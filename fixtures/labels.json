@@ -1,0 +1,143 @@
+{
+  "_doc": "Ground truth for each fixture, typed by a human. exp is the full on-screen text; meso is omitted when the inventory is closed. scripts/harvest-templates.mjs learns glyph shapes from these. name/job: use {ab} for letters whose pixels touch and so form one glyph. street/map: the two lines of the minimap title (street above, map below), typed as shown; {ab} marks letters whose pixels touch (one glyph); ~h~ marks one letter drawn as two separate pieces (two glyphs).",
+  "inventory-closed_1368x800_1794120012919.png": {
+    "exp": "17,691[2.70%]",
+    "level": "49",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "Kerning City Su~b~way",
+    "map": "Line 1 <Area 1>"
+  },
+  "inventory-closed_1368x800_1794120015045.png": {
+    "exp": "17,691[2.70%]",
+    "level": "49",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "Kerning City Su~b~way",
+    "map": "Line 1 <Area 1>"
+  },
+  "inventory-open_1368x800_1794119991682.png": {
+    "exp": "17,691[2.70%]",
+    "level": "49",
+    "meso": "721,592",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "Kerning City Su~b~way",
+    "map": "Line 1 <Area 1>"
+  },
+  "inventory-open_1368x800_1794119999819.png": {
+    "exp": "17,691[2.70%]",
+    "level": "49",
+    "meso": "721,592",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "Kerning City Su~b~way",
+    "map": "Line 1 <Area 1>"
+  },
+  "inventory-open_1368x800_1794120002377.png": {
+    "exp": "17,691[2.70%]",
+    "level": "49",
+    "meso": "721,592",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "Kerning City Su~b~way",
+    "map": "Line 1 <Area 1>"
+  },
+  "inventory-open_1368x800_1794120004165.png": {
+    "exp": "17,691[2.70%]",
+    "level": "49",
+    "meso": "721,592",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "Kerning City Su~b~way",
+    "map": "Line 1 <Area 1>"
+  },
+  "inventory-open_1368x800_1794120006292.png": {
+    "exp": "17,691[2.70%]",
+    "level": "49",
+    "meso": "721,592",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "Kerning City Su~b~way",
+    "map": "Line 1 <Area 1>"
+  },
+  "inventory-open_1368x800_1794120008404.png": {
+    "exp": "17,691[2.70%]",
+    "level": "49",
+    "meso": "721,592",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "Kerning City Su~b~way",
+    "map": "Line 1 <Area 1>"
+  },
+  "inventory-open_1368x800_1794120030427.png": {
+    "exp": "17,691[2.70%]",
+    "level": "49",
+    "meso": "721,592",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "Kerning City Su~b~way",
+    "map": "Line 1 <Area 1>"
+  },
+  "inventory-open_1368x800_1794120035160.png": {
+    "exp": "17,691[2.70%]",
+    "level": "49",
+    "meso": "721,592",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "Kerning City Su~b~way",
+    "map": "Line 1 <Area 1>"
+  },
+  "inventory-open_1368x800_1794120045178.png": {
+    "exp": "17,691[2.70%]",
+    "level": "49",
+    "meso": "721,592",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "Kerning City Su~b~way",
+    "map": "Line 1 <Area 1>"
+  },
+  "inventory-open_1368x800_1794120051852.png": {
+    "exp": "17,691[2.70%]",
+    "level": "49",
+    "meso": "721,592",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "Kerning City Su~b~way",
+    "map": "Line 1 <Area 1>"
+  },
+  "inventory-open_1368x800_1794126075894.png": {
+    "exp": "28,464[4.34%]",
+    "level": "49",
+    "meso": "729,316",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Vi}ctoria Road",
+    "map": "T~h~e Forest Nort~h~ of Ellinia"
+  },
+  "other_1368x800_1794135236873.png": {
+    "exp": "72,573[11.08%]",
+    "level": "49",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Vi}ctoria Road",
+    "map": "Tree Dungeon, Forest Up Nort~h~ {VI}II"
+  },
+  "other_1368x800_1794135344320.png": {
+    "exp": "72,825[11.11%]",
+    "level": "49",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Vi}ctoria Road",
+    "map": "Tree Dungeon, Forest Up Nort~h~ {VI}II"
+  },
+  "other_1368x800_1794135422113.png": {
+    "exp": "72,825[11.11%]",
+    "level": "49",
+    "meso": "759,840",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Vi}ctoria Road",
+    "map": "Tree Dungeon, Forest Up Nort~h~ {VI}II"
+  }
+}

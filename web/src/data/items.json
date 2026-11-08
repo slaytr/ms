@@ -1,0 +1,218 @@
+[
+  {
+    "id": 1,
+    "name": "One-Handed Axe Attack Scroll: Chaos",
+    "vendor": 1,
+    "stack": 100,
+    "stats": {
+      "W.ATK": 5
+    }
+  },
+  {
+    "id": 2,
+    "name": "One-Handed Axe Attack Scroll: Greater",
+    "vendor": 1,
+    "stack": 100,
+    "stats": {
+      "W.ATK": 4
+    }
+  },
+  {
+    "id": 3,
+    "name": "One-Handed Axe Attack Scroll: Intermediate",
+    "vendor": 1,
+    "stack": 100,
+    "stats": {
+      "W.ATK": 2
+    }
+  },
+  {
+    "id": 4,
+    "name": "One-Handed Axe Attack Scroll: Lesser",
+    "vendor": 1,
+    "stack": 100,
+    "stats": {
+      "W.ATK": 1
+    }
+  },
+  {
+    "id": 5,
+    "name": "One-Handed Blunt Weapon Attack Scroll: Chaos",
+    "vendor": 1,
+    "stack": 100,
+    "stats": {
+      "W.ATK": 5
+    }
+  },
+  {
+    "id": 6,
+    "name": "One-Handed Blunt Weapon Attack Scroll: Greater",
+    "vendor": 1,
+    "stack": 100,
+    "stats": {
+      "W.ATK": 4
+    }
+  },
+  {
+    "id": 7,
+    "name": "One-Handed Blunt Weapon Attack Scroll: Intermediate",
+    "vendor": 1,
+    "stack": 100,
+    "stats": {
+      "W.ATK": 2
+    }
+  },
+  {
+    "id": 8,
+    "name": "One-Handed Blunt Weapon Attack Scroll: Lesser",
+    "vendor": 1,
+    "stack": 100,
+    "stats": {
+      "W.ATK": 1
+    }
+  },
+  {
+    "id": 9,
+    "name": "One-Handed Sword Attack Scroll: Chaos",
+    "vendor": 1,
+    "stack": 100,
+    "stats": {
+      "W.ATK": 5
+    }
+  },
+  {
+    "id": 10,
+    "name": "One-Handed Sword Attack Scroll: Greater",
+    "vendor": 1,
+    "stack": 100,
+    "stats": {
+      "W.ATK": 4
+    }
+  },
+  {
+    "id": 11,
+    "name": "One-Handed Sword Attack Scroll: Intermediate",
+    "vendor": 1,
+    "stack": 100,
+    "stats": {
+      "W.ATK": 2
+    }
+  },
+  {
+    "id": 12,
+    "name": "One-Handed Sword Attack Scroll: Lesser",
+    "vendor": 1,
+    "stack": 100,
+    "stats": {
+      "W.ATK": 1
+    }
+  },
+  {
+    "id": 13,
+    "name": "Two-handed Axe Attack Scroll: Chaos",
+    "vendor": 1,
+    "stack": 100,
+    "stats": {
+      "W.ATK": 5
+    }
+  },
+  {
+    "id": 14,
+    "name": "Two-handed Axe Attack Scroll: Greater",
+    "vendor": 1,
+    "stack": 100,
+    "stats": {
+      "W.ATK": 4
+    }
+  },
+  {
+    "id": 15,
+    "name": "Two-handed Axe Attack Scroll: Intermediate",
+    "vendor": 1,
+    "stack": 100,
+    "stats": {
+      "W.ATK": 2
+    }
+  },
+  {
+    "id": 16,
+    "name": "Two-handed Axe Attack Scroll: Lesser",
+    "vendor": 1,
+    "stack": 100,
+    "stats": {
+      "W.ATK": 1
+    }
+  },
+  {
+    "id": 17,
+    "name": "Two-handed Blunt Weapon Attack Scroll: Chaos",
+    "vendor": 1,
+    "stack": 100,
+    "stats": {
+      "W.ATK": 5
+    }
+  },
+  {
+    "id": 18,
+    "name": "Two-handed Blunt Weapon Attack Scroll: Greater",
+    "vendor": 1,
+    "stack": 100,
+    "stats": {
+      "W.ATK": 4
+    }
+  },
+  {
+    "id": 19,
+    "name": "Two-handed Blunt Weapon Attack Scroll: Intermediate",
+    "vendor": 1,
+    "stack": 100,
+    "stats": {
+      "W.ATK": 2
+    }
+  },
+  {
+    "id": 20,
+    "name": "Two-handed Blunt Weapon Attack Scroll: Lesser",
+    "vendor": 1,
+    "stack": 100,
+    "stats": {
+      "W.ATK": 1
+    }
+  },
+  {
+    "id": 1000,
+    "name": "Silver Master Sergeant",
+    "vendor": 2500,
+    "stack": null,
+    "stats": {
+      "DEX": 2,
+      "W.DEF": 50,
+      "HP": 5,
+      "Upgrade Slots": 7
+    }
+  },
+  {
+    "id": 2000,
+    "name": "Sky Blue Training Shorts",
+    "vendor": null,
+    "stack": null,
+    "stats": {}
+  },
+  {
+    "id": 3000,
+    "name": "Roasted Relaxer",
+    "vendor": 1,
+    "stack": null,
+    "stats": {
+      "HP Recovery": 50,
+      "MP Recovery": 30
+    }
+  },
+  {
+    "id": 5577,
+    "name": "Maplestory Patrol Hat",
+    "vendor": 1,
+    "stack": null,
+    "stats": {}
+  }
+]

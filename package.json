@@ -1,0 +1,40 @@
+{
+  "name": "maple-metrics",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MapleStory metrics tracker: share your game window, read meso/EXP off the frames in-browser, store sessions in Postgres.",
+  "scripts": {
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "migrate": "node api/migrate.mjs",
+    "migrate:local": "node --env-file=.env.local api/migrate.mjs",
+    "server": "node api/server.mjs",
+    "server:local": "node --env-file=.env.local api/server.mjs",
+    "sync:prod": "node --env-file=.env.local scripts/sync-from-prod.mjs",
+    "web:dev": "vite",
+    "build": "vite build",
+    "typecheck": "vue-tsc --noEmit",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@fastify/static": "^10.1.3",
+    "fastify": "^5",
+    "pg": "^8",
+    "vue": "^3.5.42",
+    "vue-router": "^5.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/pngjs": "^6.0.5",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "pngjs": "^7.0.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11",
+    "vue-tsc": "^3.3.11"
+  }
+}

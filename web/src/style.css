@@ -1,0 +1,40 @@
+:root {
+  --bg: #fafaf7;
+  --fg: #1d1d1b;
+  --muted: #6b6b66;
+  --card: #fff;
+  --border: #deded6;
+  --accent: #d9622b;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161614;
+    --fg: #ecebe6;
+    --muted: #9b9a92;
+    --card: #1f1f1c;
+    --border: #35342f;
+    --accent: #f08a5d;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 15px/1.5 system-ui, sans-serif;
+}
+
+button, input { font: inherit; }
+
+/* Nexon's MapleStory typeface, self-hosted. Used for the home page title. */
+@font-face {
+  font-family: 'Maplestory';
+  src: url('/fonts/Maplestory-Bold.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}

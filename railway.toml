@@ -1,0 +1,10 @@
+# Railway web service (static SPA + /api/*). Add a Postgres plugin to the same
+# project; Railway injects DATABASE_URL. Migrations run at server boot.
+[build]
+builder = "NIXPACKS"
+buildCommand = "npm ci && npm run build"
+
+[deploy]
+startCommand = "node api/server.mjs"
+healthcheckPath = "/healthz"
+restartPolicyType = "ON_FAILURE"

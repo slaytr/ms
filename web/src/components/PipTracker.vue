@@ -1,0 +1,50 @@
+<script setup lang="ts">
+import type { TrackerView } from '../lib/tracker-view';
+import LevelBadge from './home/LevelBadge.vue';
+import TrackerStats from './TrackerStats.vue';
+
+/** The pop-out overlay: a name bar over the shared stats. Presentation only. */
+defineProps<{ view: TrackerView; inline?: boolean }>();
+</script>
+
+<template>
+  <section class="pip" :class="{ inline }" aria-label="Level progress">
+    <header class="bar">
+      <h1 class="name">{{ view.name ?? 'Tracking' }}</h1>
+      <LevelBadge :level="view.level" />
+    </header>
+
+    <div class="body">
+      <TrackerStats :view="view" />
+    </div>
+  </section>
+</template>
+
+<style scoped>
+.pip {
+  --ink: #4a2a0e;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  box-sizing: border-box;
+  background: #fff6dc;
+  color: var(--ink);
+  font: 700 14px/1.35 'Nunito', 'Trebuchet MS', system-ui, sans-serif;
+  border: 3px solid var(--ink);
+}
+.pip.inline { min-height: 0; border-radius: 12px; overflow: hidden; max-width: 320px; box-shadow: 0 6px 0 rgba(74, 42, 14, 0.25); }
+.pip * { box-sizing: border-box; }
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px 5px;
+  background: linear-gradient(#5cbcf7, #2f8fe0);
+  border-bottom: 3px solid var(--ink);
+}
+.name { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 1.1rem/1.2 'Lilita One', sans-serif; color: #fff; text-shadow: 0 2px 0 #1e5f9e; }
+
+.body { flex: 1; padding: 10px 12px 8px; display: flex; flex-direction: column; }
+</style>

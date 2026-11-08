@@ -1,0 +1,21 @@
+# Local Postgres for dev. `npm run db:up`, then copy .env.local.example to
+# .env.local (already points at this).
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: maple_dev
+      POSTGRES_USER: maple
+      POSTGRES_PASSWORD: maple
+    ports:
+      # 5434: the sibling `iron` project uses 5433 and a native Postgres
+      # usually owns 5432. Change the host side if taken, and update
+      # DATABASE_URL in .env.local to match.
+      - '5434:5432'
+    volumes:
+      # Postgres 18 images expect the mount at /var/lib/postgresql, not
+      # /var/lib/postgresql/data; the old path makes the container refuse to start.
+      - maple-postgres-data:/var/lib/postgresql
+
+volumes:
+  maple-postgres-data:
