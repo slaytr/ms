@@ -21,4 +21,4 @@ Safety:
 - `ms_capture_sessions.owner_token` is intentionally not synced (it's a
   credential); local rows get fresh tokens.
 - Use `--service <name>` (`npm run sync:prod -- --service <name>`) if the
-  Railway web service isn't named `web`.
+  Railway service isn't named `ms` (in the shared project, `web` is iron's).

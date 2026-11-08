@@ -1,8 +1,8 @@
-# Railway web service (static SPA + /api/*). Add a Postgres plugin to the same
-# project; Railway injects DATABASE_URL. Migrations run at server boot.
+# Railway web service (SPA + /api/*) in the shared "runescape" project, next to iron's `web`.
+# DATABASE_URL references the project's existing Postgres. Migrations run at server boot and only
+# create ms_-prefixed objects. Railpack runs `npm run build` itself and starts via the `start` script.
 [build]
-builder = "NIXPACKS"
-buildCommand = "npm ci && npm run build"
+builder = "RAILPACK"
 
 [deploy]
 startCommand = "node api/server.mjs"

@@ -107,7 +107,7 @@ async function main() {
 
   assertLocalTarget();
   const serviceIndex = args.indexOf('--service');
-  const service = serviceIndex === -1 ? 'web' : args[serviceIndex + 1];
+  const service = serviceIndex === -1 ? 'ms' : args[serviceIndex + 1];
 
   const payload = dumpFromProd(service);
   console.log('Loading into local Postgres...');

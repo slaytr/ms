@@ -72,7 +72,7 @@ The Classic UI uses exact pixel fonts, so we match pixels instead of OCR:
 
 ## Stack
 Fastify 5 + `pg` (api/, plain ESM `.mjs`), Vue 3 + Vite + TS (web/), Postgres 18,
-Railway for prod. Tests: Vitest.
+Railway for prod: service `ms` in the shared `runescape` project (iron owns `web`), same Postgres, deployed with `railway up --service ms`. Tests: Vitest.
 
 ## Commands
 - `npm run db:up` / `db:down`: local Postgres (docker, port 5434)

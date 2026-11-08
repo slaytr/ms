@@ -3,7 +3,11 @@ import type { TrackerView } from '../lib/tracker-view';
 import LevelBadge from './home/LevelBadge.vue';
 import TrackerStats from './TrackerStats.vue';
 
-/** The pop-out overlay: a name bar over the shared stats. Presentation only. */
+/**
+ * The pop-out overlay: a name bar over the shared stats. Presentation only. The home-page overview
+ * reuses it as is, filling the `top` slot (avatar) and the default slot (buttons), so the two can
+ * never drift apart.
+ */
 defineProps<{ view: TrackerView; inline?: boolean }>();
 </script>
 
@@ -15,7 +19,9 @@ defineProps<{ view: TrackerView; inline?: boolean }>();
     </header>
 
     <div class="body">
+      <div v-if="$slots.top" class="top"><slot name="top" /></div>
       <TrackerStats :view="view" />
+      <div v-if="$slots.default" class="extras"><slot /></div>
     </div>
   </section>
 </template>
@@ -47,4 +53,6 @@ defineProps<{ view: TrackerView; inline?: boolean }>();
 .name { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 1.1rem/1.2 'Lilita One', sans-serif; color: #fff; text-shadow: 0 2px 0 #1e5f9e; }
 
 .body { flex: 1; padding: 10px 12px 8px; display: flex; flex-direction: column; }
+.top { margin-bottom: 8px; }
+.extras { margin-top: 10px; }
 </style>

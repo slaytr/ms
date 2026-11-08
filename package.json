@@ -9,6 +9,7 @@
     "db:down": "docker compose down",
     "migrate": "node api/migrate.mjs",
     "migrate:local": "node --env-file=.env.local api/migrate.mjs",
+    "start": "node api/server.mjs",
     "server": "node api/server.mjs",
     "server:local": "node --env-file=.env.local api/server.mjs",
     "sync:prod": "node --env-file=.env.local scripts/sync-from-prod.mjs",
@@ -18,7 +19,7 @@
     "test": "vitest run"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.12"
   },
   "dependencies": {
     "@fastify/static": "^10.1.3",
