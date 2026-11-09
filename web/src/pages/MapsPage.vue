@@ -61,9 +61,6 @@ onMounted(async () => {
     <SkyScene />
     <main class="content">
       <h1 class="heading">Map rankings</h1>
-      <p class="sub">
-        Where the EXP is. Only sessions of 30+ minutes above 50K EXP/h count. Click a map to see who played it.
-      </p>
 
       <p v-if="error" class="alert" role="alert">{{ error }}</p>
       <p v-else-if="loading" class="status">Loading…</p>
@@ -183,7 +180,6 @@ onMounted(async () => {
   color: #fff;
   text-shadow: -2px -2px 0 var(--ink), 2px -2px 0 var(--ink), -2px 2px 0 var(--ink), 2px 2px 0 var(--ink), 0 4px 0 var(--ink);
 }
-.sub { margin: -14px 0 0; text-align: center; color: #2b4a66; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7); }
 .status, .alert { margin: 0 auto; max-width: 34rem; padding: 0.8rem 1.2rem; text-align: center; background: #fff6dc; border: 3px solid var(--ink); border-radius: 12px; }
 .alert { background: #fff0ee; border-color: #c4361d; color: #8a1d0c; }
 
