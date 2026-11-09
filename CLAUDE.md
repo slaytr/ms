@@ -91,14 +91,34 @@ The Classic UI uses exact pixel fonts, so we match pixels instead of OCR:
   digit-shaped but unmatched makes the count null. **A count is right or null, never guessed.** A `1` that loses its
   flag to compression (seen on the selected slot) reads null on purpose: a bare stem looks like a `0`'s left edge.
 - Templates are generated: label frames with `useTab` in `labels.json` (6 rows x 5 cells, "Item name:count",
-  "?:count" for untracked items, "-" empty), then `node scripts/harvest-inventory.mjs` (lists missing digits; **7 is
-  still missing**, so a stack with a 7 reads null).
-- `lib/pot-tracker.ts`: the first complete scan is the baseline; use = net fall in each item's visible total since
-  (a rise = bought/looted, shown as 0 used). Scans at a different scrollbar position aren't compared. Cost and
+  "?:count" for untracked items, "-" empty), then `node scripts/harvest-inventory.mjs` (lists missing digits).
+- **Quick slots (preferred source)**: `lib/detect/quickslots.ts` reads the 2 x 4 hotkey bar. A hotkeyed item shows its
+  TOTAL across every stack and page (a frame's Use tab showed Blue Potion 500, the bar 502: two stacks were off
+  screen), and the bar is always on screen, so no inventory window and no scrolling. It hangs off the **EXP label**
+  (slot (0,0) at +218,-107; columns 0/35/71/106 across, 34 down), so it is found at any window width (checked at
+  1026, 1282 and 1368). Icons match the same templates (key name over the top 11 rows ignored, looser threshold, bigger
+  margin). Counts are the same font but shaded differently on a white background over bright icons, so they have their
+  own digit set (`quickDigits`), learned from `quickSlots` labels (2 rows x 4 cells; "?" = icon with no count, e.g. a
+  skill) with the Use-tab digits seeding where each digit sits. Never a wrong count: 0 wrong / 28 tracked slots on
+  22 real frames, 4 honestly unreadable (stacks like 572/972/175 whose 7 sits too close to another digit).
+  **Only Blue Potion, Orange Potion and Pure Water have ever been seen on the bar.** Simulation (the real digit
+  renderings lifted off those icons and laid over all 24 catalog icons): every item was FOUND (240/240, 0 wrong
+  items), but only ~25% of counts read and ~75% came back unreadable, because each icon's highlights add their own
+  noise to the digits. So a newly hotkeyed item is found at once but its count needs a labelled frame or two
+  (`quickSlots` in labels.json, then harvest) before it reads; until then it falls back to the Use tab. The quick-slot
+  reader uses `strictTail` (gives up when a half-hidden last digit follows, rather than returning "50" for "502");
+  that rule costs real Use-tab reads, so the Use tab does not use it.
+- `lib/pot-tracker.ts`: an item on the quick slots is counted from there, as the sum of FALLS between good readings (a
+  rise = bought/looted is ignored, so restocking never distorts it; a fall of more than `MAX_USE_PER_READING` = 25 in
+  one ~3s reading is a misread or a bulk sale, not drinking, so it isn't counted); the Use tab is then ignored for that item and
+  what it had counted is banked. Items not on the bar fall back to the Use tab (first complete scan = baseline, net fall
+  since, scans at another scrollbar position not compared). Items are independent: an unreadable count leaves out only
+  that item. **Repot** pauses counting (banks use, ignores both sources) and resume starts from fresh readings. Cost and
   HP/MP come from `data/potions.ts` (24 items, from ms-classic.com; shop prices are community-recorded, items no NPC
-  sells have no cost, percentage potions have no HP/MP amount). Shown in `PotStats.vue` (overview and pop-out).
-- **Limits**: only the visible slots (the tab scrolls and its scrollbar thumb is small, so a whole-tab scan needs frames
-  at other scroll positions); can't tell a pot drunk from one traded or dropped.
+  sells have no cost, percentage potions have no HP/MP amount). Shown in `PotStats.vue` (overview and pop-out); a green
+  "QS" pill beside the name marks pots counted from the quick slots.
+- **Limits**: Use-tab pots count only the visible slots (the tab scrolls); neither source can tell a pot drunk from one
+  traded or dropped; pots not on the quick slots still need the Use tab open.
 
 ## Pages and identity
 - `/` is the real UI: a MapleStory-themed home page (Lilita One + Nunito; own art, no game assets).

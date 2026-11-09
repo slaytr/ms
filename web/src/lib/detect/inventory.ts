@@ -46,9 +46,11 @@ export interface InventoryTemplates {
   /** Stack-count digits: each character's known white-fill renderings (rows of '#' and '.'). */
   readonly digits: Readonly<Record<string, readonly Bitmap[]>>;
   readonly icons: readonly IconTemplate[];
+  /** The same, for the stack counts on the quick-slot bar: same font, but the shading and background differ, so they are learned separately. */
+  readonly quickDigits: Readonly<Record<string, readonly Bitmap[]>>;
 }
 
-export const EMPTY_INVENTORY_TEMPLATES: InventoryTemplates = { version: 1, digits: {}, icons: [] };
+export const EMPTY_INVENTORY_TEMPLATES: InventoryTemplates = { version: 1, digits: {}, icons: [], quickDigits: {} };
 
 export interface SlotReading {
   readonly row: number;
@@ -300,6 +302,29 @@ function looksLikeDigit(mask: Bitmap, at: number): boolean {
   return false;
 }
 
+/** Ink starting within this many columns of the previous digit's end is where the next digit would be. */
+const NEXT_DIGIT_REACH = 3;
+/** How much ink right after a digit makes it a damaged digit rather than the icon's noise. */
+const DAMAGED_MIN = { columns: 3, rows: 4, pixels: 6 } as const;
+
+/**
+ * Ink right where the next digit would sit that is wide and tall enough to be a (damaged) digit. A half-hidden
+ * last digit leaves such a remnant; if the reader treated it as noise it would return the shorter number
+ * ("50" for "502"). The icon's own highlights are usually thinner than this, or further away.
+ */
+function looksLikeDamagedDigit(mask: Bitmap, at: number): boolean {
+  const end = Math.min(mask[0].length, at + DIGIT_WINDOW);
+  let pixels = 0;
+  let columns = 0;
+  for (let col = at; col < end; col++) {
+    const here = mask.filter((row) => row[col] === '#').length;
+    pixels += here;
+    if (here > 0) columns += 1;
+  }
+  const rows = mask.filter((row) => row.slice(at, end).includes('#')).length;
+  return columns >= DAMAGED_MIN.columns && rows >= DAMAGED_MIN.rows && pixels >= DAMAGED_MIN.pixels;
+}
+
 type Next = { readonly at: number; readonly hit: DigitHit } | 'unknown' | null;
 
 /**
@@ -307,7 +332,7 @@ type Next = { readonly at: number; readonly hit: DigitHit } | 'unknown' | null;
  * column with ink in that window is tried. Null when nothing digit-shaped is there (the count is over);
  * 'unknown' when something digit-shaped is there but matches no known digit.
  */
-function nextDigit(mask: Bitmap, from: number, within: number, digits: InventoryTemplates['digits']): Next {
+function nextDigit(mask: Bitmap, from: number, within: number, digits: InventoryTemplates['digits'], strictTail: boolean): Next {
   const first = nextInk(mask, from, within);
   if (first === null) return null;
   for (let col = first; col <= Math.min(mask[0].length - 1, from + within); col++) {
@@ -315,7 +340,10 @@ function nextDigit(mask: Bitmap, from: number, within: number, digits: Inventory
     const hit = digitAt(mask, col, digits);
     if (hit) return { at: col, hit };
   }
-  return looksLikeDigit(mask, first) ? 'unknown' : null;
+  if (looksLikeDigit(mask, first)) return 'unknown';
+  // Right after a digit already read, a remnant that wide and tall is a damaged digit, not the icon's noise.
+  if (strictTail && from > 0 && first - from <= NEXT_DIGIT_REACH && looksLikeDamagedDigit(mask, first)) return 'unknown';
+  return null;
 }
 
 /**
@@ -324,13 +352,22 @@ function nextDigit(mask: Bitmap, from: number, within: number, digits: Inventory
  * digit-shaped (the icon's own highlights) is ignored; digit-shaped ink that matches nothing makes the
  * whole reading null, so an unknown digit is never dropped or guessed.
  */
-export function readQuantity(frame: Frame, origin: Point, digits: InventoryTemplates['digits']): number | null {
+export interface QuantityOptions {
+  /**
+   * Give up (null) when ink that could be a damaged digit sits right after the last one read, instead of treating it
+   * as the icon's noise. Safer against a half-hidden last digit ("50" for "502"), at the price of more unreadable
+   * counts; the quick slots use it, the Use tab (whose counts are a net change, not a running total) does not.
+   */
+  readonly strictTail?: boolean;
+}
+
+export function readQuantity(frame: Frame, origin: Point, digits: InventoryTemplates['digits'], options: QuantityOptions = {}): number | null {
   const mask = digitMask(frame, origin);
   let text = '';
   let from = 0;
   let within = MAX_START;
   while (text.length < 4) {
-    const next = nextDigit(mask, from, within, digits);
+    const next = nextDigit(mask, from, within, digits, options.strictTail === true);
     if (next === 'unknown') return null;
     if (next === null) break;
     text += next.hit.digit;
@@ -369,8 +406,9 @@ function decodeIcons(icons: readonly IconTemplate[]): readonly DecodedIcon[] {
 }
 
 /** Mean per-channel colour difference of an icon laid at (ox, oy), skipping the pixels the stack count covers. Stops early once it can't beat `limit`. */
-function iconDifference(frame: Frame, icon: DecodedIcon, ox: number, oy: number, origin: Point, limit: number): number {
+function iconDifference(frame: Frame, icon: DecodedIcon, ox: number, oy: number, origin: Point, limit: number, skipTop: number): number {
   const maskTop = origin.y + INVENTORY.digitsMask.top;
+  const skipAbove = origin.y + skipTop;
   const maskRight = origin.x + INVENTORY.digitsMask.width;
   let sum = 0;
   let counted = 0;
@@ -378,7 +416,7 @@ function iconDifference(frame: Frame, icon: DecodedIcon, ox: number, oy: number,
   for (const [x, y, r, g, b] of icon.opaque) {
     const fx = ox + x;
     const fy = oy + y;
-    if (fy >= maskTop && fx < maskRight) continue;
+    if (fy < skipAbove || (fy >= maskTop && fx < maskRight)) continue;
     const [pr, pg, pb] = pixel(frame, fx, fy);
     sum += Math.abs(r - pr) + Math.abs(g - pg) + Math.abs(b - pb);
     counted += 1;
@@ -395,7 +433,17 @@ const ICON_MIN_MARGIN = 4;
 const SEARCH = { across: 3, down: 3, up: 1 } as const;
 
 /** The tracked item whose icon is in this slot, or null if none matches clearly. */
-export function matchIcon(frame: Frame, origin: Point, icons: readonly IconTemplate[]): number | null {
+export interface IconMatchOptions {
+  /** Largest colour difference (per channel, 0-255) a match may have. */
+  readonly maxDifference?: number;
+  /** How much better than the runner-up the best match must be. */
+  readonly margin?: number;
+  /** Rows at the top of the slot to ignore (the quick slots draw their key name there). */
+  readonly skipTop?: number;
+}
+
+export function matchIcon(frame: Frame, origin: Point, icons: readonly IconTemplate[], options: IconMatchOptions = {}): number | null {
+  const { maxDifference = ICON_MAX_DIFFERENCE, margin = ICON_MIN_MARGIN, skipTop = 0 } = options;
   const scores: { id: number; diff: number }[] = [];
   for (const icon of decodeIcons(icons)) {
     const baseX = origin.x + Math.ceil((INVENTORY.size - icon.w) / 2);
@@ -403,15 +451,15 @@ export function matchIcon(frame: Frame, origin: Point, icons: readonly IconTempl
     let best = Number.POSITIVE_INFINITY;
     for (let dy = -SEARCH.down; dy <= SEARCH.up; dy++) {
       for (let dx = -SEARCH.across; dx <= SEARCH.across; dx++) {
-        best = Math.min(best, iconDifference(frame, icon, baseX + dx, baseY + dy, origin, Math.min(best, 60)));
+        best = Math.min(best, iconDifference(frame, icon, baseX + dx, baseY + dy, origin, Math.min(best, 60), skipTop));
       }
     }
     scores.push({ id: icon.id, diff: best });
   }
   scores.sort((a, b) => a.diff - b.diff);
   const [first, second] = scores;
-  if (!first || first.diff > ICON_MAX_DIFFERENCE) return null;
-  return second && second.diff - first.diff < ICON_MIN_MARGIN ? null : first.id;
+  if (!first || first.diff > maxDifference) return null;
+  return second && second.diff - first.diff < margin ? null : first.id;
 }
 
 function readSlot(frame: Frame, mesos: Point, row: number, col: number, templates: InventoryTemplates): SlotReading {

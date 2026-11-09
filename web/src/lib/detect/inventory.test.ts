@@ -134,6 +134,16 @@ describe('readQuantity', () => {
     expect(readQuantity(frame, origin, digits)).toBe(15);
   });
 
+  it('with strictTail, gives up when a half-hidden digit follows instead of returning the shorter number', () => {
+    const zero = digits['0'][0] as string[];
+    // "150" where the last 0 has lost its lower half: only its top four rows are still drawn.
+    const damaged = zero.map((row, y) => (y < 4 ? row : '.'.repeat(row.length)));
+    const { frame, origin } = frameWithCount([one, five, damaged]);
+    expect(readQuantity(frame, origin, digits, { strictTail: true })).toBeNull();
+    // The Use tab's reader keeps the older, more forgiving behaviour (its counts are a net change, not a running total).
+    expect(readQuantity(frame, origin, digits)).toBe(15);
+  });
+
   it('ignores a stray highlight after the count', () => {
     const { frame, origin } = frameWithCount([one, five], (white) => {
       white(23, 4);

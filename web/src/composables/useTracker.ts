@@ -5,7 +5,7 @@ import type { Detection, MapPlate } from '../lib/detect/detect.ts';
 import { coreReady } from '../lib/health';
 import { mapLabel } from '../lib/map-label';
 import { computeRates, type Reading } from '../lib/metrics';
-import { buildPotView, observePots, pausePots, rescanPots, resumePots, startPotTracking } from '../lib/pot-tracker';
+import { buildPotView, observePots, observeQuick, pausePots, rescanPots, resumePots, startPotTracking } from '../lib/pot-tracker';
 import { carryForward, snapshotFrom, type PlayerSnapshot } from '../lib/snapshot';
 import { useDetector } from './useDetector';
 import { useMissReporter } from './useMissReporter';
@@ -146,7 +146,8 @@ export function useTracker() {
         current.value = latestSnapshot;
         if (mapLabel(detection.map)) map.value = detection.map;
         await record(detection);
-        pots.value = observePots(pots.value, detection.useTab ?? null, Date.now());
+        // The quick slots first: an item they show is counted from there, and the Use tab then ignores it.
+        pots.value = observePots(observeQuick(pots.value, detection.quickSlots ?? null, Date.now()), detection.useTab ?? null, Date.now());
         void misses.consider(detection, el, session.id);
       }
     } catch (cause) {

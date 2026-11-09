@@ -26,6 +26,7 @@ import {
 } from './readers.ts';
 import type { AnchorName, Frame, Point, Polarity, Templates } from './types.ts';
 import type { UseTab } from './inventory.ts';
+import type { QuickSlots } from './quickslots.ts';
 import { fitView, unscaleView, viewFits, type View } from './view.ts';
 
 /**
@@ -70,6 +71,8 @@ export interface Detection {
   readonly map: MapPlate;
   /** The Use tab of the inventory (items and counts), when that tab is open in a native-size window; null otherwise. */
   readonly useTab?: UseTab;
+  /** The quick-slot bar (hotkeyed items and their totals), in a native-size window; null when it can't be read. */
+  readonly quickSlots?: QuickSlots | null;
   readonly state: DetectState;
 }
 

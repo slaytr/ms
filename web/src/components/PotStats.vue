@@ -23,7 +23,7 @@ const fmt = (n: number) => Math.round(n).toLocaleString();
       </span>
     </header>
 
-    <p v-if="!pots" class="note">Open your inventory on the <strong>Use</strong> tab, scrolled to the top, and we'll count your pots from there.</p>
+    <p v-if="!pots" class="note">Put your pots in the <strong>quick slots</strong> and we'll count them as you go, or open your inventory on the <strong>Use</strong> tab, scrolled to the top.</p>
 
     <template v-else>
       <p class="summary">
@@ -41,7 +41,7 @@ const fmt = (n: number) => Math.round(n).toLocaleString();
         </thead>
         <tbody>
           <tr v-for="row in pots.rows" :key="row.id" :class="{ idle: row.used === 0 }">
-            <td>{{ row.name }}</td>
+            <td>{{ row.name }}<span v-if="row.source === 'quick'" class="qs" title="Counted from your quick slots, so no inventory needed">QS</span></td>
             <td class="num" :title="row.stale ? 'Last good reading: this count isn\'t readable right now' : undefined">{{ row.now === null ? '—' : fmt(row.now) }}{{ row.stale ? '?' : '' }}</td>
             <td class="num used">{{ row.used > 0 ? fmt(row.used) : '·' }}</td>
             <td class="num meso" :title="row.used > 0 && row.mesos === null ? 'No NPC sells this, so its cost is not known' : undefined">
@@ -55,7 +55,8 @@ const fmt = (n: number) => Math.round(n).toLocaleString();
       <p v-if="pots.totals.percentItemsUsed > 0" class="note">HP/MP for elixirs and other percentage items isn't counted (it depends on your max HP/MP).</p>
       <p v-if="pots.scrolledAway" class="note warn">Your Use tab has scrolled. Scroll it back to where it was to keep counting.</p>
       <p v-if="pots.unreadable.length > 0" class="note warn">Couldn't read every {{ pots.unreadable.join(', ') }} count, so {{ pots.unreadable.length === 1 ? 'it isn\'t' : 'they aren\'t' }} fully counted.</p>
-      <p class="note">Counts the visible slots only. Pots you buy or pick up offset the ones you use.</p>
+      <p v-if="pots.usesTab" class="note">Use-tab pots: the visible slots only, and pots you buy or pick up offset the ones you use. QS pots are counted from your quick slots, wherever they are.</p>
+      <p v-else class="note"><span class="qs">QS</span> Counted from your quick slots, so no inventory needed. Pots you buy don't count against you.</p>
     </template>
   </section>
 </template>
@@ -72,6 +73,7 @@ h3 { margin: 0; font: 400 1rem / 1.2 'Lilita One', sans-serif; }
 .restart:focus-visible { outline: 3px solid #4a2a0e; outline-offset: 2px; }
 .note { margin: 4px 0 0; font-size: 11px; color: #6b4a22; }
 .note.warn { color: #a23a00; }
+.qs { margin-left: 5px; padding: 0 5px; font: 800 9px / 1.6 'Nunito', sans-serif; letter-spacing: 0.04em; color: #fff; background: #3fa02a; border-radius: 999px; vertical-align: middle; }
 .note.paused { padding: 3px 6px; color: #2c5d18; background: #eaf8dd; border-radius: 6px; }
 .summary { margin: 4px 0 6px; font-variant-numeric: tabular-nums; font-size: 12px; }
 .summary strong { font: 400 1.3rem / 1.1 'Lilita One', sans-serif; color: #2e9a1f; }

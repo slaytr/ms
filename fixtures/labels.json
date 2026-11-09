@@ -6,7 +6,21 @@
     "name": "Pa{yY}oBills",
     "job": "Wizard (Ice,Lightning)",
     "street": "Kerning City Su~b~way",
-    "map": "Line 1 <Area 1>"
+    "map": "Line 1 <Area 1>",
+    "quickSlots": [
+      [
+        "Blue Potion:498",
+        "?",
+        "-",
+        "?:41"
+      ],
+      [
+        "?",
+        "?",
+        "?",
+        "?:244"
+      ]
+    ]
   },
   "inventory-closed_1368x800_1794120015045.png": {
     "exp": "17,691[2.70%]",
@@ -14,7 +28,21 @@
     "name": "Pa{yY}oBills",
     "job": "Wizard (Ice,Lightning)",
     "street": "Kerning City Su~b~way",
-    "map": "Line 1 <Area 1>"
+    "map": "Line 1 <Area 1>",
+    "quickSlots": [
+      [
+        "Blue Potion:498",
+        "?",
+        "-",
+        "?:41"
+      ],
+      [
+        "?",
+        "?",
+        "?",
+        "?:244"
+      ]
+    ]
   },
   "inventory-open_1368x800_1794119991682.png": {
     "exp": "17,691[2.70%]",
@@ -23,7 +51,21 @@
     "name": "Pa{yY}oBills",
     "job": "Wizard (Ice,Lightning)",
     "street": "Kerning City Su~b~way",
-    "map": "Line 1 <Area 1>"
+    "map": "Line 1 <Area 1>",
+    "quickSlots": [
+      [
+        "Blue Potion:498",
+        "?",
+        "-",
+        "?:41"
+      ],
+      [
+        "?",
+        "?",
+        "?",
+        "?:244"
+      ]
+    ]
   },
   "inventory-open_1368x800_1794119999819.png": {
     "exp": "17,691[2.70%]",
@@ -32,7 +74,21 @@
     "name": "Pa{yY}oBills",
     "job": "Wizard (Ice,Lightning)",
     "street": "Kerning City Su~b~way",
-    "map": "Line 1 <Area 1>"
+    "map": "Line 1 <Area 1>",
+    "quickSlots": [
+      [
+        "Blue Potion:498",
+        "?",
+        "-",
+        "?:41"
+      ],
+      [
+        "?",
+        "?",
+        "?",
+        "?:244"
+      ]
+    ]
   },
   "inventory-open_1368x800_1794120002377.png": {
     "exp": "17,691[2.70%]",
@@ -41,7 +97,21 @@
     "name": "Pa{yY}oBills",
     "job": "Wizard (Ice,Lightning)",
     "street": "Kerning City Su~b~way",
-    "map": "Line 1 <Area 1>"
+    "map": "Line 1 <Area 1>",
+    "quickSlots": [
+      [
+        "Blue Potion:498",
+        "?",
+        "-",
+        "?:41"
+      ],
+      [
+        "?",
+        "?",
+        "?",
+        "?:244"
+      ]
+    ]
   },
   "inventory-open_1368x800_1794120004165.png": {
     "exp": "17,691[2.70%]",
@@ -93,6 +163,20 @@
         "-",
         "-",
         "?:1"
+      ]
+    ],
+    "quickSlots": [
+      [
+        "Blue Potion:498",
+        "?",
+        "-",
+        "?:41"
+      ],
+      [
+        "?",
+        "?",
+        "?",
+        "?:244"
       ]
     ]
   },
@@ -147,6 +231,20 @@
         "-",
         "?:1"
       ]
+    ],
+    "quickSlots": [
+      [
+        "Blue Potion:498",
+        "?",
+        "-",
+        "?:41"
+      ],
+      [
+        "?",
+        "?",
+        "?",
+        "?:244"
+      ]
     ]
   },
   "inventory-open_1368x800_1794120008404.png": {
@@ -200,6 +298,20 @@
         "-",
         "?:1"
       ]
+    ],
+    "quickSlots": [
+      [
+        "Blue Potion:498",
+        "?",
+        "-",
+        "?:41"
+      ],
+      [
+        "?",
+        "?",
+        "?",
+        "?:244"
+      ]
     ]
   },
   "inventory-open_1368x800_1794120030427.png": {
@@ -209,7 +321,21 @@
     "name": "Pa{yY}oBills",
     "job": "Wizard (Ice,Lightning)",
     "street": "Kerning City Su~b~way",
-    "map": "Line 1 <Area 1>"
+    "map": "Line 1 <Area 1>",
+    "quickSlots": [
+      [
+        "Blue Potion:498",
+        "?",
+        "-",
+        "?:41"
+      ],
+      [
+        "?",
+        "?",
+        "?",
+        "?:244"
+      ]
+    ]
   },
   "inventory-open_1368x800_1794120035160.png": {
     "exp": "17,691[2.70%]",
@@ -218,7 +344,21 @@
     "name": "Pa{yY}oBills",
     "job": "Wizard (Ice,Lightning)",
     "street": "Kerning City Su~b~way",
-    "map": "Line 1 <Area 1>"
+    "map": "Line 1 <Area 1>",
+    "quickSlots": [
+      [
+        "Blue Potion:498",
+        "?",
+        "-",
+        "?:41"
+      ],
+      [
+        "?",
+        "?",
+        "?",
+        "?:244"
+      ]
+    ]
   },
   "inventory-open_1368x800_1794120045178.png": {
     "exp": "17,691[2.70%]",
@@ -270,6 +410,20 @@
         "-",
         "-",
         "?:1"
+      ]
+    ],
+    "quickSlots": [
+      [
+        "Blue Potion:498",
+        "?",
+        "-",
+        "?:41"
+      ],
+      [
+        "?",
+        "?",
+        "?",
+        "?:244"
       ]
     ]
   },
@@ -324,6 +478,20 @@
         "-",
         "?:1"
       ]
+    ],
+    "quickSlots": [
+      [
+        "Blue Potion:498",
+        "?",
+        "-",
+        "?:41"
+      ],
+      [
+        "?",
+        "?",
+        "?",
+        "?:244"
+      ]
     ]
   },
   "inventory-open_1368x800_1794126075894.png": {
@@ -333,7 +501,21 @@
     "name": "Pa{yY}oBills",
     "job": "Wizard (Ice,Lightning)",
     "street": "{Vi}ctoria Road",
-    "map": "T~h~e Forest Nort~h~ of Ellinia"
+    "map": "T~h~e Forest Nort~h~ of Ellinia",
+    "quickSlots": [
+      [
+        "Blue Potion:489",
+        "?",
+        "-",
+        "?:40"
+      ],
+      [
+        "?",
+        "?",
+        "?",
+        "?:242"
+      ]
+    ]
   },
   "other_1368x800_1794135236873.png": {
     "exp": "72,573[11.08%]",
@@ -358,7 +540,21 @@
     "name": "Pa{yY}oBills",
     "job": "Wizard (Ice,Lightning)",
     "street": "{Vi}ctoria Road",
-    "map": "Tree Dungeon, Forest Up Nort~h~ {VI}II"
+    "map": "Tree Dungeon, Forest Up Nort~h~ {VI}II",
+    "quickSlots": [
+      [
+        "Blue Potion:440",
+        "?",
+        "-",
+        "?:38"
+      ],
+      [
+        "?",
+        "?",
+        "?",
+        "?:239"
+      ]
+    ]
   },
   "other_1368x800_1794190202466.png": {
     "exp": "463,716[70.77%]",
@@ -366,7 +562,21 @@
     "name": "Pa{yY}oBills",
     "job": "Wizard (Ice,Lightning)",
     "street": "{Wa}rning Street",
-    "map": "T~h~e Burnt Land III"
+    "map": "T~h~e Burnt Land III",
+    "quickSlots": [
+      [
+        "Blue Potion:469",
+        "?",
+        "-",
+        "?:23"
+      ],
+      [
+        "?",
+        "?",
+        "?",
+        "?:225"
+      ]
+    ]
   },
   "other_1368x800_1794190416821.png": {
     "exp": "468,770[71.55%]",
@@ -375,7 +585,21 @@
     "name": "Pa{yY}oBills",
     "job": "Wizard (Ice,Lightning)",
     "street": "{Vi}ctoria Road",
-    "map": "Henes{ys} Hunting Ground I"
+    "map": "Henes{ys} Hunting Ground I",
+    "quickSlots": [
+      [
+        "Blue Potion:465",
+        "?",
+        "-",
+        "?:23"
+      ],
+      [
+        "?",
+        "?",
+        "?",
+        "?:225"
+      ]
+    ]
   },
   "other_1368x800_1794190471361.png": {
     "exp": "468,770[71.55%]",
@@ -392,7 +616,21 @@
     "name": "Pa{yY}oBills",
     "job": "Wizard (Ice,Lightning)",
     "street": "Hidden Street",
-    "map": "Dangerous {Va}lley"
+    "map": "Dangerous {Va}lley",
+    "quickSlots": [
+      [
+        "Blue Potion:464",
+        "?",
+        "-",
+        "?:23"
+      ],
+      [
+        "?",
+        "?",
+        "?",
+        "?:225"
+      ]
+    ]
   },
   "other_1368x800_1794190494806.png": {
     "exp": "468,770[71.55%]",
@@ -409,7 +647,21 @@
     "name": "Pa{yY}oBills",
     "job": "Wizard (Ice,Lightning)",
     "street": "{Vi}ctoria Road",
-    "map": "Lit~h~ Har~b~or"
+    "map": "Lit~h~ Har~b~or",
+    "quickSlots": [
+      [
+        "Blue Potion:464",
+        "?",
+        "-",
+        "?:23"
+      ],
+      [
+        "?",
+        "?",
+        "?",
+        "?:225"
+      ]
+    ]
   },
   "other_1282x752_1794190536307.png": {
     "exp": "468,770[71.55%]",
@@ -417,7 +669,21 @@
     "name": "Pa{yY}oBills",
     "job": "Wizard (Ice,Lightning)",
     "street": "{Vi}ctoria Road",
-    "map": "Lit~h~ Har~b~or"
+    "map": "Lit~h~ Har~b~or",
+    "quickSlots": [
+      [
+        "Blue Potion:464",
+        "?",
+        "-",
+        "?:23"
+      ],
+      [
+        "?",
+        "?",
+        "?",
+        "?:225"
+      ]
+    ]
   },
   "other_1922x1112_1794190567451.png": {
     "exp": "468,770[71.55%]",
@@ -506,6 +772,20 @@
         "Lemon:100",
         "?:10"
       ]
+    ],
+    "quickSlots": [
+      [
+        "Blue Potion:262",
+        "Orange Potion:572",
+        "Pure Water:175",
+        "?:218"
+      ],
+      [
+        "-",
+        "-",
+        "-",
+        "-"
+      ]
     ]
   },
   "inventory-open_1368x800_1794216557845.png": {
@@ -557,6 +837,20 @@
         "Lemon:100",
         "?:10"
       ]
+    ],
+    "quickSlots": [
+      [
+        "Blue Potion:502",
+        "Orange Potion:972",
+        "Pure Water:175",
+        "?:217"
+      ],
+      [
+        "-",
+        "-",
+        "-",
+        "-"
+      ]
     ]
   },
   "inventory-open_1368x800_1794218976657.png": {
@@ -566,6 +860,20 @@
     "name": "Pa{yY}oBills",
     "job": "Wizard (Ice,Lightning)",
     "street": "{Vi}ctoria Road",
-    "map": "Remains <Tom~b~> I"
+    "map": "Remains <Tom~b~> I",
+    "quickSlots": [
+      [
+        "Blue Potion:395",
+        "Orange Potion:856",
+        "Pure Water:198",
+        "?:214"
+      ],
+      [
+        "-",
+        "-",
+        "-",
+        "-"
+      ]
+    ]
   }
 }
