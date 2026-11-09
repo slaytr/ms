@@ -15,6 +15,7 @@ import avatarRoutes from './routes/avatar.mjs';
 import devDbRoutes from './routes/dev-db.mjs';
 import devFixtureRoutes from './routes/dev-fixtures.mjs';
 import mapRoutes from './routes/maps.mjs';
+import missFrameRoutes from './routes/miss-frames.mjs';
 import sessionRoutes from './routes/sessions.mjs';
 import { runMigrations } from './migrate.mjs';
 
@@ -35,6 +36,7 @@ export async function buildServer() {
   await fastify.register(avatarRoutes);
   await fastify.register(sessionRoutes);
   await fastify.register(mapRoutes);
+  await fastify.register(missFrameRoutes);
   await fastify.register(devFixtureRoutes);
   await fastify.register(devDbRoutes);
   fastify.get('/healthz', async () => ({ ok: true }));

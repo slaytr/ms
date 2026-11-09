@@ -89,3 +89,29 @@ export function listMapSessions(): Promise<MapSession[]> {
 export function getSession(id: string): Promise<SessionDetail> {
   return request(`/api/sessions/${id}`);
 }
+
+export interface MissFrameUpload {
+  readonly width: number;
+  readonly height: number;
+  readonly missing: readonly string[];
+  readonly detection: object;
+  readonly sessionId?: string;
+  readonly png: Blob;
+}
+
+/** A PNG as base64 text, in chunks so a multi-megabyte frame doesn't overflow the call stack. */
+async function toBase64(blob: Blob): Promise<string> {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const CHUNK = 0x8000;
+  let binary = '';
+  for (let at = 0; at < bytes.length; at += CHUNK) binary += String.fromCharCode(...bytes.subarray(at, at + CHUNK));
+  return btoa(binary);
+}
+
+/** Sends a screenshot the detector couldn't fully read, so it can be pulled later and trained on. */
+export async function postMissFrame({ png, sessionId, ...rest }: MissFrameUpload): Promise<{ stored: boolean; reason?: string }> {
+  return request('/api/miss-frames', {
+    method: 'POST',
+    body: JSON.stringify({ ...rest, ...(sessionId ? { sessionId } : {}), png: await toBase64(png) }),
+  });
+}

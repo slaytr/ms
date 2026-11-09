@@ -109,6 +109,21 @@ const VIEWS = {
     rows: `select taken_at as "takenAt", session_id as "sessionId", level, exp, exp_pct::float8 as "expPct", meso
              from ms_readings order by taken_at desc limit $1 offset $2`,
   },
+  misses: {
+    label: 'Missed frames',
+    columns: [
+      { key: 'id', label: '#', type: 'number' },
+      { key: 'createdAt', label: 'Saved', type: 'time' },
+      { key: 'missing', label: 'Couldn\'t read' },
+      { key: 'size', label: 'Window' },
+      { key: 'bytes', label: 'Image bytes', type: 'number' },
+      { key: 'sessionId', label: 'Session', type: 'id' },
+    ],
+    count: 'select count(*) as n from ms_miss_frames',
+    rows: `select id, created_at as "createdAt", array_to_string(missing, ', ') as missing,
+                  width || 'x' || height as size, octet_length(png) as bytes, session_id as "sessionId"
+             from ms_miss_frames order by id desc limit $1 offset $2`,
+  },
   avatars: {
     label: 'Avatars',
     columns: [

@@ -8,5 +8,5 @@ export default defineConfig({
   plugins: [vue()],
   build: { outDir: 'dist', emptyOutDir: true },
   server: { proxy: { '/api': 'http://localhost:4174' } },
-  test: { include: ['src/**/*.test.ts'], environment: 'node' },
+  test: { include: ['src/**/*.test.ts', '../api/**/*.test.mjs'], environment: 'node' },
 });
