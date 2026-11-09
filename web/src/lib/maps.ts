@@ -3,6 +3,8 @@ export interface MapSession {
   readonly id: string;
   readonly map: string;
   readonly player: string;
+  /** The character's job as the game words it (e.g. "Wizard (Ice,Lightning)"), or null when it couldn't be read. */
+  readonly job: string | null;
   /** Stable identity (character fingerprint), so two sessions by one character count as one player. */
   readonly playerKey: string;
   /** Epoch ms of the first reading. */

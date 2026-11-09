@@ -6,6 +6,7 @@ const session = (over: Partial<MapSession> = {}): MapSession => ({
   id: 'a',
   map: 'Victoria Road: Henesys Hunting Ground',
   player: 'PayYoBills',
+  job: 'Wizard (Ice,Lightning)',
   playerKey: 'abc',
   startedAt: 0,
   seconds: 3600,

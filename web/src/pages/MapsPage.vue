@@ -29,7 +29,6 @@ const columns: ReadonlyArray<{ key: RankKey; label: string; hint: string }> = [
   { key: 'expPctPerHour', label: '% / hr', hint: 'Share of a level per hour, fair across levels' },
   { key: 'mesoPerHour', label: 'Meso / hr', hint: 'Only counts while the inventory was open' },
   { key: 'seconds', label: 'Time', hint: 'Total time tracked on this map' },
-  { key: 'sessions', label: 'Sessions', hint: 'How many tracked sessions were spent here' },
 ];
 
 const ranks = computed(() => sortRanks(rankMaps(sessions.value), sortKey.value));
@@ -85,19 +84,16 @@ onMounted(async () => {
                 <col class="c-rate" />
                 <col class="c-rate" />
                 <col class="c-small" />
-                <col class="c-small" />
-                <col class="c-small" />
               </colgroup>
               <thead>
                 <tr>
                   <th class="num">#</th>
                   <th class="left">Map</th>
-                  <th v-for="col in columns" :key="col.key" class="num" :aria-sort="sortKey === col.key ? 'descending' : undefined">
+                  <th v-for="col in columns" :key="col.key" :class="col.key === 'expPerHour' ? 'left' : 'num'" :aria-sort="sortKey === col.key ? 'descending' : undefined">
                     <button type="button" :class="{ on: sortKey === col.key }" :title="col.hint" @click="sortKey = col.key">
                       {{ col.label }}<span v-if="sortKey === col.key" aria-hidden="true"> ▼</span>
                     </button>
                   </th>
-                  <th class="num">Players</th>
                 </tr>
               </thead>
               <tbody>
@@ -108,15 +104,13 @@ onMounted(async () => {
                       {{ rank.map }}
                     </button>
                   </td>
-                  <td class="num exp">
+                  <td class="left exp">
                     <span class="bar" :style="{ width: barWidth(rank.expPerHour) }" aria-hidden="true" />
                     <span class="val">{{ formatPerHour(rank.expPerHour) }}</span>
                   </td>
                   <td class="num">{{ pct(rank.expPctPerHour) }}</td>
                   <td class="num meso">{{ formatPerHour(rank.mesoPerHour) }}</td>
                   <td class="num">{{ formatStay(rank.seconds) }}</td>
-                  <td class="num">{{ rank.sessions }}</td>
-                  <td class="num">{{ rank.players }}</td>
                 </tr>
               </tbody>
             </table>
@@ -139,6 +133,7 @@ onMounted(async () => {
                 <col class="h-rate" />
                 <col class="h-rate" />
                 <col :class="selectedMap ? undefined : 'h-player'" />
+                <col class="h-job job-col" />
                 <col v-if="!selectedMap" />
               </colgroup>
               <thead>
@@ -151,6 +146,7 @@ onMounted(async () => {
                   <th class="num">EXP / hr</th>
                   <th class="num">% / hr</th>
                   <th class="left">Player</th>
+                  <th class="left job-col">Job</th>
                   <th v-if="!selectedMap" class="left">Map</th>
                 </tr>
               </thead>
@@ -164,6 +160,7 @@ onMounted(async () => {
                   <td class="num exp-text">{{ formatPerHour(sessionRates(s).expPerHour) }}</td>
                   <td class="num">{{ pct(sessionRates(s).expPctPerHour) }}</td>
                   <td class="left strong" :title="s.player">{{ s.player }}</td>
+                  <td class="left dim job-col" :title="s.job ?? undefined">{{ s.job ?? '—' }}</td>
                   <td v-if="!selectedMap" class="left" :title="s.map">{{ s.map }}</td>
                 </tr>
               </tbody>
@@ -247,8 +244,11 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; borde
 .h-gain { width: 6.25rem; }
 .h-rate { width: 4.75rem; }
 .h-player { width: 7rem; }
+.h-job { width: 8.5rem; }
+/* Not enough room for the job without sideways scrolling on a narrower window: drop it, the rest stays. */
+@media (max-width: 1019px) { .job-col { display: none; } }
 .bar { position: absolute; inset: 6px auto 6px 8px; max-width: calc(100% - 16px); background: linear-gradient(#a6ec7a, #5cc23e); border-radius: 6px; opacity: 0.55; }
-.val { position: relative; font-weight: 800; color: #1f6f12; }
+.val { position: relative; padding-left: 8px; font-weight: 800; color: #1f6f12; }
 .exp-text { color: #2e9a1f; font-weight: 800; }
 .meso { color: #b07a00; font-weight: 800; }
 

@@ -70,6 +70,7 @@ with e as (
 select s.id,
        s.label as map,
        coalesce(nullif(st.name, ''), nullif(s.character, ''), 'Unknown') as player,
+       coalesce(nullif(st.job, ''), nullif(en.job, '')) as job,
        coalesce(s.fingerprint, lower(coalesce(nullif(st.name, ''), nullif(s.character, ''), s.id::text))) as "playerKey",
        extract(epoch from sp.first_at) * 1000 as "startedAt",
        extract(epoch from (sp.last_at - sp.first_at)) as seconds,
@@ -80,6 +81,7 @@ select s.id,
   from ms_capture_sessions s
   join span sp on sp.session_id = s.id
   left join ms_session_snapshots st on st.session_id = s.id and st.kind = 'start'
+  left join ms_session_snapshots en on en.session_id = s.id and en.kind = 'end'
   left join exp_gain eg on eg.session_id = s.id
   left join pct_gain pg on pg.session_id = s.id
   left join meso_gain mg on mg.session_id = s.id
@@ -96,6 +98,7 @@ export async function listMapSessions() {
     id: row.id,
     map: row.map,
     player: row.player,
+    job: row.job ?? null,
     playerKey: row.playerKey,
     startedAt: Number(row.startedAt),
     seconds: Number(row.seconds),
