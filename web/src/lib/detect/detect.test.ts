@@ -148,9 +148,9 @@ describe('map name (minimap title, top left)', () => {
     expect(result.map).toEqual({ street: truth(file).street, name: truth(file).map });
   });
 
-  it('reads three different maps, so the width of the panel is not what makes it work', () => {
+  it('reads several different maps, so the width of the panel is not what makes it work', () => {
     const maps = new Set(fixtures.map((f) => detectFrame(loadFrame(f), DEFAULT_TEMPLATES).map.name));
-    expect(maps).toEqual(new Set(['Line 1 <Area 1>', 'Tree Dungeon, Forest Up North VIII', 'The Forest North of Ellinia']));
+    expect(maps).toEqual(new Set(['Line 1 <Area 1>', 'Tree Dungeon, Forest Up North VIII', 'The Forest North of Ellinia', 'The Burnt Land III', 'Henesys Hunting Ground I', 'Dangerous Valley', 'Lith Harbor']));
   });
 
   it('keeps a roman numeral as capital I\'s but reads the same bar as l inside a word', () => {

@@ -139,5 +139,48 @@
     "job": "Wizard (Ice,Lightning)",
     "street": "{Vi}ctoria Road",
     "map": "Tree Dungeon, Forest Up Nort~h~ {VI}II"
+  },
+  "other_1368x800_1794190202466.png": {
+    "exp": "463,716[70.77%]",
+    "level": "49",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Wa}rning Street",
+    "map": "T~h~e Burnt Land III"
+  },
+  "other_1368x800_1794190416821.png": {
+    "exp": "468,770[71.55%]",
+    "level": "49",
+    "meso": "928,611",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Vi}ctoria Road",
+    "map": "Henes{ys} Hunting Ground I"
+  },
+  "other_1368x800_1794190471361.png": {
+    "exp": "468,770[71.55%]",
+    "level": "49",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "Hidden Street",
+    "map": "Dangerous {Va}lley"
+  },
+  "inventory-open_1368x800_1794190478576.png": {
+    "exp": "468,770[71.55%]",
+    "level": "49",
+    "meso": "928,611",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "Hidden Street",
+    "map": "Dangerous {Va}lley"
+  },
+  "other_1368x800_1794190494806.png": {
+    "exp": "468,770[71.55%]",
+    "level": "49",
+    "meso": "928,611",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Vi}ctoria Road",
+    "map": "Lit~h~ Har~b~or"
   }
 }
