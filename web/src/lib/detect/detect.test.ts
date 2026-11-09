@@ -18,8 +18,9 @@ interface Label {
   meso?: string;
   name: string;
   job: string;
-  street: string;
-  map: string;
+  /** The minimap title; absent for a frame where the minimap is hidden. */
+  street?: string;
+  map?: string;
 }
 
 /** Tests that read every fixture (some are 2560x1440 and need unscaling) outlast vitest's 5s default when files run in parallel. */
@@ -44,8 +45,8 @@ function truth(file: string) {
     meso: label.meso ? Number(label.meso.replace(/,/g, '')) : null,
     name: label.name.replace(/[{}]/g, ''),
     job: label.job,
-    street: plain(label.street),
-    map: plain(label.map),
+    street: label.street === undefined ? null : plain(label.street),
+    map: label.map === undefined ? null : plain(label.map),
   };
 }
 
@@ -148,15 +149,23 @@ describe('character plate (name + job)', () => {
 });
 
 describe('map name (minimap title, top left)', () => {
-  it.each(fixtures)('reads the street and map name from %s', (file) => {
+  const withMinimap = fixtures.filter((f) => (labels[f] as Label).street !== undefined);
+
+  it.each(withMinimap)('reads the street and map name from %s', (file) => {
     const result = detectFrame(loadFrame(file), DEFAULT_TEMPLATES);
     expect(result.found.minimap).toBe(true);
     expect(result.map).toEqual({ street: truth(file).street, name: truth(file).map });
   });
 
+  it.each(fixtures.filter((f) => !withMinimap.includes(f)))('reads no map, not a wrong one, when the minimap is hidden (%s)', (file) => {
+    const result = detectFrame(loadFrame(file), DEFAULT_TEMPLATES);
+    expect(result.found.minimap).toBe(false);
+    expect(result.map).toEqual({ street: null, name: null });
+  });
+
   it('reads several different maps, so the width of the panel is not what makes it work', () => {
-    const maps = new Set(fixtures.map((f) => detectFrame(loadFrame(f), DEFAULT_TEMPLATES).map.name));
-    expect(maps).toEqual(new Set(['Line 1 <Area 1>', 'Tree Dungeon, Forest Up North VIII', 'The Forest North of Ellinia', 'The Burnt Land III', 'Henesys Hunting Ground I', 'Dangerous Valley', 'Lith Harbor']));
+    const maps = new Set(withMinimap.map((f) => detectFrame(loadFrame(f), DEFAULT_TEMPLATES).map.name));
+    expect(maps).toEqual(new Set(['Line 1 <Area 1>', 'Tree Dungeon, Forest Up North VIII', 'The Forest North of Ellinia', 'The Burnt Land III', 'Henesys Hunting Ground I', 'Dangerous Valley', 'Lith Harbor', 'Kerning City Construction Site', 'Remains <Tomb> I']));
   }, SLOW_TEST_MS);
 
   it('keeps a roman numeral as capital I\'s but reads the same bar as l inside a word', () => {
@@ -285,7 +294,7 @@ describe('windows taller than the client (UI scaled up)', () => {
     const positions = open.map((f) => detectFrame(upscaleCapture(loadFrame(f), layout), DEFAULT_TEMPLATES));
     positions.forEach((result, i) => expect(result.meso).toBe(truth(open[i]).meso));
     expect(new Set(positions.map((r) => `${r.state.mesos?.x},${r.state.mesos?.y}`)).size).toBeGreaterThan(1);
-  });
+  }, SLOW_TEST_MS);
 
   it('reports no meso, not a wrong one, when the inventory is closed in a scaled window', () => {
     const closedFile = closed[0];

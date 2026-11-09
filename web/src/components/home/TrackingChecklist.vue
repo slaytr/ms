@@ -70,15 +70,15 @@ const meso = computed(() => props.detection?.meso ?? null);
       <span class="sr">{{ statusWord[health.exp] }}</span>
     </li>
 
-    <li class="row" :class="health.meso">
+    <li class="row" :class="[health.meso, { optional: health.meso === 'missing' }]">
       <span class="icon" aria-hidden="true" />
-      <span class="label">Meso</span>
+      <span class="label">Meso <span class="tag">optional</span></span>
       <span class="value">
         <template v-if="health.meso === 'ok' && meso !== null"><strong>{{ fmt(meso) }}</strong></template>
         <template v-else-if="health.meso === 'unreadable'">Found, but some digits aren't recognised yet</template>
-        <template v-else>Open your inventory so we can read your meso</template>
+        <template v-else>Optional. Open your inventory to track meso and pots.</template>
       </span>
-      <span class="sr">{{ statusWord[health.meso] }}</span>
+      <span class="sr">{{ health.meso === 'missing' ? 'Optional, inventory not open' : statusWord[health.meso] }}</span>
     </li>
   </ul>
 </template>
@@ -117,6 +117,9 @@ const meso = computed(() => props.detection?.meso ?? null);
 .row.unreadable { border-color: #f0b030; background: #fff8e0; }
 .row.unreadable .icon { background: #f0a000; border-color: #b36f00; }
 .row.unreadable .icon::after { content: '!'; }
+.row.optional { border-style: dashed; background: transparent; }
+.row.optional .label, .row.optional .value { color: #8f7a55; }
+.tag { margin-left: 0.3em; padding: 0 6px; font: 700 0.7rem / 1.5 'Nunito', sans-serif; color: #6b4a22; background: #f1e6c4; border-radius: 999px; vertical-align: middle; }
 .row.missing .icon::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #fff; opacity: 0.8; }
 @keyframes pop { 0% { transform: scale(0.4); } 70% { transform: scale(1.25); } 100% { transform: scale(1); } }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

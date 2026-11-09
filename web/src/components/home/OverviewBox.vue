@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { PotView } from '../../lib/pot-tracker';
 import type { TrackerView } from '../../lib/tracker-view';
 import PipTracker from '../PipTracker.vue';
 import CharacterAvatar from './CharacterAvatar.vue';
@@ -12,11 +13,14 @@ defineProps<{
   name: string | null;
   job: string | null;
   view: TrackerView;
+  pots?: PotView | null;
 }>();
+
+defineEmits<{ rescan: [] }>();
 </script>
 
 <template>
-  <PipTracker class="overview" :view="view" inline>
+  <PipTracker class="overview" :view="view" :pots="pots" inline @rescan="$emit('rescan')">
     <template #top>
       <div class="who-row">
         <CharacterAvatar :name="name" />

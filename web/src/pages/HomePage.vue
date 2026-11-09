@@ -77,9 +77,8 @@ const clearDockTimer = () => {
   if (dockTimer) clearTimeout(dockTimer);
   dockTimer = null;
 };
-// Locked in means the core reads are steady AND meso has been read at least once (it needs the inventory open).
-const mesoSeen = computed(() => readings.value.some((r) => r.meso !== null));
-const lockedIn = computed(() => confirmed.value && mesoSeen.value);
+// Locked in means the core reads (name, level, EXP) are steady. Meso and pots need the inventory open, so they are optional.
+const lockedIn = computed(() => confirmed.value);
 watch(lockedIn, (isLocked) => {
   if (!isLocked || docked.value || dockTimer) return;
   dockTimer = setTimeout(() => {
@@ -135,6 +134,10 @@ onBeforeUnmount(() => {
         </button>
       </div>
 
+      <p v-if="status !== 'tracking'" class="fine">
+        Only the numbers leave your computer, unless something on screen can't be read. Then we keep a screenshot of the game window so we can teach the tracker to read it.
+      </p>
+
       <p v-if="capture.error.value || message" class="alert" role="alert">{{ capture.error.value ?? message }}</p>
 
       <!-- Idle: welcome back, or how it works -->
@@ -165,7 +168,6 @@ onBeforeUnmount(() => {
         <GameWindow v-if="!docked" key="checking" class="panel checking" :title="lockedIn ? `Locked in!` : 'Checking your game window'">
           <p class="banner" :class="{ done: lockedIn }" role="status">
             <template v-if="lockedIn">Got it. Tracking {{ displayName ?? 'your character' }}…</template>
-            <template v-else-if="confirmed">Almost there. Open your inventory so we can read your meso.</template>
             <template v-else>Making sure we can read your name, level and EXP…</template>
           </p>
 
@@ -192,7 +194,14 @@ onBeforeUnmount(() => {
         </GameWindow>
 
         <div v-else key="docked" class="dashboard">
-          <OverviewBox class="overview-box" :name="displayName" :job="lastDetection?.character.job ?? profile?.job ?? null" :view="trackerView">
+          <OverviewBox
+            class="overview-box"
+            :name="displayName"
+            :job="lastDetection?.character.job ?? profile?.job ?? null"
+            :view="trackerView"
+            :pots="tracker.potView.value"
+            @rescan="tracker.rescanPots()"
+          >
             <form v-if="askForName" class="name-form" @submit.prevent="saveTypedName">
               <label for="typed-name">We can't read every letter of your name yet. What is it?</label>
               <div class="name-row">
@@ -225,7 +234,7 @@ onBeforeUnmount(() => {
 
       <!-- Rendered inside the pop-out window while it is open. -->
       <Teleport v-if="popOut.target.value" :to="popOut.target.value">
-        <PipTracker :view="trackerView" />
+        <PipTracker :view="trackerView" :pots="tracker.potView.value" @rescan="tracker.rescanPots()" />
       </Teleport>
     </main>
   </div>

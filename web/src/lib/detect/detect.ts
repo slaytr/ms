@@ -25,6 +25,7 @@ import {
   textGlyphs,
 } from './readers.ts';
 import type { AnchorName, Frame, Point, Polarity, Templates } from './types.ts';
+import type { UseTab } from './inventory.ts';
 import { fitView, unscaleView, viewFits, type View } from './view.ts';
 
 /**
@@ -67,6 +68,8 @@ export interface Detection {
   readonly found: Readonly<Record<AnchorName | 'character', boolean>>;
   readonly character: CharacterPlate;
   readonly map: MapPlate;
+  /** The Use tab of the inventory (items and counts), when that tab is open in a native-size window; null otherwise. */
+  readonly useTab?: UseTab;
   readonly state: DetectState;
 }
 

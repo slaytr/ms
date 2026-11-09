@@ -37,6 +37,11 @@ The Classic UI uses exact pixel fonts, so we match pixels instead of OCR:
   A map with a letter that has no template yet reads null and the session stays unnamed; label that
   map's fixture (`street`/`map` in labels.json) and harvest to add it. In labels, `{ab}` = touching
   letters (one glyph), `~h~` = one letter drawn as two pieces (stem + arch; "h" and "b" do this).
+  **Drafts:** `draft-map-glyphs.ts` holds hand-drawn candidates (not measured) for every letter and digit the map
+  font still lacks (J M O P Q V W X Y Z, j k q v x z, 0 2-9, and `-` `:`), in the style of the real glyphs. A harvested glyph
+  always wins, so labelling a real frame replaces its draft; a wrong draft just never matches. `draft-map-glyphs.test.ts`
+  rejects any draft within 2px of another character (that is why there is no `.` or `!`) and checks each reads with one
+  wrong pixel. Same mechanism as `draft-glyphs.ts` for the name/job font.
 - Pure TS with no browser APIs, so it runs in the page, Vitest and Node scripts.
   Scripts import the .ts directly (Node type stripping): use `.ts` import extensions.
 - Templates are generated, not hand-written: add screenshots via the dev
@@ -55,6 +60,45 @@ The Classic UI uses exact pixel fonts, so we match pixels instead of OCR:
   `"scaled": true`: tests read it, harvest skips it (templates are learned from native-size frames).
   `scale-fixture.ts` renders a native frame the way a taller window shows it, for layouts and content
   (an open inventory) no real capture covers.
+
+## Missed frames (training data from production)
+- When the detector can't read a piece of data (`lib/miss-capture.ts`: character name, level digits,
+  EXP, meso digits, minimap, map name), `useMissReporter` sends a full-resolution PNG to
+  `POST /api/miss-frames` (table `ms_miss_frames`, migration 005). A level inferred from EXP counts as a
+  miss, since its digits still weren't read. Only once the game was recognised in the run (never frames from
+  some other shared window), a few per run, spaced apart, once per kind of miss per browser per day.
+- The endpoint is anonymous (it must work before any session exists), so it is bounded hard: PNG header
+  checked against the stated size, 8 MB cap, per-client and overall hourly caps, 3 frames per signature
+  (fields + level + map + window size), 100 frames total (oldest dropped). Frames are never served over HTTP.
+- No foreign key to sessions, so `sync:prod` (truncate cascade) can't wipe them.
+- Pull them with `npm run pull:misses` (via `railway ssh`, like sync:prod): saves
+  `fixtures/other_<w>x<h>_<ms>.png` plus `fixtures/misses.json` (what was missing and what was read). Label
+  the frame in `labels.json` and run `harvest-templates.mjs`. `--purge` deletes pulled frames from prod.
+- The home page tells players that an unreadable frame is kept. Screenshots can show other players' names
+  (chat, nameplates): they come from the window the player chose to share.
+
+## Pot tracker (Use tab)
+- `lib/detect/inventory.ts` reads the Item Inventory's **Use** tab, found from the same `MESOS` anchor as meso
+  (window position doesn't matter). Slot (0,0) is at the anchor + (-164,-222), pitch 36 across / 34 down, 5 cols x 6
+  visible rows. The tab is "selected" when its head pixel is pink (pale or deeper). Native-size windows only.
+- **Icons**: matched against `inventory-templates.json` icons (opaque pixels, searched a few px around bottom-centre,
+  pixels under the stack count ignored). A match needs a small colour difference AND a clear margin over the
+  runner-up, else the slot is "an item we don't track" (null id). Icons come from `fixtures/potion-icons/` (gitignored;
+  fetched from ms-classic.com, whose robots.txt allows it).
+- **Stack counts** are drawn over the icon in a proportional font (white fill, black outline). Only white runs bordered by
+  black on both sides count (icon highlights aren't). Digits are matched left to right by exact shape with a 2px
+  tolerance and a margin over the next digit; ink after the count that isn't digit-shaped is ignored, ink that is
+  digit-shaped but unmatched makes the count null. **A count is right or null, never guessed.** A `1` that loses its
+  flag to compression (seen on the selected slot) reads null on purpose: a bare stem looks like a `0`'s left edge.
+- Templates are generated: label frames with `useTab` in `labels.json` (6 rows x 5 cells, "Item name:count",
+  "?:count" for untracked items, "-" empty), then `node scripts/harvest-inventory.mjs` (lists missing digits; **7 is
+  still missing**, so a stack with a 7 reads null).
+- `lib/pot-tracker.ts`: the first complete scan is the baseline; use = net fall in each item's visible total since
+  (a rise = bought/looted, shown as 0 used). Scans at a different scrollbar position aren't compared. Cost and
+  HP/MP come from `data/potions.ts` (24 items, from ms-classic.com; shop prices are community-recorded, items no NPC
+  sells have no cost, percentage potions have no HP/MP amount). Shown in `PotStats.vue` (overview and pop-out).
+- **Limits**: only the visible slots (the tab scrolls and its scrollbar thumb is small, so a whole-tab scan needs frames
+  at other scroll positions); can't tell a pot drunk from one traded or dropped.
 
 ## Pages and identity
 - `/` is the real UI: a MapleStory-themed home page (Lilita One + Nunito; own art, no game assets).

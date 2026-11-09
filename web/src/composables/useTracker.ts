@@ -5,8 +5,10 @@ import type { Detection, MapPlate } from '../lib/detect/detect.ts';
 import { coreReady } from '../lib/health';
 import { mapLabel } from '../lib/map-label';
 import { computeRates, type Reading } from '../lib/metrics';
+import { buildPotView, observePots, rescanPots, startPotTracking } from '../lib/pot-tracker';
 import { carryForward, snapshotFrom, type PlayerSnapshot } from '../lib/snapshot';
 import { useDetector } from './useDetector';
+import { useMissReporter } from './useMissReporter';
 import { useScreenCapture } from './useScreenCapture';
 
 const SAMPLE_INTERVAL_MS = 3_000;
@@ -29,6 +31,10 @@ export type TrackerStatus = 'idle' | 'loading' | 'tracking';
 export function useTracker() {
   const capture = useScreenCapture();
   const detector = useDetector();
+  const misses = useMissReporter();
+  /** Pot use from scans of the Use tab (see lib/pot-tracker.ts). */
+  const pots = ref(startPotTracking());
+  const potView = computed(() => buildPotView(pots.value));
 
   const status = ref<TrackerStatus>('idle');
   const message = ref<string | null>(null);
@@ -140,6 +146,8 @@ export function useTracker() {
         current.value = latestSnapshot;
         if (mapLabel(detection.map)) map.value = detection.map;
         await record(detection);
+        pots.value = observePots(pots.value, detection.useTab ?? null, Date.now());
+        void misses.consider(detection, el, session.id);
       }
     } catch (cause) {
       message.value = `Read failed: ${(cause as Error).message}`;
@@ -170,6 +178,8 @@ export function useTracker() {
       session.id = '';
       session.token = '';
       detector.reset();
+      misses.reset();
+      pots.value = startPotTracking();
       capture.onEnded(() => void stop());
       now.value = Date.now();
       stopClock();
@@ -211,6 +221,12 @@ export function useTracker() {
     latest,
     current,
     map,
+    potView,
+    rescanPots: () => {
+      pots.value = rescanPots(pots.value);
+    },
+    missFramesSent: misses.sent,
+    missFrameError: misses.error,
     start,
     stop,
   };

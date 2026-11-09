@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import type { PotView } from '../lib/pot-tracker';
 import type { TrackerView } from '../lib/tracker-view';
 import LevelBadge from './home/LevelBadge.vue';
+import PotStats from './PotStats.vue';
 import TrackerStats from './TrackerStats.vue';
 
 /**
@@ -8,7 +10,9 @@ import TrackerStats from './TrackerStats.vue';
  * reuses it as is, filling the `top` slot (avatar) and the default slot (buttons), so the two can
  * never drift apart.
  */
-defineProps<{ view: TrackerView; inline?: boolean }>();
+/** `pots` is shown only when passed (null means "passed, nothing counted yet"). */
+defineProps<{ view: TrackerView; inline?: boolean; pots?: PotView | null }>();
+defineEmits<{ rescan: [] }>();
 </script>
 
 <template>
@@ -21,6 +25,7 @@ defineProps<{ view: TrackerView; inline?: boolean }>();
     <div class="body">
       <div v-if="$slots.top" class="top"><slot name="top" /></div>
       <TrackerStats :view="view" />
+      <PotStats v-if="pots !== undefined" :pots="pots" @rescan="$emit('rescan')" />
       <div v-if="$slots.default" class="extras"><slot /></div>
     </div>
   </section>

@@ -1,5 +1,7 @@
 import { DEFAULT_TEMPLATES } from '../lib/detect/default-templates.ts';
 import { detectFrame, INITIAL_STATE, type Detection, type DetectState } from '../lib/detect/detect.ts';
+import { DEFAULT_INVENTORY_TEMPLATES } from '../lib/detect/default-inventory-templates.ts';
+import { readUseTab } from '../lib/detect/inventory.ts';
 import { withInferredLevel } from '../lib/level-infer';
 
 /**
@@ -26,12 +28,15 @@ export function useDetector() {
     if (!ctx) return null;
 
     ctx.drawImage(video, 0, 0);
-    const raw = detectFrame(ctx.getImageData(0, 0, width, height), DEFAULT_TEMPLATES, state);
+    const image = ctx.getImageData(0, 0, width, height);
+    const raw = detectFrame(image, DEFAULT_TEMPLATES, state);
     state = raw.state;
     // If the level digits can't be read, work the level out from EXP and EXP%.
     const detection = withInferredLevel(raw, lastLevel);
     if (detection.level !== null) lastLevel = detection.level;
-    return detection;
+    // The Use tab is only read in a native-size window (a scaled one would need the frame unscaled first).
+    const useTab = raw.state.mesos && !raw.state.view ? readUseTab(image, raw.state.mesos, DEFAULT_INVENTORY_TEMPLATES) : null;
+    return { ...detection, useTab };
   }
 
   function reset(): void {
