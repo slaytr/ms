@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import CharacterAvatar from '../components/home/CharacterAvatar.vue';
 import GameWindow from '../components/home/GameWindow.vue';
+import LeaderStrip from '../components/home/LeaderStrip.vue';
 import LevelBadge from '../components/home/LevelBadge.vue';
 import ExpChart from '../components/home/ExpChart.vue';
 import PotChart from '../components/home/PotChart.vue';
@@ -14,7 +15,10 @@ import { usePopOut } from '../composables/usePopOut';
 import { useTracker } from '../composables/useTracker';
 import { formatClock } from '../lib/format';
 import { assessDetection } from '../lib/health';
+import { listCharacters, getWeeklySessions } from '../lib/api';
+import { specLeaders, type SpecSlot } from '../lib/characters';
 import { expGainSeries } from '../lib/metrics';
+import { topByExp, type WeeklyRank } from '../lib/rankings';
 import {
   loadProfile,
   mergeProfile,
@@ -94,6 +98,19 @@ watch(status, (now) => {
     docked.value = false;
   }
 });
+// Leaderboard teaser for the welcome screen. A nicety: if it can't load, say so quietly and carry on.
+const podium = ref<readonly WeeklyRank[]>([]);
+const jobLeaders = ref<readonly SpecSlot[]>([]);
+const leaderError = ref(false);
+onMounted(async () => {
+  try {
+    const [characters, week] = await Promise.all([listCharacters(), getWeeklySessions()]);
+    podium.value = topByExp(week.sessions);
+    jobLeaders.value = specLeaders(characters).filter((slot) => slot.leader !== null);
+  } catch {
+    leaderError.value = true;
+  }
+});
 const expSeries = computed(() => expGainSeries(readings.value));
 const potCharts = computed(() =>
   (tracker.potView.value?.rows ?? []).map((row) => ({
@@ -145,6 +162,12 @@ onBeforeUnmount(() => {
       <p v-if="status !== 'tracking'" class="fine">
         Only the numbers leave your computer, unless something on screen can't be read. Then we keep a screenshot of the game window so we can teach the tracker to read it.
       </p>
+
+      <!-- Under 1200px the leaderboard sits in the column; wider, it moves to the sides (see the asides below). -->
+      <GameWindow v-if="status !== 'tracking' && (podium.length > 0 || jobLeaders.length > 0)" class="panel leaders" title="Leaderboard">
+        <LeaderStrip :podium="podium" :jobs="jobLeaders" />
+      </GameWindow>
+      <p v-else-if="status !== 'tracking' && leaderError" class="fine">The leaderboard couldn't load just now.</p>
 
       <p v-if="capture.error.value || message" class="alert" role="alert">{{ capture.error.value ?? message }}</p>
 
@@ -254,6 +277,17 @@ onBeforeUnmount(() => {
         <PipTracker :view="trackerView" />
       </Teleport>
     </main>
+
+    <aside v-if="status !== 'tracking' && podium.length > 0" class="side left" aria-label="Weekly top 3">
+      <GameWindow title="Weekly top 3">
+        <LeaderStrip :podium="podium" :jobs="[]" only="podium" stack />
+      </GameWindow>
+    </aside>
+    <aside v-if="status !== 'tracking' && jobLeaders.length > 0" class="side right" aria-label="Top by job">
+      <GameWindow title="Top by job">
+        <LeaderStrip :podium="[]" :jobs="jobLeaders" only="jobs" />
+      </GameWindow>
+    </aside>
   </div>
 </template>
 
@@ -431,4 +465,13 @@ onBeforeUnmount(() => {
   .banner.done { animation: none; }
 }
 @media (max-width: 480px) { .stats { grid-template-columns: 1fr; } }
+.leaders { margin-top: 1.1rem; }
+/* Wide screens: the leaderboard flanks the centred 620px column instead of sitting in it. */
+.side { display: none; }
+@media (min-width: 1200px) {
+  .leaders { display: none; }
+  .side { display: block; position: absolute; z-index: 1; top: 7.5rem; width: 250px; }
+  .side.left { right: calc(50% + 310px + 24px); }
+  .side.right { left: calc(50% + 310px + 24px); }
+}
 </style>
