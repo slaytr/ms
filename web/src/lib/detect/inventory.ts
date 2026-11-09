@@ -48,9 +48,14 @@ export interface InventoryTemplates {
   readonly icons: readonly IconTemplate[];
   /** The same, for the stack counts on the quick-slot bar: same font, but the shading and background differ, so they are learned separately. */
   readonly quickDigits: Readonly<Record<string, readonly Bitmap[]>>;
+  /**
+   * Remnants seen right after the last digit of a labelled quick-slot count that are harmless icon highlights, not a
+   * damaged digit (each icon draws the same ones every time). The strict reader ignores one it has seen before.
+   */
+  readonly quickTails: readonly Bitmap[];
 }
 
-export const EMPTY_INVENTORY_TEMPLATES: InventoryTemplates = { version: 1, digits: {}, icons: [], quickDigits: {} };
+export const EMPTY_INVENTORY_TEMPLATES: InventoryTemplates = { version: 1, digits: {}, icons: [], quickDigits: {}, quickTails: [] };
 
 export interface SlotReading {
   readonly row: number;
@@ -302,6 +307,14 @@ function looksLikeDigit(mask: Bitmap, at: number): boolean {
   return false;
 }
 
+/** Width of the window after the last digit that is kept as a known harmless remnant. */
+export const TAIL_WIDTH = 8;
+
+/** The mask after the last digit (from column `from`) looks like a remnant already known to be harmless (give or take a column and a pixel). */
+function isKnownTail(mask: Bitmap, from: number, tails: readonly Bitmap[] = []): boolean {
+  return tails.some((tail) => [-1, 0, 1].some((shift) => from + shift >= 0 && mismatchAt(mask, from + shift, tail) <= 1));
+}
+
 /** Ink starting within this many columns of the previous digit's end is where the next digit would be. */
 const NEXT_DIGIT_REACH = 3;
 /** How much ink right after a digit makes it a damaged digit rather than the icon's noise. */
@@ -332,7 +345,7 @@ type Next = { readonly at: number; readonly hit: DigitHit } | 'unknown' | null;
  * column with ink in that window is tried. Null when nothing digit-shaped is there (the count is over);
  * 'unknown' when something digit-shaped is there but matches no known digit.
  */
-function nextDigit(mask: Bitmap, from: number, within: number, digits: InventoryTemplates['digits'], strictTail: boolean): Next {
+function nextDigit(mask: Bitmap, from: number, within: number, digits: InventoryTemplates['digits'], options: QuantityOptions): Next {
   const first = nextInk(mask, from, within);
   if (first === null) return null;
   for (let col = first; col <= Math.min(mask[0].length - 1, from + within); col++) {
@@ -342,7 +355,7 @@ function nextDigit(mask: Bitmap, from: number, within: number, digits: Inventory
   }
   if (looksLikeDigit(mask, first)) return 'unknown';
   // Right after a digit already read, a remnant that wide and tall is a damaged digit, not the icon's noise.
-  if (strictTail && from > 0 && first - from <= NEXT_DIGIT_REACH && looksLikeDamagedDigit(mask, first)) return 'unknown';
+  if (options.strictTail && from > 0 && first - from <= NEXT_DIGIT_REACH && looksLikeDamagedDigit(mask, first) && !isKnownTail(mask, from, options.tails)) return 'unknown';
   return null;
 }
 
@@ -359,6 +372,8 @@ export interface QuantityOptions {
    * counts; the quick slots use it, the Use tab (whose counts are a net change, not a running total) does not.
    */
   readonly strictTail?: boolean;
+  /** With strictTail: remnants known to be harmless (see InventoryTemplates.quickTails), ignored when seen again. */
+  readonly tails?: readonly Bitmap[];
 }
 
 export function readQuantity(frame: Frame, origin: Point, digits: InventoryTemplates['digits'], options: QuantityOptions = {}): number | null {
@@ -367,7 +382,7 @@ export function readQuantity(frame: Frame, origin: Point, digits: InventoryTempl
   let from = 0;
   let within = MAX_START;
   while (text.length < 4) {
-    const next = nextDigit(mask, from, within, digits, options.strictTail === true);
+    const next = nextDigit(mask, from, within, digits, options);
     if (next === 'unknown') return null;
     if (next === null) break;
     text += next.hit.digit;

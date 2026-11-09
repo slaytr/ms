@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, useId } from 'vue';
 
 import { formatCompact } from '../../lib/format';
 import type { ExpGainPoint } from '../../lib/metrics';
 
 const props = defineProps<{ series: readonly ExpGainPoint[] }>();
+/** Unique per chart: the Tracker page keeps its own copy mounted (hidden) while the Maps page shows another. */
+const areaId = `exp-area-${useId()}`;
 
 const W = 640;
 const H = 300;
@@ -73,7 +75,7 @@ const summary = computed(() =>
   <figure class="chart">
     <svg :viewBox="`0 0 ${W} ${H}`" role="img" :aria-label="summary" preserveAspectRatio="xMidYMid meet">
       <defs>
-        <linearGradient id="exp-area" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient :id="areaId" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stop-color="#6cc24a" stop-opacity="0.55" />
           <stop offset="100%" stop-color="#6cc24a" stop-opacity="0.04" />
         </linearGradient>
@@ -87,7 +89,7 @@ const summary = computed(() =>
         <text v-for="tick in xTicks" :key="`x${tick.label}`" :x="tick.x" :y="H - 10" text-anchor="middle">{{ tick.label }}</text>
       </g>
 
-      <path v-if="ready" :d="areaPath" fill="url(#exp-area)" />
+      <path v-if="ready" :d="areaPath" :fill="`url(#${areaId})`" />
       <polyline v-if="ready" :points="linePath" class="line" />
       <circle v-if="lastPoint" :cx="x(lastPoint.elapsedMs)" :cy="y(lastPoint.gained)" r="5.5" class="dot" />
     </svg>

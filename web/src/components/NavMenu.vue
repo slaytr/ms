@@ -4,6 +4,8 @@ import { RouterLink } from 'vue-router';
 const links = [
   { to: '/', label: 'Tracker' },
   { to: '/maps', label: 'Maps' },
+  { to: '/characters', label: 'Characters' },
+  { to: '/rankings', label: 'Rankings' },
 ] as const;
 </script>
 

@@ -5,7 +5,8 @@ import type { Detection, MapPlate } from '../lib/detect/detect.ts';
 import { coreReady } from '../lib/health';
 import { mapLabel } from '../lib/map-label';
 import { computeRates, type Reading } from '../lib/metrics';
-import { buildPotView, observePots, observeQuick, pausePots, rescanPots, resumePots, startPotTracking } from '../lib/pot-tracker';
+import { emptyPotHistory, recordPotHistory, type PotHistory } from '../lib/pot-history';
+import { buildPotView,observePots, observeQuick, pausePots, rescanPots, resumePots, startPotTracking } from '../lib/pot-tracker';
 import { carryForward, snapshotFrom, type PlayerSnapshot } from '../lib/snapshot';
 import { useDetector } from './useDetector';
 import { useMissReporter } from './useMissReporter';
@@ -35,6 +36,8 @@ export function useTracker() {
   /** Pot use from scans of the Use tab (see lib/pot-tracker.ts). */
   const pots = ref(startPotTracking());
   const potView = computed(() => buildPotView(pots.value));
+  /** Running pots used per item over the session, for the per-potion charts. */
+  const potHistory = ref<PotHistory>(emptyPotHistory);
 
   const status = ref<TrackerStatus>('idle');
   const message = ref<string | null>(null);
@@ -148,6 +151,8 @@ export function useTracker() {
         await record(detection);
         // The quick slots first: an item they show is counted from there, and the Use tab then ignores it.
         pots.value = observePots(observeQuick(pots.value, detection.quickSlots ?? null, Date.now()), detection.useTab ?? null, Date.now());
+        const potNow = Date.now();
+        potHistory.value = recordPotHistory(potHistory.value, buildPotView(pots.value), readings.value[0]?.takenAt ?? potNow, potNow);
         void misses.consider(detection, el, session.id);
       }
     } catch (cause) {
@@ -181,6 +186,7 @@ export function useTracker() {
       detector.reset();
       misses.reset();
       pots.value = startPotTracking();
+      potHistory.value = emptyPotHistory;
       capture.onEnded(() => void stop());
       now.value = Date.now();
       stopClock();
@@ -223,8 +229,10 @@ export function useTracker() {
     current,
     map,
     potView,
+    potHistory,
     rescanPots: () => {
       pots.value = rescanPots(pots.value);
+      potHistory.value = emptyPotHistory;
     },
     /** Repot: freeze pot counting while restocking, or carry on from the restocked inventory. */
     togglePotsPaused: () => {

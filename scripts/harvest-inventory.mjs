@@ -98,7 +98,7 @@ function createLearner(name, seed = {}) {
     let within = 5;
     for (const ch of count) {
       const own = [...(digits.get(ch)?.values() ?? []), ...(seeds.get(ch) ?? [])];
-      if (own.length === 0) return problems.push(`${where}: no ${name} template for "${ch}" yet, skipped.`);
+      if (own.length === 0) return `${where}: no ${name} template for "${ch}" yet, skipped.`;
       let best = null;
       for (let start = from; start <= from + within + 3 && start < mask[0].length; start++) {
         for (const r of own) {
@@ -108,23 +108,47 @@ function createLearner(name, seed = {}) {
           if (!best || d < best.d) best = { d, at, w: r[0].length };
         }
       }
-      if (!best || best.d > maxDiff) return problems.push(`${where}: couldn't place "${ch}" within ${maxDiff} pixels, skipped.`);
+      if (!best || best.d > maxDiff) return `${where}: couldn't place "${ch}" within ${maxDiff} pixels, skipped.`;
       const glyph = mask.map((m) => m.slice(best.at, best.at + best.w));
       const others = [...digits, ...seeds].filter(([d]) => d !== ch).flatMap(([, shapes]) => [...shapes.values()]);
       const nearestOther = Math.min(...others.map((r) => mismatchAt(mask, best.at, r)));
-      if (nearestOther - best.d < MARGIN) return problems.push(`${where}: the "${ch}" is too close to another digit (${best.d} vs ${nearestOther}), skipped.`);
+      // The label says which digit this is; what matters is that the shape, once learned, can never be confused with another digit.
+      if (nearestOther < MARGIN) return `${where}: the "${ch}" would sit within ${nearestOther} pixels of another digit, skipped.`;
       learned.push([ch, glyph]);
       from = best.at + best.w;
       within = 4;
     }
     learned.forEach(([ch, glyph]) => fileDigit(ch, glyph, where));
+    return null;
   }
 
   return {
     name,
     digits,
     learn: learnClean,
-    finish: () => retry.forEach(learnWithLabel),
+    /**
+     * Retries the skipped slots until a pass learns nothing new. A rendering learned from one slot (say a 7 over the
+     * orange icon) can unlock another that was too noisy to place before, so one pass in file order is not enough.
+     */
+    finish: () => {
+      let waiting = retry;
+      let reasons = [];
+      for (let pass = 0; pass < 6; pass++) {
+        const still = [];
+        reasons = [];
+        for (const slot of waiting) {
+          const why = learnWithLabel(slot);
+          if (why) {
+            still.push(slot);
+            reasons.push(why);
+          }
+        }
+        if (still.length === waiting.length) break;
+        waiting = still;
+        if (waiting.length === 0) break;
+      }
+      problems.push(...reasons);
+    },
     result: () => Object.fromEntries([...digits].sort(([a], [b]) => a.localeCompare(b)).map(([digit, shapes]) => [digit, [...shapes.values()]])),
   };
 }
@@ -181,6 +205,39 @@ quickLearner = createLearner('quick slot', useTabLearner.result());
 for (const slot of quickSlots) quickLearner.learn(slot);
 quickLearner.finish();
 
+/** Width of the window after the last digit that is kept as a known harmless remnant (matches TAIL_WIDTH in inventory.ts). */
+const TAIL_WIDTH = 8;
+
+/**
+ * What is left after the last digit of a labelled quick-slot count: the icon's own highlights, which it draws the same
+ * every time. Only taken from slots where the learned digits place exactly (within 2 pixels), so it never comes from a
+ * misread. The strict reader then ignores a remnant it has seen before, and still refuses an unfamiliar one.
+ */
+function tailAfter({ frame, origin, count }) {
+  const mask = digitMask(frame, origin);
+  let from = 0;
+  let within = 5;
+  for (const ch of count) {
+    const own = [...(quickLearner.digits.get(ch)?.values() ?? [])];
+    let best = null;
+    for (let start = from; start <= from + within + 3 && start < mask[0].length; start++) {
+      for (const r of own) {
+        const at = start - leadOf(r);
+        if (at < 0 || !mask.some((m) => m[start] === '#')) continue;
+        const d = mismatchAt(mask, at, r);
+        if (!best || d < best.d) best = { d, at, w: r[0].length };
+      }
+    }
+    if (!best || best.d > 2) return null;
+    from = best.at + best.w;
+    within = 4;
+  }
+  const window = mask.map((m) => m.slice(from, from + TAIL_WIDTH).padEnd(TAIL_WIDTH, '.'));
+  return window.some((m) => m.includes('#')) ? window : null;
+}
+
+const quickTails = [...new Map(quickSlots.map(tailAfter).filter(Boolean).map((w) => [w.join('/'), w])).values()];
+
 const icons = readdirSync(ICON_DIR)
   .filter((f) => f.endsWith('.png'))
   .sort()
@@ -189,10 +246,11 @@ const icons = readdirSync(ICON_DIR)
     return { id: Number(f.replace('.png', '')), w: png.width, h: png.height, rgba: Buffer.from(png.data).toString('base64') };
   });
 
-const out = { version: 1, digits: useTabLearner.result(), icons, quickDigits: quickLearner.result() };
+const out = { version: 1, digits: useTabLearner.result(), icons, quickDigits: quickLearner.result(), quickTails };
 writeFileSync(OUT, `${JSON.stringify(out)}\n`);
 
 console.log(`wrote ${OUT}`);
+console.log(`quick-slot harmless remnants learned: ${quickTails.length}`);
 console.log(`icons: ${icons.length} (slot ${INVENTORY.size}px, search around bottom-centre)`);
 for (const [title, learner] of [['digits (Use tab)', useTabLearner], ['quickDigits    ', quickLearner]]) {
   const have = [...learner.digits.keys()];

@@ -5,6 +5,7 @@ import CharacterAvatar from '../components/home/CharacterAvatar.vue';
 import GameWindow from '../components/home/GameWindow.vue';
 import LevelBadge from '../components/home/LevelBadge.vue';
 import ExpChart from '../components/home/ExpChart.vue';
+import PotChart from '../components/home/PotChart.vue';
 import OverviewBox from '../components/home/OverviewBox.vue';
 import SkyScene from '../components/home/SkyScene.vue';
 import TrackingChecklist from '../components/home/TrackingChecklist.vue';
@@ -94,6 +95,13 @@ watch(status, (now) => {
   }
 });
 const expSeries = computed(() => expGainSeries(readings.value));
+const potCharts = computed(() =>
+  (tracker.potView.value?.rows ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    series: tracker.potHistory.value.series.get(row.id) ?? [],
+  })),
+);
 
 function saveTypedName() {
   if (!profile.value) return;
@@ -221,6 +229,7 @@ onBeforeUnmount(() => {
             <button class="stop" type="button" @click="tracker.stop()">Stop tracking</button>
           </OverviewBox>
 
+          <div class="charts">
           <GameWindow class="chart-panel" title="EXP over time">
             <p class="chart-summary">
               <strong>+{{ Math.round(rates.expGained).toLocaleString() }}</strong> EXP gained
@@ -228,6 +237,13 @@ onBeforeUnmount(() => {
             </p>
             <ExpChart :series="expSeries" />
           </GameWindow>
+
+          <GameWindow v-if="potCharts.length > 0" class="pot-panel" title="Potions used over time">
+            <div class="pot-grid">
+              <PotChart v-for="pot in potCharts" :key="pot.id" :name="pot.name" :series="pot.series" :elapsed-ms="rates.elapsedMs" />
+            </div>
+          </GameWindow>
+          </div>
         </div>
       </Transition>
       <!-- The shared window feeds detection; it stays out of sight. -->
@@ -235,7 +251,7 @@ onBeforeUnmount(() => {
 
       <!-- Rendered inside the pop-out window while it is open. -->
       <Teleport v-if="popOut.target.value" :to="popOut.target.value">
-        <PipTracker :view="trackerView" :pots="tracker.potView.value" @rescan="tracker.rescanPots()" @repot="tracker.togglePotsPaused()" />
+        <PipTracker :view="trackerView" />
       </Teleport>
     </main>
   </div>
@@ -381,6 +397,9 @@ onBeforeUnmount(() => {
 /* Docked view: overview box on the left, EXP chart taking the middle. */
 .content.wide { max-width: 1280px; }
 .dashboard { display: grid; grid-template-columns: minmax(260px, 320px) minmax(0, 1fr); gap: 20px; align-items: start; text-align: left; }
+.charts { display: grid; gap: 20px; min-width: 0; }
+.pot-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 520px) { .pot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .chart-summary { margin: 0 0 0.5rem; font-size: 1.1rem; }
 .chart-summary strong { font: 400 1.7rem 'Lilita One', sans-serif; font-variant-numeric: tabular-nums; }
 .dim { color: #6b4a22; }

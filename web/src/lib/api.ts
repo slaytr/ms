@@ -1,3 +1,5 @@
+import type { CharacterEntry } from './characters';
+import type { WeeklySessions } from './rankings';
 import type { MapSession } from './maps';
 import type { Reading } from './metrics';
 import type { PlayerSnapshot } from './snapshot';
@@ -84,6 +86,14 @@ export function listSessions(): Promise<SessionSummary[]> {
 
 export function listMapSessions(): Promise<MapSession[]> {
   return request('/api/maps/sessions');
+}
+
+export function listCharacters(): Promise<CharacterEntry[]> {
+  return request('/api/characters');
+}
+
+export function getWeeklySessions(): Promise<WeeklySessions> {
+  return request('/api/rankings/week');
 }
 
 export function getSession(id: string): Promise<SessionDetail> {

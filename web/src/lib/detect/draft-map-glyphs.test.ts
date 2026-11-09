@@ -51,15 +51,18 @@ describe('draft map glyphs', () => {
     expect(clashes).toEqual([]);
   });
 
+  /** Drafts that actually ship: a character with a harvested glyph uses that, not its draft. */
+  const live = () => variants(DRAFT_MAP_GLYPHS).filter(({ char }) => !(char in HARVESTED));
+
   it('read back as themselves', () => {
-    for (const { char, bitmap } of variants(DRAFT_MAP_GLYPHS)) {
+    for (const { char, bitmap } of live()) {
       expect(classify(bitmap, withDrafts(HARVESTED, DRAFT_MAP_GLYPHS), GLYPH_TOLERANCE)).toBe(char);
     }
   });
 
   it('read with one wrong pixel', () => {
     const set = withDrafts(HARVESTED, DRAFT_MAP_GLYPHS);
-    for (const { char, bitmap } of variants(DRAFT_MAP_GLYPHS)) {
+    for (const { char, bitmap } of live()) {
       // Flip a pixel on the first ink row: the one a compressed edge is most likely to nibble.
       const top = bitmap.findIndex((row) => row.includes('#'));
       const flipped = bitmap.map((row, y) => (y === top ? (row[0] === '#' ? '.' : '#') + row.slice(1) : row));

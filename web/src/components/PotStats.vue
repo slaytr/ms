@@ -8,7 +8,16 @@ import type { PotView } from '../lib/pot-tracker';
 defineProps<{ pots: PotView | null }>();
 defineEmits<{ rescan: []; repot: [] }>();
 
+/** Item icons live in web/public/potions, named by the game's item id. */
+const iconUrl = (id: number) => `/potions/${id}.png`;
+/** An item with no icon file just shows its name. */
+const hideIcon = (event: Event) => {
+  (event.target as HTMLImageElement).style.visibility = 'hidden';
+};
 const fmt = (n: number) => Math.round(n).toLocaleString();
+/** Change in stock since counting began: negative = ran down, positive = restocked or looted. Null when a count is unknown. */
+const net = (row: { before: number | null; now: number | null }) => (row.before === null || row.now === null ? null : row.now - row.before);
+const fmtNet = (n: number | null) => (n === null ? '—' : n > 0 ? `+${fmt(n)}` : n < 0 ? `−${fmt(-n)}` : '0');
 </script>
 
 <template>
@@ -37,13 +46,19 @@ const fmt = (n: number) => Math.round(n).toLocaleString();
 
       <table>
         <thead>
-          <tr><th>Item</th><th class="num">Left</th><th class="num">Used</th><th class="num">Mesos</th></tr>
+          <tr><th>Item</th><th class="num">Left</th><th class="num">Used</th><th class="num" title="Change in stock since counting began (restocking counts)">Net</th><th class="num">Mesos</th></tr>
         </thead>
         <tbody>
           <tr v-for="row in pots.rows" :key="row.id" :class="{ idle: row.used === 0 }">
-            <td>{{ row.name }}<span v-if="row.source === 'quick'" class="qs" title="Counted from your quick slots, so no inventory needed">QS</span></td>
+            <td class="item">
+              <span class="icon" :title="row.name">
+                <img :src="iconUrl(row.id)" alt="" width="27" height="30" loading="lazy" @error="hideIcon" />
+              </span>
+              <span class="label">{{ row.name }}</span><span v-if="row.source === 'quick'" class="qs" title="Counted from your quick slots, so no inventory needed">QS</span>
+            </td>
             <td class="num" :title="row.stale ? 'Last good reading: this count isn\'t readable right now' : undefined">{{ row.now === null ? '—' : fmt(row.now) }}{{ row.stale ? '?' : '' }}</td>
             <td class="num used">{{ row.used > 0 ? fmt(row.used) : '·' }}</td>
+            <td class="num netcol" :class="{ up: (net(row) ?? 0) > 0, down: (net(row) ?? 0) < 0 }">{{ fmtNet(net(row)) }}</td>
             <td class="num meso" :title="row.used > 0 && row.mesos === null ? 'No NPC sells this, so its cost is not known' : undefined">
               {{ row.used === 0 ? '' : row.mesos === null ? '?' : fmt(row.mesos) }}
             </td>
@@ -84,7 +99,14 @@ h3 { margin: 0; font: 400 1rem / 1.2 'Lilita One', sans-serif; }
 table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
 th { text-align: left; font-size: 10px; color: #6b4a22; border-bottom: 2px solid #ecdcae; padding: 1px 3px; }
 td { padding: 1px 3px; border-bottom: 1px solid #f1e6c4; }
+.item { display: flex; align-items: center; gap: 6px; }
+.icon { flex: none; display: grid; place-items: center; width: 32px; height: 34px; background: #fff6dc; border: 2px solid #d9c48a; border-radius: 6px; }
+.icon img { display: block; image-rendering: pixelated; }
+.label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+tr.idle .icon img { opacity: 0.45; filter: grayscale(0.6); }
 .num { text-align: right; }
 .used { font-weight: 800; color: #2e9a1f; }
+.netcol.down { color: #c0392b; }
+.netcol.up { color: #1f6fc4; }
 tr.idle td { color: #8f7a55; }
 </style>

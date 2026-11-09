@@ -99,8 +99,12 @@ The Classic UI uses exact pixel fonts, so we match pixels instead of OCR:
   1026, 1282 and 1368). Icons match the same templates (key name over the top 11 rows ignored, looser threshold, bigger
   margin). Counts are the same font but shaded differently on a white background over bright icons, so they have their
   own digit set (`quickDigits`), learned from `quickSlots` labels (2 rows x 4 cells; "?" = icon with no count, e.g. a
-  skill) with the Use-tab digits seeding where each digit sits. Never a wrong count: 0 wrong / 28 tracked slots on
-  22 real frames, 4 honestly unreadable (stacks like 572/972/175 whose 7 sits too close to another digit).
+  skill) with the Use-tab digits seeding where each digit sits. Never a wrong count: 0 wrong, 0 unreadable / 31
+  tracked slots on 23 real frames. The harvest retries skipped slots in passes (a rendering learned from one slot, e.g.
+  a `7` over the orange icon, unlocks others; a learned shape only has to sit 3+ px from every other digit, since the
+  label already says which digit it is). It also learns `quickTails`: the harmless icon highlights left right after
+  the last digit of a labelled count, which the strict reader then ignores when seen again (an unfamiliar remnant
+  still makes the count null).
   **Only Blue Potion, Orange Potion and Pure Water have ever been seen on the bar.** Simulation (the real digit
   renderings lifted off those icons and laid over all 24 catalog icons): every item was FOUND (240/240, 0 wrong
   items), but only ~25% of counts read and ~75% came back unreadable, because each icon's highlights add their own

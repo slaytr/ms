@@ -2,12 +2,16 @@
 import { computed, onMounted, ref } from 'vue';
 
 import GameWindow from '../components/home/GameWindow.vue';
+import ExpChart from '../components/home/ExpChart.vue';
 import SkyScene from '../components/home/SkyScene.vue';
+import { useSessionSeries } from '../composables/useSessionSeries';
 import { listMapSessions } from '../lib/api';
 import { formatPerHour } from '../lib/format';
 import {
   formatLevels,
   formatStay,
+  MIN_EXP_PER_HOUR,
+  MIN_SESSION_SECONDS,
   qualifyingSessions,
   rankMaps,
   sessionRates,
@@ -23,6 +27,7 @@ const loading = ref(true);
 const error = ref<string | null>(null);
 const sortKey = ref<RankKey>('expPerHour');
 const selectedMap = ref<string | null>(null);
+const sessionSeries = useSessionSeries();
 
 const columns: ReadonlyArray<{ key: RankKey; label: string; hint: string }> = [
   { key: 'expPerHour', label: 'EXP / hr', hint: 'EXP gained per hour on this map' },
@@ -35,6 +40,11 @@ const ranks = computed(() => sortRanks(rankMaps(sessions.value), sortKey.value))
 const bestExpPerHour = computed(() => Math.max(1, ...ranks.value.map((r) => r.expPerHour)));
 const history = computed(() => (selectedMap.value ? sessions.value.filter((s) => s.map === selectedMap.value) : sessions.value));
 
+/** Why some tracked sessions are missing from the tables. */
+const qualifyNote = computed(
+  () =>
+    `Only sessions of ${MIN_SESSION_SECONDS / 60}+ minutes above ${formatPerHour(MIN_EXP_PER_HOUR)} EXP/h are shown (${sessions.value.length} of ${allSessions.value.length} tracked).`,
+);
 const fmt = (n: number) => Math.round(n).toLocaleString();
 const pct = (n: number) => `${n.toFixed(1)}%`;
 const when = (ms: number) => new Date(ms).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -117,6 +127,7 @@ onMounted(async () => {
           </div>
         </GameWindow>
 
+        <p class="note">{{ qualifyNote }}</p>
         <GameWindow title="History" class="history">
           <template #aside>
             <button v-if="selectedMap" type="button" class="clear" @click="selectedMap = null">{{ selectedMap }} ✕</button>
@@ -151,8 +162,19 @@ onMounted(async () => {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="s in history" :key="s.id">
-                  <td class="left dim">{{ when(s.startedAt) }}</td>
+                <template v-for="(s, index) in history" :key="s.id">
+                <tr :class="{ alt: index % 2 === 1, picked: sessionSeries.openId.value === s.id }">
+                  <td class="left dim">
+                    <button
+                      type="button"
+                      class="when-btn"
+                      :aria-expanded="sessionSeries.openId.value === s.id"
+                      title="Show EXP over time for this session"
+                      @click="sessionSeries.toggle(s.id)"
+                    >
+                      <span class="caret" aria-hidden="true">{{ sessionSeries.openId.value === s.id ? '▼' : '▶' }}</span>{{ when(s.startedAt) }}
+                    </button>
+                  </td>
                   <td class="left dim">{{ formatLevels(s.levelFrom, s.levelTo) }}</td>
                   <td class="num">{{ formatStay(s.seconds) }}</td>
                   <td class="num exp-text">+{{ fmt(s.expGained) }}</td>
@@ -163,6 +185,17 @@ onMounted(async () => {
                   <td class="left dim job-col" :title="s.job ?? undefined">{{ s.job ?? '—' }}</td>
                   <td v-if="!selectedMap" class="left" :title="s.map">{{ s.map }}</td>
                 </tr>
+                <tr v-if="sessionSeries.openId.value === s.id" class="detail">
+                  <td colspan="10">
+                    <p v-if="sessionSeries.error.value" class="detail-msg err" role="alert">{{ sessionSeries.error.value }}</p>
+                    <p v-else-if="sessionSeries.loadingId.value === s.id" class="detail-msg">Loading…</p>
+                    <template v-else-if="sessionSeries.series.value[s.id]">
+                      <p class="detail-title">EXP gained over time · {{ s.player }}<template v-if="s.map"> · {{ s.map }}</template></p>
+                      <ExpChart :series="sessionSeries.series.value[s.id]" />
+                    </template>
+                  </td>
+                </tr>
+                </template>
               </tbody>
             </table>
           </div>
@@ -199,6 +232,7 @@ onMounted(async () => {
   text-shadow: -2px -2px 0 var(--ink), 2px -2px 0 var(--ink), -2px 2px 0 var(--ink), 2px 2px 0 var(--ink), 0 4px 0 var(--ink);
 }
 .status, .alert { margin: 0 auto; max-width: 34rem; padding: 0.8rem 1.2rem; text-align: center; background: #fff6dc; border: 3px solid var(--ink); border-radius: 12px; }
+.note { margin: -8px 0 -12px; text-align: center; font-size: 0.8rem; color: #fff; text-shadow: 0 1px 0 var(--ink), 0 2px 0 var(--ink); }
 .alert { background: #fff0ee; border-color: #c4361d; color: #8a1d0c; }
 
 .scroll { margin: -18px -20px -20px; overflow-x: auto; }
@@ -238,7 +272,7 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; borde
 .history-table { table-layout: fixed; min-width: 0; }
 .history-table th, .history-table td { padding: 9px 6px; }
 .history-table td.left { overflow: hidden; text-overflow: ellipsis; }
-.h-when { width: 8.25rem; }
+.h-when { width: 9.5rem; }
 .h-level { width: 6rem; }
 .h-time { width: 4rem; }
 .h-gain { width: 6.25rem; }
@@ -252,6 +286,16 @@ button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; borde
 .exp-text { color: #2e9a1f; font-weight: 800; }
 .meso { color: #b07a00; font-weight: 800; }
 
+.when-btn { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
+.when-btn:hover { color: #1f6fc4; text-decoration: underline; }
+.caret { flex: none; width: 0.8em; font-size: 0.7em; }
+.history-table tbody tr:nth-child(even) { background: none; }
+.history-table tbody tr.alt { background: rgba(255, 253, 243, 0.7); }
+.history-table tr.detail { background: #fffdf3 !important; }
+.history-table tr.detail td { padding: 10px 14px 14px; white-space: normal; overflow: visible; }
+.detail-title { margin: 0 0 4px; font-size: 0.85rem; color: #6b4a22; }
+.detail-msg { margin: 0; padding: 14px 0; text-align: center; color: #6b4a22; }
+.detail-msg.err { color: #8a1d0c; }
 .history .clear { padding: 0 10px; border: 2px solid #fff; border-radius: 999px; font-size: 0.85rem; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>

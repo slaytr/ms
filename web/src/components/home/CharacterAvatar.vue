@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue';
 
 /** The character's sprite from ClassicRank (via our /api/avatar proxy). Renders nothing if there isn't one. */
-const props = defineProps<{ name: string | null | undefined }>();
+const props = defineProps<{ name: string | null | undefined; small?: boolean }>();
 
 const failedFor = ref<string | null>(null);
 
@@ -21,6 +21,7 @@ const usable = (name: string | null | undefined): name is string => !!name && /^
   <img
     v-if="usable(name) && failedFor !== name"
     class="avatar"
+    :class="{ small }"
     :src="`/api/avatar/${encodeURIComponent(name)}`"
     :alt="`${name}'s character`"
     width="96"
@@ -31,4 +32,5 @@ const usable = (name: string | null | undefined): name is string => !!name && /^
 
 <style scoped>
 .avatar { display: block; margin: 0 auto 6px; width: 96px; height: 96px; image-rendering: pixelated; }
+.avatar.small { margin: 0; width: 48px; height: 48px; }
 </style>

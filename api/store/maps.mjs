@@ -85,15 +85,24 @@ select s.id,
   left join exp_gain eg on eg.session_id = s.id
   left join pct_gain pg on pg.session_id = s.id
   left join meso_gain mg on mg.session_id = s.id
- where s.label <> ''
+ where ($3::boolean = false or s.label <> '')
+   and sp.first_at >= to_timestamp($4::float8 / 1000.0)
    and sp.readings >= 2
    and extract(epoch from (sp.last_at - sp.first_at)) >= $1
  order by sp.first_at desc
  limit $2`;
 
 /** Per-session map stats, newest first. Numbers come back as JS numbers (Postgres returns bigint as text). */
-export async function listMapSessions() {
-  const { rows } = await query(SESSION_STATS_SQL, [MIN_SESSION_SECONDS, MAX_SESSIONS]);
+export function listMapSessions() {
+  return listSessionStats({ requireLabel: true, sinceMs: 0 });
+}
+
+/**
+ * The same per-session stats with a choice of filters: `requireLabel` drops sessions that never got
+ * a map name, and `sinceMs` keeps only sessions whose first reading is at or after that epoch-ms time.
+ */
+export async function listSessionStats({ requireLabel, sinceMs }) {
+  const { rows } = await query(SESSION_STATS_SQL, [MIN_SESSION_SECONDS, MAX_SESSIONS, requireLabel, sinceMs]);
   return rows.map((row) => ({
     id: row.id,
     map: row.map,

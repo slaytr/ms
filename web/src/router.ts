@@ -1,14 +1,20 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
 import CapturePage from './pages/CapturePage.vue';
-import HomePage from './pages/HomePage.vue';
+import CharactersPage from './pages/CharactersPage.vue';
+import RankingsPage from './pages/RankingsPage.vue';
 import MapsPage from './pages/MapsPage.vue';
+
+/** The home page is mounted by App.vue (kept alive so a screen share survives navigation), so its route renders nothing. */
+const HomePlaceholder = { render: () => null };
 
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', name: 'home', component: HomePage, meta: { title: "Bill's Personal Super Duper Maplestory Classic Tracker" } },
+    { path: '/', name: 'home', component: HomePlaceholder, meta: { title: "Bill's Personal Super Duper Maplestory Classic Tracker" } },
     { path: '/maps', name: 'maps', component: MapsPage, meta: { title: 'Maps | Bill\'s Personal Super Duper Maplestory Classic Tracker' } },
+    { path: '/characters', name: 'characters', component: CharactersPage, meta: { title: "Characters | Bill's Personal Super Duper Maplestory Classic Tracker" } },
+    { path: '/rankings', name: 'rankings', component: RankingsPage, meta: { title: "Rankings | Bill's Personal Super Duper Maplestory Classic Tracker" } },
     // Not linked from anywhere: reach the testing tools by typing /testing.
     { path: '/testing', name: 'testing', component: CapturePage, meta: { title: 'Testing tools' } },
     { path: '/capture', redirect: '/testing' },

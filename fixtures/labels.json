@@ -875,5 +875,28 @@
         "-"
       ]
     ]
+  },
+  "inventory-open_1368x800_1794229014401.png": {
+    "exp": "146,969[20.71%]",
+    "level": "50",
+    "meso": "675,858",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "Hidden Street",
+    "map": "Free Market <13>",
+    "quickSlots": [
+      [
+        "Blue Potion:298",
+        "Orange Potion:789",
+        "Pure Water:198",
+        "?:212"
+      ],
+      [
+        "-",
+        "-",
+        "-",
+        "-"
+      ]
+    ]
   }
 }

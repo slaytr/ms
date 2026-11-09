@@ -55,7 +55,7 @@ export function readQuickSlots(frame: Frame, exp: Point, templates: InventoryTem
       const origin = quickSlotOrigin(exp, row, col);
       const itemId = matchIcon(frame, origin, templates.icons, ICON_OPTIONS);
       // Only a tracked item has a count we care about, and skills have none.
-      const quantity = itemId === null ? null : readQuantity(frame, origin, templates.quickDigits, { strictTail: true });
+      const quantity = itemId === null ? null : readQuantity(frame, origin, templates.quickDigits, { strictTail: true, tails: templates.quickTails });
       slots.push({ row, col, itemId, quantity });
     }
   }

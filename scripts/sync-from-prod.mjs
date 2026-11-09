@@ -19,7 +19,7 @@ import { execFileSync } from 'node:child_process';
 import { pool, withTransaction, closePool } from '../api/db.mjs';
 
 /** Synced tables in FK-safe order. `ms_schema_migrations` is deliberately excluded: each environment tracks its own. */
-const TABLES = ['ms_capture_sessions', 'ms_session_snapshots', 'ms_readings'];
+const TABLES = ['ms_capture_sessions', 'ms_session_snapshots', 'ms_readings', 'ms_character_avatars'];
 
 /**
  * Explicit column lists where `select *` would be wrong. owner_token is a
@@ -28,6 +28,13 @@ const TABLES = ['ms_capture_sessions', 'ms_session_snapshots', 'ms_readings'];
  */
 const COLUMNS = {
   ms_capture_sessions: ['id', 'label', 'character', 'fingerprint', 'started_at', 'ended_at'],
+  // bytea does not survive JSON, so the sprite travels as base64 (see DECODERS).
+  ms_character_avatars: ['name_key', 'name', "encode(png, 'base64') as png", 'fetched_at'],
+};
+
+/** Turns a dumped column back into what the table stores. */
+const DECODERS = {
+  ms_character_avatars: { png: (value) => Buffer.from(value, 'base64') },
 };
 
 /** Tables whose serial PK needs its sequence re-synced after a bulk load with explicit ids. */
@@ -52,7 +59,7 @@ async function loadTable(client, table, rows) {
   const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
   const sql = `insert into ${table} (${columns.join(', ')}) values (${placeholders})`;
   for (const row of rows) {
-    await client.query(sql, columns.map((col) => row[col]));
+    await client.query(sql, columns.map((col) => (DECODERS[table]?.[col] ? DECODERS[table][col](row[col]) : row[col])));
   }
   return rows.length;
 }
@@ -68,8 +75,10 @@ async function resyncSerialSequences(client) {
 
 async function restore(payload) {
   await withTransaction(async (client) => {
-    await client.query(`truncate ${TABLES.join(', ')} restart identity cascade`);
-    for (const table of TABLES) {
+    // Only tables present in the dump are replaced: an older deployed dump script may not send every table yet.
+    const present = TABLES.filter((table) => Array.isArray(payload[table]));
+    await client.query(`truncate ${present.join(', ')} restart identity cascade`);
+    for (const table of present) {
       const count = await loadTable(client, table, payload[table] ?? []);
       console.log(`  ${table}: ${count} row(s)`);
     }
