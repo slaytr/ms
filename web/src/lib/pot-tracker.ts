@@ -168,6 +168,8 @@ export interface PotRow {
   readonly used: number;
   /** Mesos at the NPC price, or null when no NPC sells it. */
   readonly mesos: number | null;
+  /** Mesos worth of the change in stock (now minus start) at the NPC price: negative when the bag lost value, positive after restocking. Null when no NPC sells it or a count is unknown. */
+  readonly netMesos: number | null;
   /** HP/MP restored by what was used; null for a percentage potion (it depends on max HP/MP). */
   readonly hp: number | null;
   readonly mp: number | null;
@@ -179,6 +181,8 @@ export interface PotTotals {
   readonly mesos: number;
   /** Items used that have no NPC price, so `mesos` is a floor. */
   readonly mesosUnknownFor: number;
+  /** Sum of the rows' net mesos (items with no price or unknown counts add nothing). */
+  readonly netMesos: number;
   readonly hp: number;
   readonly mp: number;
   /** Percentage potions used, whose HP/MP is not in `hp`/`mp`. */
@@ -221,6 +225,7 @@ function rowFor(state: PotTrackerState, id: number): PotRow | null {
     stale: quick ? false : state.unreadable.has(id),
     used,
     mesos: used === 0 ? 0 : mesoCost(potion, used),
+    netMesos: before === null || now === null ? null : mesoCost(potion, now - before),
     hp: restoreOf(potion, used, 'hp', 'hpPercent'),
     mp: restoreOf(potion, used, 'mp', 'mpPercent'),
   };
@@ -240,6 +245,7 @@ export function buildPotView(state: PotTrackerState): PotView | null {
   const totals: PotTotals = {
     used: rows.reduce((sum, row) => sum + row.used, 0),
     mesos: rows.reduce((sum, row) => sum + (row.mesos ?? 0), 0),
+    netMesos: rows.reduce((sum, row) => sum + (row.netMesos ?? 0), 0),
     mesosUnknownFor: usedRows.filter((row) => row.mesos === null).length,
     hp: rows.reduce((sum, row) => sum + (row.hp ?? 0), 0),
     mp: rows.reduce((sum, row) => sum + (row.mp ?? 0), 0),

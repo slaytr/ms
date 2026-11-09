@@ -1,0 +1,15 @@
+/**
+ * The home page's change log. Add an entry here and it shows up in the box under the weekly top 3
+ * (newest date first, so order in this file doesn't matter).
+ *
+ *   { date: '2026-11-10', text: 'Potion graphs under the EXP chart.' },
+ */
+export interface ChangeLogEntry {
+  /** ISO day, YYYY-MM-DD. */
+  readonly date: string;
+  readonly text: string;
+}
+
+export const CHANGELOG: readonly ChangeLogEntry[] = [
+  { date: '2026-11-10', text: 'Updated some of the text on the home page.' },
+];

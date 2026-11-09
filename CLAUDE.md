@@ -74,7 +74,7 @@ The Classic UI uses exact pixel fonts, so we match pixels instead of OCR:
 - Pull them with `npm run pull:misses` (via `railway ssh`, like sync:prod): saves
   `fixtures/other_<w>x<h>_<ms>.png` plus `fixtures/misses.json` (what was missing and what was read). Label
   the frame in `labels.json` and run `harvest-templates.mjs`. `--purge` deletes pulled frames from prod.
-- The home page tells players that an unreadable frame is kept. Screenshots can show other players' names
+- The home page used to tell players that an unreadable frame is kept; that note was removed (2026-11-10), so nothing on the page says so now. Screenshots can show other players' names
   (chat, nameplates): they come from the window the player chose to share.
 
 ## Pot tracker (Use tab)

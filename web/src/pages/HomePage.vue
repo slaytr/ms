@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import CharacterAvatar from '../components/home/CharacterAvatar.vue';
+import ChangeLog from '../components/home/ChangeLog.vue';
 import GameWindow from '../components/home/GameWindow.vue';
 import LeaderStrip from '../components/home/LeaderStrip.vue';
 import LevelBadge from '../components/home/LevelBadge.vue';
@@ -11,6 +12,7 @@ import OverviewBox from '../components/home/OverviewBox.vue';
 import SkyScene from '../components/home/SkyScene.vue';
 import TrackingChecklist from '../components/home/TrackingChecklist.vue';
 import PipTracker from '../components/PipTracker.vue';
+import { CHANGELOG } from '../data/changelog';
 import { usePopOut } from '../composables/usePopOut';
 import { useTracker } from '../composables/useTracker';
 import { formatClock } from '../lib/format';
@@ -155,19 +157,19 @@ onBeforeUnmount(() => {
             <rect x="6" y="6" width="20" height="11" rx="1.5" fill="#43a9f0" />
             <path d="M11 26h10M16 21v5" stroke="#4a2a0e" stroke-width="3" stroke-linecap="round" />
           </svg>
-          {{ status === 'loading' ? 'Pick your game window…' : 'Share your game window' }}
+          {{ status === 'loading' ? 'Pick your game window…' : 'Click here to share your game window' }}
         </button>
       </div>
-
-      <p v-if="status !== 'tracking'" class="fine">
-        Only the numbers leave your computer, unless something on screen can't be read. Then we keep a screenshot of the game window so we can teach the tracker to read it.
-      </p>
 
       <!-- Under 1200px the leaderboard sits in the column; wider, it moves to the sides (see the asides below). -->
       <GameWindow v-if="status !== 'tracking' && (podium.length > 0 || jobLeaders.length > 0)" class="panel leaders" title="Leaderboard">
         <LeaderStrip :podium="podium" :jobs="jobLeaders" />
       </GameWindow>
       <p v-else-if="status !== 'tracking' && leaderError" class="fine">The leaderboard couldn't load just now.</p>
+
+      <GameWindow v-if="status !== 'tracking'" class="panel changelog-inline" title="Change log">
+        <ChangeLog :entries="CHANGELOG" />
+      </GameWindow>
 
       <p v-if="capture.error.value || message" class="alert" role="alert">{{ capture.error.value ?? message }}</p>
 
@@ -278,9 +280,12 @@ onBeforeUnmount(() => {
       </Teleport>
     </main>
 
-    <aside v-if="status !== 'tracking' && podium.length > 0" class="side left" aria-label="Weekly top 3">
-      <GameWindow title="Weekly top 3">
+    <aside v-if="status !== 'tracking'" class="side left" aria-label="Weekly top 3 and change log">
+      <GameWindow v-if="podium.length > 0" title="Weekly top 3">
         <LeaderStrip :podium="podium" :jobs="[]" only="podium" stack />
+      </GameWindow>
+      <GameWindow title="Change log">
+        <ChangeLog :entries="CHANGELOG" />
       </GameWindow>
     </aside>
     <aside v-if="status !== 'tracking' && jobLeaders.length > 0" class="side right" aria-label="Top by job">
@@ -467,10 +472,10 @@ onBeforeUnmount(() => {
 @media (max-width: 480px) { .stats { grid-template-columns: 1fr; } }
 .leaders { margin-top: 1.1rem; }
 /* Wide screens: the leaderboard flanks the centred 620px column instead of sitting in it. */
-.side { display: none; }
+.side { display: none; gap: 20px; }
 @media (min-width: 1200px) {
-  .leaders { display: none; }
-  .side { display: block; position: absolute; z-index: 1; top: 7.5rem; width: 250px; }
+  .leaders, .changelog-inline { display: none; }
+  .side { display: grid; position: absolute; z-index: 1; top: 7.5rem; width: 250px; }
   .side.left { right: calc(50% + 310px + 24px); }
   .side.right { left: calc(50% + 310px + 24px); }
 }

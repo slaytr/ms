@@ -170,6 +170,21 @@ describe('buildPotView', () => {
     expect(view.rows.find((r) => r.id === RED)).toMatchObject({ mesos: 500, hp: 1000, mp: 0 });
   });
 
+  it('nets the stock change in mesos: what the bag is worth now against the start, so restocking offsets use', () => {
+    // 10 Red Potions drunk (stock 100 -> 90) is -500; buying 30 back (-> 120) ends above the start, so the net is
+    // positive (and, on the Use tab, 'used' reads 0 because a rise is never negative use).
+    expect(buildPotView(feed([of([RED, 100]), of([RED, 90])]))!.rows[0]).toMatchObject({ used: 10, mesos: 500, netMesos: -500 });
+    const restocked = buildPotView(feed([of([RED, 100]), of([RED, 90]), of([RED, 120])]))!;
+    expect(restocked.rows[0]).toMatchObject({ used: 0, mesos: 0, netMesos: 20 * 50 });
+    expect(restocked.totals.netMesos).toBe(1000);
+  });
+
+  it('has no net mesos for an item no NPC sells', () => {
+    const view = buildPotView(feed([of([MANA_ELIXIR, 30]), of([MANA_ELIXIR, 28])]))!;
+    expect(view.rows[0].netMesos).toBeNull();
+    expect(view.totals.netMesos).toBe(0);
+  });
+
   it('says cost is unknown for an item no NPC sells, rather than making a figure up', () => {
     const view = buildPotView(feed([of([MANA_ELIXIR, 30]), of([MANA_ELIXIR, 28])]))!;
     expect(view.rows[0]).toMatchObject({ id: MANA_ELIXIR, used: 2, mesos: null });

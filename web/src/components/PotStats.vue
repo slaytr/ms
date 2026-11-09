@@ -46,7 +46,7 @@ const fmtNet = (n: number | null) => (n === null ? '—' : n > 0 ? `+${fmt(n)}` 
 
       <table>
         <thead>
-          <tr><th>Item</th><th class="num">Left</th><th class="num">Used</th><th class="num" title="Change in stock since counting began (restocking counts)">Net</th><th class="num">Mesos</th></tr>
+          <tr><th>Item</th><th class="num">Left</th><th class="num">Used</th><th class="num" title="Change in stock since counting began (restocking counts)">Net</th><th class="num" title="Mesos spent on the pots used, and below it the net change in what your stock is worth">Mesos</th></tr>
         </thead>
         <tbody>
           <tr v-for="row in pots.rows" :key="row.id" :class="{ idle: row.used === 0 }">
@@ -61,6 +61,7 @@ const fmtNet = (n: number | null) => (n === null ? '—' : n > 0 ? `+${fmt(n)}` 
             <td class="num netcol" :class="{ up: (net(row) ?? 0) > 0, down: (net(row) ?? 0) < 0 }">{{ fmtNet(net(row)) }}</td>
             <td class="num meso" :title="row.used > 0 && row.mesos === null ? 'No NPC sells this, so its cost is not known' : undefined">
               {{ row.used === 0 ? '' : row.mesos === null ? '?' : fmt(row.mesos) }}
+              <small v-if="row.netMesos !== null && row.netMesos !== 0" class="netmeso" :class="{ up: row.netMesos > 0 }" title="Net: what your stock is worth now against when counting began (restocking offsets use)">{{ fmtNet(row.netMesos) }}</small>
             </td>
           </tr>
         </tbody>
@@ -106,6 +107,8 @@ td { padding: 1px 3px; border-bottom: 1px solid #f1e6c4; }
 tr.idle .icon img { opacity: 0.45; filter: grayscale(0.6); }
 .num { text-align: right; }
 .used { font-weight: 800; color: #2e9a1f; }
+small.netmeso { display: block; font-size: 10px; line-height: 1.1; color: #c0392b; }
+small.netmeso.up { color: #1f6fc4; }
 .netcol.down { color: #c0392b; }
 .netcol.up { color: #1f6fc4; }
 tr.idle td { color: #8f7a55; }

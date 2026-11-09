@@ -4,11 +4,11 @@ import { emptyPotHistory, recordPotHistory } from './pot-history';
 import type { PotRow, PotView } from './pot-tracker';
 
 const row = (id: number, used: number): PotRow => ({
-  id, name: `Pot ${id}`, source: 'quick', before: 100, now: 100 - used, stale: false, used, mesos: 0, hp: 0, mp: 0,
+  id, name: `Pot ${id}`, source: 'quick', before: 100, now: 100 - used, stale: false, used, mesos: 0, netMesos: 0, hp: 0, mp: 0,
 });
 const view = (...rows: PotRow[]): PotView => ({
   rows,
-  totals: { used: 0, mesos: 0, mesosUnknownFor: 0, hp: 0, mp: 0, percentItemsUsed: 0 },
+  totals: { used: 0, mesos: 0, netMesos: 0, mesosUnknownFor: 0, hp: 0, mp: 0, percentItemsUsed: 0 },
   scrolledAway: false, paused: false, unreadable: [], usesTab: false, since: 0,
 });
 
