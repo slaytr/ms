@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { dayGain, formatSeen, rankCharacters, type CharacterEntry, type LevelPoint } from './characters';
+import { dayGain, formatSeen, specLeaders, rankCharacters, type CharacterEntry, type LevelPoint } from './characters';
 
 const entry = (name: string, level: number, expPct: number | null, lastSeenAt = 0): CharacterEntry => ({
   playerKey: name,
@@ -57,5 +57,23 @@ describe('dayGain', () => {
     expect(dayGain({ dayFrom: null, dayTo: null })).toBeNull();
     expect(dayGain({ dayFrom: point(5, 50, 1, 1), dayTo: point(5, 50, 9, 2) })).toBeNull();
     expect(dayGain({ dayFrom: point(0, 500, 1, 1), dayTo: point(1, 500, 9, 2) })).toBeNull();
+  });
+});
+
+describe('specLeaders', () => {
+  const make = (name: string, job: string | null, level: number): CharacterEntry => ({
+    playerKey: name, name, job, level, expPct: 10, lastSeenAt: 0, dayFrom: null, dayTo: null,
+  });
+
+  it('puts the highest level of each spec in its slot, in spec order', () => {
+    const slots = specLeaders(
+      [make('a', 'Wizard (Ice,Lightning)', 50), make('b', 'Bandit', 60), make('c', 'Wizard (Ice, Lightning)', 55), make('d', null, 99)],
+      ['Bandit', 'Wizard (Ice,Lightning)'],
+    );
+    expect(slots.map((s) => [s.spec, s.leader?.name, s.count])).toEqual([['Bandit', 'b', 1], ['Wizard (Ice,Lightning)', 'c', 2]]);
+  });
+
+  it('leaves a spec nobody plays blank', () => {
+    expect(specLeaders([make('a', 'Bandit', 5)], ['Bandit', 'Cleric'])[1]).toEqual({ spec: 'Cleric', leader: null, count: 0 });
   });
 });

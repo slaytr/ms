@@ -74,3 +74,31 @@ export function formatSeen(lastSeenAt: number, now: number): string {
   if (age < DAY) return `${Math.floor(age / HOUR)}h ago`;
   return `${Math.floor(age / DAY)}d ago`;
 }
+
+/** The 2nd-job specs, as the job line reads on screen (mages show their element pair). */
+export const SPECS: readonly string[] = [
+  'Fighter', 'Page', 'Spearman',
+  'Wizard (Fire,Poison)', 'Wizard (Ice,Lightning)', 'Cleric',
+  'Hunter', 'Crossbowman',
+  'Assassin', 'Bandit',
+  'Brawler', 'Gunslinger',
+];
+
+/** Jobs are read off the screen, so tidy stray spacing and case before comparing ("Wizard (Ice, Lightning)" = "Wizard (Ice,Lightning)"). */
+const jobKey = (job: string): string => job.replace(/\s+/g, ' ').replace(/\s*([(),])\s*/g, '$1').trim().toLowerCase();
+
+/** One spec's slot: its top character (highest level), or null when nobody plays it. */
+export interface SpecSlot {
+  readonly spec: string;
+  readonly leader: CharacterEntry | null;
+  readonly count: number;
+}
+
+/** One slot per spec, in `specs` order. A spec with no character has a null leader, so it renders blank. */
+export function specLeaders(characters: readonly CharacterEntry[], specs: readonly string[] = SPECS): readonly SpecSlot[] {
+  const ranked = rankCharacters(characters);
+  return specs.map((spec) => {
+    const members = ranked.filter((c) => c.job !== null && jobKey(c.job) === jobKey(spec));
+    return { spec, leader: members[0] ?? null, count: members.length };
+  });
+}
