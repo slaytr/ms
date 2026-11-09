@@ -10,14 +10,18 @@ const MAX_SESSIONS = 1000;
  *
  * The gains mirror web/src/lib/metrics.ts: they sum the change between consecutive successful reads
  * of each field (a failed read is skipped, a drop is a death penalty and counts as zero).
+ * A wrapped bar (a drop of 50+ points) is a level-up whatever the label says, and a rising level label
+ * only counts as one unless the readings are under 30s apart and EXP kept climbing (the label just
+ * catching up to a level-up already counted), exactly as `leveledUp` does in metrics.ts.
  * EXP uses the raw counter, which resets on a level-up, so the single gap that crosses a level-up
  * contributes 0 to `expGained` (a slight undercount, never an invention). `expPctGained` wraps the
  * level-up exactly, so it is also the level-fair figure for comparing characters.
  */
 const SESSION_STATS_SQL = `
 with e as (
-  select session_id, exp, level, exp_pct,
-         lag(exp) over w as p_exp, lag(level) over w as p_level, lag(exp_pct) over w as p_pct
+  select session_id, taken_at, exp, level, exp_pct,
+         lag(exp) over w as p_exp, lag(level) over w as p_level, lag(exp_pct) over w as p_pct,
+         lag(taken_at) over w as p_at
     from ms_readings
    where exp is not null
   window w as (partition by session_id order by taken_at)
@@ -25,14 +29,16 @@ with e as (
   select session_id,
          sum(case
                when p_exp is null then 0
-               when level is not null and p_level is not null then case when level > p_level then 0 else greatest(0, exp - p_exp) end
                when exp_pct is not null and p_pct is not null and exp_pct - p_pct < -50 then 0
+               when level is not null and p_level is not null and level > p_level
+                    and not (taken_at - p_at <= interval '30 seconds' and exp >= p_exp) then 0
                else greatest(0, exp - p_exp)
              end)::bigint as gained
     from e group by session_id
 ), p as (
-  select session_id, exp_pct, level,
-         lag(exp_pct) over w as p_pct, lag(level) over w as p_level
+  select session_id, taken_at, exp, exp_pct, level,
+         lag(exp_pct) over w as p_pct, lag(level) over w as p_level, lag(exp) over w as p_exp,
+         lag(taken_at) over w as p_at
     from ms_readings
    where exp_pct is not null
   window w as (partition by session_id order by taken_at)
@@ -40,8 +46,11 @@ with e as (
   select session_id,
          sum(case
                when p_pct is null then 0
-               when level is not null and p_level is not null and level > p_level then 100 - p_pct + exp_pct
-               when (level is null or p_level is null) and exp_pct - p_pct < -50 then 100 - p_pct + exp_pct
+               when exp_pct - p_pct < -50 then 100 - p_pct + exp_pct
+               when level is not null and p_level is not null and level > p_level
+                    and not (taken_at - p_at <= interval '30 seconds'
+                             and (case when exp is not null and p_exp is not null then exp >= p_exp else exp_pct >= p_pct end))
+                 then 100 - p_pct + exp_pct
                else greatest(0, exp_pct - p_pct)
              end)::float8 as gained
     from p group by session_id

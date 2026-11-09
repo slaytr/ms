@@ -182,3 +182,37 @@ describe('computeRates with a wall clock', () => {
     expect(computeRates([], 99_000).elapsedMs).toBe(0);
   });
 });
+
+describe('computeRates: a level label that lags the EXP reset', () => {
+  // Readings are ~3s apart. Level 50's digits can't be read yet, so right after a level-up the level is
+  // inferred from EXP and can stay on the old level for a tick before it corrects to the new one.
+  const SEC = 1 / 20; // 3 seconds, in minutes
+
+  it('counts a level-up once when the label is still the old level on the tick EXP resets, then catches up', () => {
+    const r = computeRates([
+      reading(0, { exp: 650_000, expPct: 99.21, level: 49 }),
+      reading(SEC, { exp: 100, expPct: 0.02, level: 49 }), // EXP has reset, label not yet
+      reading(2 * SEC, { exp: 900, expPct: 0.13, level: 50 }), // label catches up
+    ]);
+    // 5,200 left in level 49, then 100, then 800 more: 6,100. Not another whole level on top.
+    expect(r.expGained).toBe(6_100);
+    expect(r.expPctGained).toBeCloseTo(0.92, 2);
+  });
+
+  it('does not add a whole level when the label rises a few seconds apart with EXP still climbing', () => {
+    const r = computeRates([
+      reading(0, { exp: 0, expPct: 0, level: 49 }),
+      reading(SEC, { exp: 500, expPct: 0.07, level: 50 }),
+    ]);
+    expect(r.expGained).toBe(500);
+    expect(r.expPctGained).toBeCloseTo(0.07, 2);
+  });
+
+  it('still counts a real level-up when the EXP counter dropped', () => {
+    const r = computeRates([
+      reading(0, { exp: 650_000, expPct: 99.21, level: 49 }),
+      reading(SEC, { exp: 1_200, expPct: 0.17, level: 50 }),
+    ]);
+    expect(r.expGained).toBe(6_400);
+  });
+});

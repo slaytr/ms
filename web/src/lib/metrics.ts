@@ -23,6 +23,8 @@ export interface Rates {
 const HOUR_MS = 3_600_000;
 /** A percent drop bigger than this with no level reading is assumed to be a level-up wrap. */
 const LEVEL_UP_DROP_THRESHOLD = 50;
+/** Readings are ~3s apart; closer together than this, a level label rising while EXP keeps climbing is a relabel, not a level-up. */
+const RELABEL_WINDOW_MS = 30_000;
 /** Below this percent, raw/percent is too coarse (two decimals) to estimate a level's size. */
 const MIN_PCT_FOR_LEVEL_SIZE = 1;
 
@@ -49,11 +51,33 @@ function sumMesoGain(readings: readonly Reading[]): number {
   return consecutive(readings, (r) => r.meso).reduce((total, [a, b]) => total + Math.max(0, b.meso! - a.meso!), 0);
 }
 
-/** Did the character level up between two readings? Uses the level when both were read, else a big percent drop. */
-function leveledUp(prev: Reading, current: Reading): boolean {
-  if (prev.level !== null && current.level !== null) return current.level > prev.level;
-  if (prev.expPct !== null && current.expPct !== null) return current.expPct - prev.expPct < -LEVEL_UP_DROP_THRESHOLD;
+/** Did the EXP bar wrap (a drop of more than half a level)? That only happens on a level-up, whatever the level label says. */
+function barWrapped(prev: Reading, current: Reading): boolean {
+  return prev.expPct !== null && current.expPct !== null && current.expPct - prev.expPct < -LEVEL_UP_DROP_THRESHOLD;
+}
+
+/** True when the raw counter (else the percent) carried on climbing from `prev` to `current`, which a level-up never does. */
+function keptClimbing(prev: Reading, current: Reading): boolean {
+  if (prev.exp !== null && current.exp !== null) return current.exp >= prev.exp;
+  if (prev.expPct !== null && current.expPct !== null) return current.expPct >= prev.expPct;
   return false;
+}
+
+/**
+ * Did the character level up between two readings?
+ *
+ * A wrapped EXP bar is a level-up regardless of the label (the label can lag it by a tick: level
+ * digits we have no template for are inferred from EXP, and just after a level-up EXP is so small
+ * that the old level still fits). A rising label is a level-up too, except when the readings are
+ * seconds apart and EXP kept climbing: then the label was only catching up to a level-up we already
+ * counted, and counting it again would add a whole level's EXP. Across a long gap (alt-tabbed,
+ * unreadable) EXP can legitimately end higher in the new level, so the label is trusted there.
+ */
+function leveledUp(prev: Reading, current: Reading): boolean {
+  if (barWrapped(prev, current)) return true;
+  if (prev.level === null || current.level === null || current.level <= prev.level) return false;
+  const shortGap = current.takenAt - prev.takenAt <= RELABEL_WINDOW_MS;
+  return !(shortGap && keptClimbing(prev, current));
 }
 
 /**
