@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatLevels, formatStay, rankMaps, sessionRates, sortRanks, type MapSession } from './maps';
+import { formatLevels, formatStay, qualifyingSessions, rankMaps, sessionRates, sortRanks, type MapSession } from './maps';
 
 const session = (over: Partial<MapSession> = {}): MapSession => ({
   id: 'a',
@@ -52,6 +52,29 @@ describe('rankMaps', () => {
     const copy = [...input];
     rankMaps(input);
     expect(input).toEqual(copy);
+  });
+});
+
+describe('qualifyingSessions', () => {
+  it('keeps sessions of 30+ minutes above 50K EXP/h', () => {
+    // 30 min, 30,000 EXP = 60K/h.
+    expect(qualifyingSessions([session({ seconds: 1800, expGained: 30_000 })])).toHaveLength(1);
+  });
+
+  it('drops sessions under 30 minutes however fast they were', () => {
+    expect(qualifyingSessions([session({ seconds: 1799, expGained: 500_000 })])).toHaveLength(0);
+  });
+
+  it('drops sessions at or below 50K EXP/h, even long ones', () => {
+    // Exactly 50K/h is not "above".
+    expect(qualifyingSessions([session({ seconds: 3600, expGained: 50_000 })])).toHaveLength(0);
+    expect(qualifyingSessions([session({ seconds: 7200, expGained: 10_000 })])).toHaveLength(0);
+  });
+
+  it('leaves a map out of the ranking when none of its sessions qualify', () => {
+    const slow = session({ id: '1', map: 'Slow', seconds: 3600, expGained: 10_000 });
+    const fast = session({ id: '2', map: 'Fast', seconds: 3600, expGained: 200_000 });
+    expect(rankMaps(qualifyingSessions([slow, fast])).map((r) => r.map)).toEqual(['Fast']);
   });
 });
 

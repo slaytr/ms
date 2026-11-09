@@ -8,6 +8,7 @@ import { formatPerHour } from '../lib/format';
 import {
   formatLevels,
   formatStay,
+  qualifyingSessions,
   rankMaps,
   sessionRates,
   sortRanks,
@@ -15,7 +16,9 @@ import {
   type RankKey,
 } from '../lib/maps';
 
-const sessions = ref<readonly MapSession[]>([]);
+/** Everything the API returned; `sessions` is the part that counts (30+ minutes, above 50K EXP/h). */
+const allSessions = ref<readonly MapSession[]>([]);
+const sessions = computed(() => qualifyingSessions(allSessions.value));
 const loading = ref(true);
 const error = ref<string | null>(null);
 const sortKey = ref<RankKey>('expPerHour');
@@ -44,7 +47,7 @@ function toggleMap(map: string) {
 
 onMounted(async () => {
   try {
-    sessions.value = await listMapSessions();
+    allSessions.value = await listMapSessions();
   } catch (cause) {
     error.value = (cause as Error).message;
   } finally {
@@ -58,12 +61,19 @@ onMounted(async () => {
     <SkyScene />
     <main class="content">
       <h1 class="heading">Map rankings</h1>
-      <p class="sub">Where the EXP is, from every session you've tracked. Click a map to see who played it.</p>
+      <p class="sub">
+        Where the EXP is. Only sessions of 30+ minutes above 50K EXP/h count. Click a map to see who played it.
+      </p>
 
       <p v-if="error" class="alert" role="alert">{{ error }}</p>
       <p v-else-if="loading" class="status">Loading…</p>
       <p v-else-if="sessions.length === 0" class="status">
-        No map data yet. Track a session with the minimap visible and at least a minute of play, and it will show up here.
+        <template v-if="allSessions.length === 0">
+          No map data yet. Track a session with the minimap visible and it will show up here once it qualifies.
+        </template>
+        <template v-else>
+          None of your {{ allSessions.length }} tracked sessions qualify yet. A session needs 30+ minutes at over 50K EXP/h.
+        </template>
       </p>
 
       <template v-else>

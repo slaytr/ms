@@ -31,7 +31,21 @@ export type RankKey = 'expPerHour' | 'expPctPerHour' | 'mesoPerHour' | 'seconds'
 
 const HOUR_SECONDS = 3600;
 
+/** Only real grinding sessions count toward the Maps page: long enough to trust, and fast enough to matter. */
+export const MIN_SESSION_SECONDS = 30 * 60;
+export const MIN_EXP_PER_HOUR = 50_000;
+
 const perHour = (amount: number, seconds: number) => (seconds > 0 ? (amount / seconds) * HOUR_SECONDS : 0);
+
+/** Lasted at least 30 minutes and earned more than 50K EXP/h. */
+export function isQualifyingSession(session: MapSession): boolean {
+  return session.seconds >= MIN_SESSION_SECONDS && perHour(session.expGained, session.seconds) > MIN_EXP_PER_HOUR;
+}
+
+/** A new array of just the qualifying sessions. */
+export function qualifyingSessions(sessions: readonly MapSession[]): readonly MapSession[] {
+  return sessions.filter(isQualifyingSession);
+}
 
 /**
  * Groups sessions by map. Rates are total gained over total time (not an average of averages), so a
