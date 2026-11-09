@@ -30,6 +30,42 @@ export const ANCHOR_TOLERANCE = 2;
 /** Mismatching pixels tolerated when classifying a glyph. */
 export const GLYPH_TOLERANCE = 1;
 
+/**
+ * The client draws its UI at a fixed 1366x768 and scales it up to the window by height (a bilinear
+ * upscale, so glyphs are no longer exact bitmaps). Frames from larger windows have the scaling undone
+ * first (see view.ts). That recovers the native pixels to within 8-bit rounding, but at fractional
+ * scales an occasional pixel lands on the wrong side of a threshold, so those frames get a little more
+ * slack than native ones: 4 and 2 read every real capture we have, 2 and 1 (the native values) missed
+ * the raw EXP in the 16:10 one.
+ */
+export const NATIVE = { width: 1366, height: 768 } as const;
+export const SCALED_ANCHOR_TOLERANCE = 4;
+export const SCALED_GLYPH_TOLERANCE = 2;
+
+/**
+ * Where the client area sits inside the captured frame: a windowed capture has a title bar and a 1px
+ * border, a borderless/fullscreen one has neither. `top` is the title bar height, `border` the width
+ * of the side and bottom edges. The reference fixtures (and so every position in this file) are the
+ * windowed case; REFERENCE_CLIENT is where the client's own top-left was in them.
+ */
+export const WINDOW_FRAMES = [
+  { top: 31, border: 1 },
+  { top: 0, border: 0 },
+  { top: 32, border: 0 },
+  { top: 31, border: 0 },
+] as const;
+export const REFERENCE_CLIENT = { x: 1, y: 31 } as const;
+
+/**
+ * Where the anchors the view fit leans on sit in the native 1366x768 client of the reference fixtures
+ * (a test checks these against a real frame). The status bar is centred, so on a wider or narrower
+ * client they shift by half the difference in width.
+ */
+export const ANCHOR_HOME = {
+  exp: { x: 722, y: 736 },
+  level: { x: 295, y: 743 },
+} as const;
+
 /** exp/level live in the bottom status bar; only this many bottom rows are searched for them. */
 export const STATUS_BAR_SEARCH_HEIGHT = 140;
 

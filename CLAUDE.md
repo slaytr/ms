@@ -12,7 +12,19 @@ frame and read meso / EXP% / level with a purpose-built pixel detector
 The Classic UI uses exact pixel fonts, so we match pixels instead of OCR:
 - Each reading is located by a tiny **anchor** (the `EXP.`, `LV.` and `MESOS`
   labels), then digits are read at fixed offsets (layout.ts). The inventory is
-  movable, so meso is found by anchor wherever it sits. Nothing depends on window size.
+  movable, so meso is found by anchor wherever it sits. Window width and aspect ratio don't matter
+  (4:3, 16:9 and short windows all draw the UI at the same pixel size); window **height** does, see below.
+- **Scaled windows.** The client draws its UI at a fixed 1366x768 and scales it to the window by
+  height with a plain bilinear upscale (so a 1080p or 1440p window has every glyph smeared). `view.ts`
+  undoes that: it fits the layout (windowed = 31px title bar + 1px borders, or borderless; native width
+  rounded by the client) by checking which candidate makes the `EXP.`/`LV.` anchors match, then solves
+  the upscale back to the exact native bitmaps (a tridiagonal least squares per axis), so the same
+  templates and near-exact tolerances apply. `detectFrame` tries the frame as is first, and only fits
+  when the status bar isn't found; the fit (~30ms) is cached in `DetectState.view`, a failed fit is not
+  retried for a few ticks. Unscaling costs ~65ms/tick at 1440p. Sampling instead of solving (nearest or
+  bilinear) was tried and blurs glyphs too much to match. Limits: the title bar/border sizes in
+  `WINDOW_FRAMES` (Windows display scaling above 100% changes them), and client heights under 768 aren't
+  scaled at all. `ANCHOR_HOME` (layout.ts) is checked against a real frame by a test.
 - Digits are segmented at empty columns and matched to exact bitmap templates
   (templates.json). Unknown glyph => null reading. **Never guess a digit.**
 - Meso is read right-to-left and stops at a verified blank gap, so another window
@@ -32,7 +44,10 @@ The Classic UI uses exact pixel fonts, so we match pixels instead of OCR:
   `node scripts/harvest-templates.mjs`. It reports which characters still have
   no template and flags conflicting labels (it caught a comma mislabelled as a period).
   `node scripts/probe-glyphs.mjs` shows how any screen region segments.
-- Tests run the detector over every real frame in `fixtures/`.
+- Tests run the detector over every real frame in `fixtures/`. Label a frame from a taller window
+  `"scaled": true`: tests read it, harvest skips it (templates are learned from native-size frames).
+  `scale-fixture.ts` renders a native frame the way a taller window shows it, for layouts and content
+  (an open inventory) no real capture covers.
 
 ## Pages and identity
 - `/` is the real UI: a MapleStory-themed home page (Lilita One + Nunito; own art, no game assets).

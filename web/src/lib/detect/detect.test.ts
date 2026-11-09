@@ -7,9 +7,12 @@ import { DEFAULT_TEMPLATES } from './default-templates.ts';
 import { detectFrame, INITIAL_STATE } from './detect.ts';
 import { FIXTURES_DIR, listFixtures, loadFrame } from './fixture-io.ts';
 import { parseExp, parseExpPoints, parseMeso, resolveLookalikes, resolveMapLookalikes } from './readers.ts';
+import { borderless, upscaleCapture, windowed } from './scale-fixture.ts';
 import { EMPTY_TEMPLATES, type Frame } from './types.ts';
 
 interface Label {
+  /** A frame from a window taller than the client's native size, so its UI is scaled up. */
+  scaled?: boolean;
   exp: string;
   level: string;
   meso?: string;
@@ -18,6 +21,9 @@ interface Label {
   street: string;
   map: string;
 }
+
+/** Tests that read every fixture (some are 2560x1440 and need unscaling) outlast vitest's 5s default when files run in parallel. */
+const SLOW_TEST_MS = 30_000;
 
 /** Labels mark pixel quirks ({ab} touching letters, ~b~ a letter drawn in two pieces); the screen text has neither. */
 const plain = (text: string) => text.replace(/[{}~]/g, '');
@@ -110,7 +116,7 @@ describe('character plate (name + job)', () => {
     const prints = new Set(fixtures.map((f) => detectFrame(loadFrame(f), DEFAULT_TEMPLATES).character.fingerprint));
     expect(prints.size).toBe(1);
     expect([...prints][0]).toBeTruthy();
-  });
+  }, SLOW_TEST_MS);
 
   it('changes the fingerprint when the name pixels change (a different character)', () => {
     const frame = loadFrame(open[0]);
@@ -151,7 +157,7 @@ describe('map name (minimap title, top left)', () => {
   it('reads several different maps, so the width of the panel is not what makes it work', () => {
     const maps = new Set(fixtures.map((f) => detectFrame(loadFrame(f), DEFAULT_TEMPLATES).map.name));
     expect(maps).toEqual(new Set(['Line 1 <Area 1>', 'Tree Dungeon, Forest Up North VIII', 'The Forest North of Ellinia', 'The Burnt Land III', 'Henesys Hunting Ground I', 'Dangerous Valley', 'Lith Harbor']));
-  });
+  }, SLOW_TEST_MS);
 
   it('keeps a roman numeral as capital I\'s but reads the same bar as l inside a word', () => {
     expect(resolveMapLookalikes('Tree Dungeon, Forest Up North VIII')).toBe('Tree Dungeon, Forest Up North VIII');
@@ -197,6 +203,110 @@ describe('map name (minimap title, top left)', () => {
     const result = detectFrame(loadFrame(closed[0]), { ...DEFAULT_TEMPLATES, fonts: { ...DEFAULT_TEMPLATES.fonts, map: withoutA } });
     expect(result.map.street).toBe('Kerning City Subway');
     expect(result.map.name).toBeNull();
+  });
+});
+
+const scaledFixtures = fixtures.filter((f) => (labels[f] as Label).scaled);
+
+describe('windows taller than the client (UI scaled up)', () => {
+  it('has real scaled captures to test against, at several sizes and aspect ratios', () => {
+    const sizes = new Set(
+      scaledFixtures.map((f) => {
+        const { width, height } = loadFrame(f);
+        return `${width}x${height}`;
+      }),
+    );
+    expect(sizes.size).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each(scaledFixtures)('reads everything exactly from %s', (file) => {
+    const result = detectFrame(loadFrame(file), DEFAULT_TEMPLATES);
+    const expected = truth(file);
+    expect(result.state.view).toBeDefined();
+    expect({ exp: result.exp, pct: result.expPct, level: result.level, name: result.character.name, job: result.character.job, street: result.map.street, map: result.map.name }).toEqual({
+      exp: expected.exp,
+      pct: expected.expPct,
+      level: expected.level,
+      name: expected.name,
+      job: expected.job,
+      street: expected.street,
+      map: expected.map,
+    });
+  });
+
+  it('keeps the fitted view between ticks instead of fitting again', () => {
+    const frame = loadFrame(scaledFixtures[0]);
+    const first = detectFrame(frame, DEFAULT_TEMPLATES);
+    const second = detectFrame(frame, DEFAULT_TEMPLATES, first.state);
+    expect(second.state.view).toBe(first.state.view);
+    expect(second.exp).toBe(first.exp);
+  });
+
+  it('refits when the window is resized', () => {
+    const [a, b] = [scaledFixtures[0], scaledFixtures.find((f) => loadFrame(f).height !== loadFrame(scaledFixtures[0]).height)!];
+    const first = detectFrame(loadFrame(a), DEFAULT_TEMPLATES);
+    const resized = detectFrame(loadFrame(b), DEFAULT_TEMPLATES, first.state);
+    expect(resized.state.view).toBeDefined();
+    expect(resized.state.view).not.toBe(first.state.view);
+    expect(resized.exp).toBe(truth(b).exp);
+  });
+
+  it('goes back to reading exactly when the window is resized down to native size', () => {
+    const scaled = detectFrame(loadFrame(scaledFixtures[0]), DEFAULT_TEMPLATES);
+    const nativeFile = fixtures.find((f) => f.startsWith('inventory-closed'))!;
+    const back = detectFrame(loadFrame(nativeFile), DEFAULT_TEMPLATES, scaled.state);
+    expect(back.state.view).toBeUndefined();
+    expect(back.exp).toBe(truth(nativeFile).exp);
+  });
+
+  // No real scaled capture has the inventory open, so these render a real open-inventory frame the way
+  // a taller window would (the model matches real captures to ~0.5 grey levels; see scale-fixture.ts).
+  const inventory = open.find((f) => f.endsWith('1794190478576.png'))!;
+  it.each([
+    ['windowed 1080p 16:9', windowed(1080, 1920, 1366), true],
+    ['windowed 16:10 (native width 1228)', windowed(1200, 1920, 1228), false],
+    ['borderless 1440p', borderless(1440, 2560, 1366), true],
+    ['borderless 4K', borderless(2160, 3840, 1366), true],
+  ])('reads meso and everything else in a %s window', (_name, layout, hasMinimap) => {
+    const result = detectFrame(upscaleCapture(loadFrame(inventory), layout), DEFAULT_TEMPLATES);
+    const expected = truth(inventory);
+    expect(result.meso).toBe(expected.meso);
+    expect(result.exp).toBe(expected.exp);
+    expect(result.expPct).toBe(expected.expPct);
+    expect(result.level).toBe(expected.level);
+    expect(result.character.name).toBe(expected.name);
+    expect(result.character.job).toBe(expected.job);
+    // A narrower client crops the minimap off the left edge, and then there is no map to read.
+    expect(result.map).toEqual(hasMinimap ? { street: expected.street, name: expected.map } : { street: null, name: null });
+  });
+
+  it('follows an inventory that was dragged somewhere else', () => {
+    const layout = windowed(1080, 1920, 1366);
+    const positions = open.map((f) => detectFrame(upscaleCapture(loadFrame(f), layout), DEFAULT_TEMPLATES));
+    positions.forEach((result, i) => expect(result.meso).toBe(truth(open[i]).meso));
+    expect(new Set(positions.map((r) => `${r.state.mesos?.x},${r.state.mesos?.y}`)).size).toBeGreaterThan(1);
+  });
+
+  it('reports no meso, not a wrong one, when the inventory is closed in a scaled window', () => {
+    const closedFile = closed[0];
+    const result = detectFrame(upscaleCapture(loadFrame(closedFile), windowed(1080, 1920, 1366)), DEFAULT_TEMPLATES);
+    expect(result.found.mesos).toBe(false);
+    expect(result.meso).toBeNull();
+    expect(result.exp).toBe(truth(closedFile).exp);
+  });
+
+  it('finds nothing, and waits before trying to fit again, when the game is not on screen', () => {
+    const blank: Frame = { width: 2560, height: 1440, data: new Uint8ClampedArray(2560 * 1440 * 4).fill(60) };
+    const first = detectFrame(blank, DEFAULT_TEMPLATES);
+    expect(first.found).toEqual({ exp: false, level: false, mesos: false, minimap: false, character: false });
+    expect(first.state.view).toBeUndefined();
+    expect(first.state.refitIn).toBeGreaterThan(0);
+
+    // The (slow) fit is skipped for the next few ticks, then tried again.
+    let state = first.state;
+    const waited = state.refitIn!;
+    for (let i = 0; i < waited; i++) state = detectFrame(blank, DEFAULT_TEMPLATES, state).state;
+    expect(state.refitIn).toBe(0);
   });
 });
 

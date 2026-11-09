@@ -1,5 +1,5 @@
 {
-  "_doc": "Ground truth for each fixture, typed by a human. exp is the full on-screen text; meso is omitted when the inventory is closed. scripts/harvest-templates.mjs learns glyph shapes from these. name/job: use {ab} for letters whose pixels touch and so form one glyph. street/map: the two lines of the minimap title (street above, map below), typed as shown; {ab} marks letters whose pixels touch (one glyph); ~h~ marks one letter drawn as two separate pieces (two glyphs).",
+  "_doc": "Ground truth for each fixture, typed by a human. exp is the full on-screen text; meso is omitted when the inventory is closed. scripts/harvest-templates.mjs learns glyph shapes from these. name/job: use {ab} for letters whose pixels touch and so form one glyph. street/map: the two lines of the minimap title (street above, map below), typed as shown; {ab} marks letters whose pixels touch (one glyph); ~h~ marks one letter drawn as two separate pieces (two glyphs). scaled: true marks a frame from a window taller than the client's native 768 rows (UI scaled up): the tests read it, but harvest-templates skips it because glyph templates are learned from native-size frames only.",
   "inventory-closed_1368x800_1794120012919.png": {
     "exp": "17,691[2.70%]",
     "level": "49",
@@ -182,5 +182,57 @@
     "job": "Wizard (Ice,Lightning)",
     "street": "{Vi}ctoria Road",
     "map": "Lit~h~ Har~b~or"
+  },
+  "other_1026x800_1794190544334.png": {
+    "exp": "468,770[71.55%]",
+    "level": "49",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Vi}ctoria Road",
+    "map": "Lit~h~ Har~b~or"
+  },
+  "other_1282x752_1794190536307.png": {
+    "exp": "468,770[71.55%]",
+    "level": "49",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Vi}ctoria Road",
+    "map": "Lit~h~ Har~b~or"
+  },
+  "other_1922x1112_1794190567451.png": {
+    "exp": "468,770[71.55%]",
+    "level": "49",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Vi}ctoria Road",
+    "map": "Lit~h~ Har~b~or",
+    "scaled": true
+  },
+  "other_1922x1232_1794190575814.png": {
+    "exp": "468,770[71.55%]",
+    "level": "49",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Vi}ctoria Road",
+    "map": "Lit~h~ Har~b~or",
+    "scaled": true
+  },
+  "other_1922x1232_1794190576457.png": {
+    "exp": "468,770[71.55%]",
+    "level": "49",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Vi}ctoria Road",
+    "map": "Lit~h~ Har~b~or",
+    "scaled": true
+  },
+  "other_2560x1440_1794190589896.png": {
+    "exp": "468,770[71.55%]",
+    "level": "49",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Vi}ctoria Road",
+    "map": "Lit~h~ Har~b~or",
+    "scaled": true
   }
 }

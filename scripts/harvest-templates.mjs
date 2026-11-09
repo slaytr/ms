@@ -26,7 +26,8 @@ import { expGlyphs, joinGlyphs, levelTiles, mapGlyphs, mesoGlyphs, textGlyphs } 
 
 const OUT = join(import.meta.dirname, '..', 'web', 'src', 'lib', 'detect', 'templates.json');
 const labels = JSON.parse(readFileSync(join(FIXTURES_DIR, 'labels.json'), 'utf8'));
-const files = Object.keys(labels).filter((name) => name.endsWith('.png'));
+// Scaled-up frames are for the tests only: templates are learned from native-size frames.
+const files = Object.keys(labels).filter((name) => name.endsWith('.png') && !labels[name].scaled);
 
 const REFERENCE = files.find((name) => labels[name].meso && labels[name].exp && labels[name].level);
 if (!REFERENCE) throw new Error('labels.json needs at least one fixture labelled with exp, level and meso.');

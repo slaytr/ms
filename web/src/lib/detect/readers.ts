@@ -162,20 +162,20 @@ export function joinGlyphs(left: TextGlyph, right: TextGlyph): Bitmap {
 }
 
 /** The character at glyphs[i], and how many glyphs it used: a joined pair if one is a known letter, else just glyphs[i]. */
-function classifyAt(glyphs: readonly TextGlyph[], i: number, set: GlyphSet): { token: string; used: number } {
+function classifyAt(glyphs: readonly TextGlyph[], i: number, set: GlyphSet, tolerance: number): { token: string; used: number } {
   const next = glyphs[i + 1];
   if (next && next.gapBefore <= MAX_SPLIT_GAP) {
-    const joined = classify(joinGlyphs(glyphs[i], next), set, GLYPH_TOLERANCE);
+    const joined = classify(joinGlyphs(glyphs[i], next), set, tolerance);
     if (joined !== UNKNOWN) return { token: joined, used: 2 };
   }
-  return { token: classify(glyphs[i].bitmap, set, GLYPH_TOLERANCE), used: 1 };
+  return { token: classify(glyphs[i].bitmap, set, tolerance), used: 1 };
 }
 
-function readLine(glyphs: readonly TextGlyph[], set: GlyphSet, style: LineStyle): string | null {
+function readLine(glyphs: readonly TextGlyph[], set: GlyphSet, style: LineStyle, tolerance: number): string | null {
   if (glyphs.length === 0) return null;
   let text = '';
   for (let i = 0; i < glyphs.length; ) {
-    const { token, used } = classifyAt(glyphs, i, set);
+    const { token, used } = classifyAt(glyphs, i, set, tolerance);
     if (token === UNKNOWN) return null;
     text += (glyphs[i].gapBefore >= style.spaceGap ? ' ' : '') + token;
     i += used;
@@ -184,8 +184,8 @@ function readLine(glyphs: readonly TextGlyph[], set: GlyphSet, style: LineStyle)
 }
 
 /** The line's text, or null if it is empty or any glyph (or merged pair of letters) has no template yet. */
-export function readTextLine(glyphs: readonly TextGlyph[], set: GlyphSet): string | null {
-  return readLine(glyphs, set, CHARACTER_STYLE);
+export function readTextLine(glyphs: readonly TextGlyph[], set: GlyphSet, tolerance = GLYPH_TOLERANCE): string | null {
+  return readLine(glyphs, set, CHARACTER_STYLE, tolerance);
 }
 
 // ---------------------------------------------------------------------
@@ -212,8 +212,8 @@ export function mapGlyphs(luma: Uint8Array, width: number, height: number, origi
 }
 
 /** One line of the minimap title, or null if it is empty or any glyph has no template yet. */
-export function readMapLine(glyphs: readonly TextGlyph[], set: GlyphSet): string | null {
-  return readLine(glyphs, set, MAP_STYLE);
+export function readMapLine(glyphs: readonly TextGlyph[], set: GlyphSet, tolerance = GLYPH_TOLERANCE): string | null {
+  return readLine(glyphs, set, MAP_STYLE, tolerance);
 }
 
 /** 53-bit string hash (cyrb53): tiny, dependency-free, and stable across browsers and Node. */
@@ -252,10 +252,10 @@ export interface ExpReading {
 }
 
 /** Classifies glyphs left to right and stops after the closing bracket, ignoring anything drawn beyond it. */
-function classifyUntilBracket(glyphs: readonly Bitmap[], set: GlyphSet): string {
+function classifyUntilBracket(glyphs: readonly Bitmap[], set: GlyphSet, tolerance: number): string {
   let text = '';
   for (const glyph of glyphs) {
-    const char = classify(glyph, set, GLYPH_TOLERANCE);
+    const char = classify(glyph, set, tolerance);
     text += char;
     if (char === ']') break;
   }
@@ -279,8 +279,8 @@ export function parseExp(text: string): ExpReading {
   return { pct: Number(match[2]), exp: parseExpPoints(match[1]) };
 }
 
-export function readExp(glyphs: readonly Bitmap[], set: GlyphSet): ExpReading {
-  return parseExp(classifyUntilBracket(glyphs, set));
+export function readExp(glyphs: readonly Bitmap[], set: GlyphSet, tolerance = GLYPH_TOLERANCE): ExpReading {
+  return parseExp(classifyUntilBracket(glyphs, set, tolerance));
 }
 
 export function parseMeso(text: string): number | null {
@@ -289,15 +289,15 @@ export function parseMeso(text: string): number | null {
   return Number.isSafeInteger(value) ? value : null;
 }
 
-export function readMeso(glyphs: readonly Bitmap[], set: GlyphSet): number | null {
+export function readMeso(glyphs: readonly Bitmap[], set: GlyphSet, tolerance = GLYPH_TOLERANCE): number | null {
   if (glyphs.length === 0) return null;
-  const text = glyphs.map((glyph) => classify(glyph, set, GLYPH_TOLERANCE)).join('');
+  const text = glyphs.map((glyph) => classify(glyph, set, tolerance)).join('');
   return text.includes(UNKNOWN) ? null : parseMeso(text);
 }
 
-export function readLevel(tiles: readonly Bitmap[], set: GlyphSet): number | null {
+export function readLevel(tiles: readonly Bitmap[], set: GlyphSet, tolerance = GLYPH_TOLERANCE): number | null {
   if (tiles.length === 0) return null;
-  const text = tiles.map((tile) => classify(tile, set, GLYPH_TOLERANCE)).join('');
+  const text = tiles.map((tile) => classify(tile, set, tolerance)).join('');
   if (text.includes(UNKNOWN)) return null;
   const level = Number(text);
   return level >= 1 && level <= 300 ? level : null;
