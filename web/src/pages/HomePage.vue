@@ -201,6 +201,7 @@ onBeforeUnmount(() => {
             :view="trackerView"
             :pots="tracker.potView.value"
             @rescan="tracker.rescanPots()"
+            @repot="tracker.togglePotsPaused()"
           >
             <form v-if="askForName" class="name-form" @submit.prevent="saveTypedName">
               <label for="typed-name">We can't read every letter of your name yet. What is it?</label>
@@ -234,7 +235,7 @@ onBeforeUnmount(() => {
 
       <!-- Rendered inside the pop-out window while it is open. -->
       <Teleport v-if="popOut.target.value" :to="popOut.target.value">
-        <PipTracker :view="trackerView" :pots="tracker.potView.value" @rescan="tracker.rescanPots()" />
+        <PipTracker :view="trackerView" :pots="tracker.potView.value" @rescan="tracker.rescanPots()" @repot="tracker.togglePotsPaused()" />
       </Teleport>
     </main>
   </div>

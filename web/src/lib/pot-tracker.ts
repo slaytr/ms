@@ -10,6 +10,10 @@ import { totalsByItem, type UseTabReading } from './detect/inventory.ts';
  * Items are independent: a stack whose count can't be read leaves out only that item (it keeps its last
  * good figure, flagged), and every other pot carries on.
  *
+ * Repotting: pausing banks what has been used so far and freezes counting, so buying a stack of pots isn't
+ * mistaken for anything. On resume every item gets a fresh baseline from the restocked inventory and use
+ * keeps adding to the banked total.
+ *
  * Only what is visible is counted: the tab scrolls, so a reading taken at a different scroll position is
  * a different page and is never compared with the baseline.
  */
@@ -19,7 +23,7 @@ export interface PotTrackerState {
   readonly since: number | null;
   /** The scrollbar position the counts were taken at; a scan only counts at the same spot. */
   readonly scroll: number | null;
-  /** Each item's total when it was first read. */
+  /** Each item's total when it was first read (since the last pause). */
   readonly baseline: ReadonlyMap<number, number>;
   /** Each item's last good total. */
   readonly latest: ReadonlyMap<number, number>;
@@ -27,6 +31,10 @@ export interface PotTrackerState {
   readonly unreadable: ReadonlySet<number>;
   /** The Use tab is open but scrolled away from where counting started. */
   readonly scrolledAway: boolean;
+  /** Counting is frozen while the player restocks. */
+  readonly paused: boolean;
+  /** Pots used before the last pause(s), per item. */
+  readonly carried: ReadonlyMap<number, number>;
 }
 
 export const startPotTracking = (): PotTrackerState => ({
@@ -36,13 +44,16 @@ export const startPotTracking = (): PotTrackerState => ({
   latest: new Map(),
   unreadable: new Set(),
   scrolledAway: false,
+  paused: false,
+  carried: new Map(),
 });
 
 /** Folds one frame's Use-tab reading (null when the Use tab isn't showing) into the tracker. */
 export function observePots(state: PotTrackerState, reading: UseTabReading | null, nowMs: number): PotTrackerState {
-  if (reading === null) return state;
+  if (reading === null || state.paused) return state;
   const { totals, unreadable } = totalsByItem(reading);
-  const started = state.since !== null;
+  // Counting has begun once something has a baseline; after a pause the baselines start over.
+  const started = state.baseline.size > 0;
   if (!started && totals.size === 0) return { ...state, unreadable };
   if (started && reading.scroll !== state.scroll) return { ...state, scrolledAway: true };
 
@@ -61,21 +72,46 @@ export function observePots(state: PotTrackerState, reading: UseTabReading | nul
     latest,
     unreadable,
     scrolledAway: false,
+    paused: false,
+    carried: state.carried,
   };
 }
 
-/** Starts counting again from the latest figures (e.g. after restocking). */
+const usedIn = (state: PotTrackerState, id: number) => Math.max(0, (state.baseline.get(id) ?? 0) - (state.latest.get(id) ?? 0));
+
+/**
+ * Freezes counting for a restock and banks what has been used so far. Scans are ignored until
+ * `resumePots`; nothing that happens in the inventory while paused counts.
+ */
+export function pausePots(state: PotTrackerState): PotTrackerState {
+  if (state.since === null || state.paused) return state;
+  const carried = new Map(state.carried);
+  for (const id of state.baseline.keys()) carried.set(id, (carried.get(id) ?? 0) + usedIn(state, id));
+  return { ...state, paused: true, carried, baseline: new Map(), latest: new Map(), unreadable: new Set(), scrolledAway: false };
+}
+
+/** Counting carries on: the next scan becomes the new baseline for every item. */
+export function resumePots(state: PotTrackerState): PotTrackerState {
+  return state.paused ? { ...state, paused: false } : state;
+}
+
+/** Starts counting again from the latest figures (and forgets what was banked), e.g. for a new session of grinding. */
 export function rescanPots(state: PotTrackerState): PotTrackerState {
-  return state.since === null ? state : { ...state, baseline: new Map(state.latest), scrolledAway: false };
+  if (state.since === null) return state;
+  if (state.paused) return { ...startPotTracking() };
+  return { ...state, baseline: new Map(state.latest), carried: new Map(), scrolledAway: false, paused: false };
 }
 
 export interface PotRow {
   readonly id: number;
   readonly name: string;
-  readonly before: number;
-  readonly now: number;
+  /** Count when the current stretch of counting began, or null if it hasn't been read since a pause. */
+  readonly before: number | null;
+  /** Latest count, or null if it hasn't been read since a pause. */
+  readonly now: number | null;
   /** The count couldn't be read in the latest scan, so `now` is the last good figure. */
   readonly stale: boolean;
+  /** Used in total: banked from before any pause plus this stretch. */
   readonly used: number;
   /** Mesos at the NPC price, or null when no NPC sells it. */
   readonly mesos: number | null;
@@ -100,6 +136,8 @@ export interface PotView {
   readonly rows: readonly PotRow[];
   readonly totals: PotTotals;
   readonly scrolledAway: boolean;
+  /** Counting is frozen for a restock. */
+  readonly paused: boolean;
   /** Names of tracked items on screen whose count couldn't be read, so they aren't (all) counted. */
   readonly unreadable: readonly string[];
   /** When counting started. */
@@ -111,16 +149,19 @@ function restoreOf(potion: Potion, used: number, flat: 'hp' | 'mp', percent: 'hp
   return potion[percent] !== undefined ? null : 0;
 }
 
-function rowFor(id: number, before: number, now: number, stale: boolean): PotRow | null {
+function rowFor(state: PotTrackerState, id: number): PotRow | null {
   const potion = potionById(id);
-  if (!potion || (before === 0 && now === 0)) return null;
-  const used = Math.max(0, before - now);
+  if (!potion) return null;
+  const before = state.baseline.get(id) ?? null;
+  const now = state.latest.get(id) ?? (before === null ? null : 0);
+  const used = (state.carried.get(id) ?? 0) + usedIn(state, id);
+  if (used === 0 && (before ?? 0) === 0 && (now ?? 0) === 0) return null;
   return {
     id,
     name: potion.name,
     before,
     now,
-    stale,
+    stale: state.unreadable.has(id),
     used,
     mesos: used === 0 ? 0 : mesoCost(potion, used),
     hp: restoreOf(potion, used, 'hp', 'hpPercent'),
@@ -132,8 +173,9 @@ function rowFor(id: number, before: number, now: number, stale: boolean): PotRow
 export function buildPotView(state: PotTrackerState): PotView | null {
   if (state.since === null) return null;
 
-  const rows = [...state.baseline]
-    .map(([id, before]) => rowFor(id, before, state.latest.get(id) ?? 0, state.unreadable.has(id)))
+  const ids = new Set([...state.baseline.keys(), ...state.carried.keys()]);
+  const rows = [...ids]
+    .map((id) => rowFor(state, id))
     .filter((row): row is PotRow => row !== null)
     .sort((a, b) => Number(b.used > 0) - Number(a.used > 0) || a.name.localeCompare(b.name));
 
@@ -147,5 +189,5 @@ export function buildPotView(state: PotTrackerState): PotView | null {
     percentItemsUsed: usedRows.filter((row) => row.hp === null || row.mp === null).length,
   };
   const unreadable = [...state.unreadable].map((id) => potionById(id)?.name).filter((name): name is string => name !== undefined).sort();
-  return { rows, totals, scrolledAway: state.scrolledAway, unreadable, since: state.since };
+  return { rows, totals, scrolledAway: state.scrolledAway, paused: state.paused, unreadable, since: state.since };
 }

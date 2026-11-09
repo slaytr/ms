@@ -5,7 +5,7 @@ import type { Detection, MapPlate } from '../lib/detect/detect.ts';
 import { coreReady } from '../lib/health';
 import { mapLabel } from '../lib/map-label';
 import { computeRates, type Reading } from '../lib/metrics';
-import { buildPotView, observePots, rescanPots, startPotTracking } from '../lib/pot-tracker';
+import { buildPotView, observePots, pausePots, rescanPots, resumePots, startPotTracking } from '../lib/pot-tracker';
 import { carryForward, snapshotFrom, type PlayerSnapshot } from '../lib/snapshot';
 import { useDetector } from './useDetector';
 import { useMissReporter } from './useMissReporter';
@@ -224,6 +224,10 @@ export function useTracker() {
     potView,
     rescanPots: () => {
       pots.value = rescanPots(pots.value);
+    },
+    /** Repot: freeze pot counting while restocking, or carry on from the restocked inventory. */
+    togglePotsPaused: () => {
+      pots.value = pots.value.paused ? resumePots(pots.value) : pausePots(pots.value);
     },
     missFramesSent: misses.sent,
     missFrameError: misses.error,

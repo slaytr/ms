@@ -16,11 +16,11 @@ defineProps<{
   pots?: PotView | null;
 }>();
 
-defineEmits<{ rescan: [] }>();
+defineEmits<{ rescan: []; repot: [] }>();
 </script>
 
 <template>
-  <PipTracker class="overview" :view="view" :pots="pots" inline @rescan="$emit('rescan')">
+  <PipTracker class="overview" :view="view" :pots="pots" inline @rescan="$emit('rescan')" @repot="$emit('repot')">
     <template #top>
       <div class="who-row">
         <CharacterAvatar :name="name" />

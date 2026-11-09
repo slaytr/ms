@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { SlotReading, UseTabReading } from './detect/inventory.ts';
-import { buildPotView, observePots, rescanPots, startPotTracking } from './pot-tracker';
+import { buildPotView, observePots, pausePots, rescanPots, resumePots, startPotTracking } from './pot-tracker';
 
 const RED = 2000000;
 const BLUE = 2000003;
@@ -93,6 +93,61 @@ describe('observePots', () => {
 
   it('keeps tracking while the inventory is closed or on another tab', () => {
     expect(row(feed([of([RED, 100]), null, of([RED, 95])]), RED)?.used).toBe(5);
+  });
+});
+
+describe('repotting (pause and resume)', () => {
+  const at = (state: ReturnType<typeof feed>, reading: UseTabReading | null, t: number) => observePots(state, reading, t);
+
+  it('freezes counting while paused, so restocking changes nothing', () => {
+    let state = pausePots(feed([of([RED, 100]), of([RED, 90])]));
+    state = at(state, of([RED, 500]), 9000); // bought 410
+    state = at(state, of([RED, 480]), 9500);
+    expect(buildPotView(state)?.paused).toBe(true);
+    expect(row(state, RED)?.used).toBe(10);
+  });
+
+  it('banks what was used before the pause and keeps adding to it after', () => {
+    let state = pausePots(feed([of([RED, 100]), of([RED, 90])]));
+    state = resumePots(state);
+    state = at(state, of([RED, 500]), 10_000); // the restocked inventory is the new baseline
+    expect(row(state, RED)).toMatchObject({ before: 500, now: 500, used: 10 });
+    state = at(state, of([RED, 487]), 11_000);
+    expect(row(state, RED)).toMatchObject({ before: 500, now: 487, used: 23 });
+  });
+
+  it('does not treat the restock as pots gained or lost', () => {
+    let state = pausePots(feed([of([RED, 5])]));
+    state = at(resumePots(state), of([RED, 300]), 5000);
+    expect(row(state, RED)?.used).toBe(0);
+    expect(buildPotView(state)?.totals.used).toBe(0);
+  });
+
+  it('keeps an item that has not been read since the pause, with its banked use', () => {
+    let state = pausePots(feed([of([RED, 100], [BLUE, 50]), of([RED, 90], [BLUE, 40])]));
+    state = at(resumePots(state), of([RED, 300]), 6000); // Blue is not readable yet after the restock
+    expect(row(state, BLUE)).toMatchObject({ before: null, now: null, used: 10 });
+    expect(row(state, RED)).toMatchObject({ before: 300, used: 10 });
+  });
+
+  it('takes the new baseline at whatever scroll position the tab is at after the restock', () => {
+    let state = pausePots(feed([of([RED, 100]), of([RED, 90])]));
+    state = at(resumePots(state), tab([slot(RED, 300)], -120), 7000);
+    expect(buildPotView(state)?.scrolledAway).toBe(false);
+    state = at(state, tab([slot(RED, 295)], -120), 8000);
+    expect(row(state, RED)?.used).toBe(15);
+  });
+
+  it('pausing twice in a row, or before anything was counted, changes nothing', () => {
+    expect(pausePots(startPotTracking())).toEqual(startPotTracking());
+    const paused = pausePots(feed([of([RED, 100]), of([RED, 95])]));
+    expect(pausePots(paused)).toBe(paused);
+    expect(row(resumePots(resumePots(paused)), RED)?.used).toBe(5);
+  });
+
+  it('restart count forgets the banked use too', () => {
+    const state = rescanPots(resumePots(pausePots(feed([of([RED, 100]), of([RED, 90])]))));
+    expect(buildPotView(state)?.totals.used ?? 0).toBe(0);
   });
 });
 

@@ -6,7 +6,7 @@ import type { PotView } from '../lib/pot-tracker';
  * the mesos spent and HP/MP restored. Presentation only; the numbers come from lib/pot-tracker.ts.
  */
 defineProps<{ pots: PotView | null }>();
-defineEmits<{ rescan: [] }>();
+defineEmits<{ rescan: []; repot: [] }>();
 
 const fmt = (n: number) => Math.round(n).toLocaleString();
 </script>
@@ -15,7 +15,12 @@ const fmt = (n: number) => Math.round(n).toLocaleString();
   <section class="pots" aria-label="Potions">
     <header class="head">
       <h3>Potions</h3>
-      <button v-if="pots" type="button" class="restart" title="Count from what you have now" @click="$emit('rescan')">Restart count</button>
+      <span v-if="pots" class="buttons">
+        <button type="button" class="restart" :class="{ on: pots.paused }" :title="pots.paused ? 'Carry on counting from your restocked inventory' : 'Pause while you restock; what you used so far is kept'" @click="$emit('repot')">
+          {{ pots.paused ? 'Resume' : 'Repot' }}
+        </button>
+        <button type="button" class="restart" title="Start over from what you have now, forgetting what was used" @click="$emit('rescan')">Restart count</button>
+      </span>
     </header>
 
     <p v-if="!pots" class="note">Open your inventory on the <strong>Use</strong> tab, scrolled to the top, and we'll count your pots from there.</p>
@@ -37,7 +42,7 @@ const fmt = (n: number) => Math.round(n).toLocaleString();
         <tbody>
           <tr v-for="row in pots.rows" :key="row.id" :class="{ idle: row.used === 0 }">
             <td>{{ row.name }}</td>
-            <td class="num" :title="row.stale ? 'Last good reading: this count isn\'t readable right now' : undefined">{{ fmt(row.now) }}{{ row.stale ? '?' : '' }}</td>
+            <td class="num" :title="row.stale ? 'Last good reading: this count isn\'t readable right now' : undefined">{{ row.now === null ? '—' : fmt(row.now) }}{{ row.stale ? '?' : '' }}</td>
             <td class="num used">{{ row.used > 0 ? fmt(row.used) : '·' }}</td>
             <td class="num meso" :title="row.used > 0 && row.mesos === null ? 'No NPC sells this, so its cost is not known' : undefined">
               {{ row.used === 0 ? '' : row.mesos === null ? '?' : fmt(row.mesos) }}
@@ -46,6 +51,7 @@ const fmt = (n: number) => Math.round(n).toLocaleString();
         </tbody>
       </table>
 
+      <p v-if="pots.paused" class="note paused">Paused for repotting. Restock, then press <strong>Resume</strong>. Nothing in your inventory counts until then.</p>
       <p v-if="pots.totals.percentItemsUsed > 0" class="note">HP/MP for elixirs and other percentage items isn't counted (it depends on your max HP/MP).</p>
       <p v-if="pots.scrolledAway" class="note warn">Your Use tab has scrolled. Scroll it back to where it was to keep counting.</p>
       <p v-if="pots.unreadable.length > 0" class="note warn">Couldn't read every {{ pots.unreadable.join(', ') }} count, so {{ pots.unreadable.length === 1 ? 'it isn\'t' : 'they aren\'t' }} fully counted.</p>
@@ -59,10 +65,14 @@ const fmt = (n: number) => Math.round(n).toLocaleString();
 .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 h3 { margin: 0; font: 400 1rem / 1.2 'Lilita One', sans-serif; }
 .restart { padding: 1px 8px; font: 700 11px / 1.4 'Nunito', sans-serif; color: #4a2a0e; background: #fff; border: 2px solid #d9c48a; border-radius: 999px; cursor: pointer; }
+.buttons { display: inline-flex; gap: 4px; }
+.restart.on { background: #5cc23e; border-color: #2c7d18; color: #fff; }
 .restart:hover { background: #ffe6a0; }
+.restart.on:hover { background: #4aa82e; }
 .restart:focus-visible { outline: 3px solid #4a2a0e; outline-offset: 2px; }
 .note { margin: 4px 0 0; font-size: 11px; color: #6b4a22; }
 .note.warn { color: #a23a00; }
+.note.paused { padding: 3px 6px; color: #2c5d18; background: #eaf8dd; border-radius: 6px; }
 .summary { margin: 4px 0 6px; font-variant-numeric: tabular-nums; font-size: 12px; }
 .summary strong { font: 400 1.3rem / 1.1 'Lilita One', sans-serif; color: #2e9a1f; }
 .dot { margin: 0 4px; color: #8f7a55; }

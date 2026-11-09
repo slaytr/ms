@@ -12,7 +12,7 @@ import TrackerStats from './TrackerStats.vue';
  */
 /** `pots` is shown only when passed (null means "passed, nothing counted yet"). */
 defineProps<{ view: TrackerView; inline?: boolean; pots?: PotView | null }>();
-defineEmits<{ rescan: [] }>();
+defineEmits<{ rescan: []; repot: [] }>();
 </script>
 
 <template>
@@ -25,7 +25,7 @@ defineEmits<{ rescan: [] }>();
     <div class="body">
       <div v-if="$slots.top" class="top"><slot name="top" /></div>
       <TrackerStats :view="view" />
-      <PotStats v-if="pots !== undefined" :pots="pots" @rescan="$emit('rescan')" />
+      <PotStats v-if="pots !== undefined" :pots="pots" @rescan="$emit('rescan')" @repot="$emit('repot')" />
       <div v-if="$slots.default" class="extras"><slot /></div>
     </div>
   </section>
