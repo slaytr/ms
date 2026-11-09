@@ -4,3 +4,7 @@ node_modules/
 .playwright-mcp/
 /*.png
 *.log
+
+# New screenshot captures stay on this machine. Promote one deliberately with `git add -f fixtures/<file>.png`
+# once it is labelled in labels.json and a test needs it. Frames already committed stay tracked.
+/fixtures/*.png
