@@ -44,6 +44,13 @@ The Classic UI uses exact pixel fonts, so we match pixels instead of OCR:
   `node scripts/harvest-templates.mjs`. It reports which characters still have
   no template and flags conflicting labels (it caught a comma mislabelled as a period).
   `node scripts/probe-glyphs.mjs` shows how any screen region segments.
+- **Drafted letters.** The only exception to "generated": `detect/draft-glyphs.ts` holds hand-drawn
+  guesses (2 variants each) for text-font letters and digits not harvested yet, so a name or job with
+  an unharvested letter can still read. Not measured from the game. `default-templates.ts` merges them
+  under the harvested set, so harvesting a real frame replaces a draft automatically. Matching allows
+  1 wrong pixel, so the test requires every draft to be 3+ px from any other letter's template (a
+  wrong letter is worse than none). `Y`/`y` are cut from the real `yY` glyph. If a drafted letter
+  never matches in practice, harvest a real frame of it; don't tweak the draft.
 - Tests run the detector over every real frame in `fixtures/`. Label a frame from a taller window
   `"scaled": true`: tests read it, harvest skips it (templates are learned from native-size frames).
   `scale-fixture.ts` renders a native frame the way a taller window shows it, for layouts and content
