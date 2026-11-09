@@ -77,7 +77,17 @@ onMounted(async () => {
         <GameWindow title="Ranking">
           <template #aside>{{ ranks.length }} {{ ranks.length === 1 ? 'map' : 'maps' }}</template>
           <div class="scroll">
-            <table>
+            <table class="ranking">
+              <colgroup>
+                <col class="c-rank" />
+                <col />
+                <col class="c-exp" />
+                <col class="c-rate" />
+                <col class="c-rate" />
+                <col class="c-small" />
+                <col class="c-small" />
+                <col class="c-small" />
+              </colgroup>
               <thead>
                 <tr>
                   <th class="num">#</th>
@@ -119,31 +129,42 @@ onMounted(async () => {
             <template v-else>All maps</template>
           </template>
           <div class="scroll">
-            <table>
+            <table class="history-table">
+              <colgroup>
+                <col class="h-when" />
+                <col class="h-level" />
+                <col class="h-time" />
+                <col class="h-gain" />
+                <col class="h-gain" />
+                <col class="h-rate" />
+                <col class="h-rate" />
+                <col :class="selectedMap ? undefined : 'h-player'" />
+                <col v-if="!selectedMap" />
+              </colgroup>
               <thead>
                 <tr>
                   <th class="left">When</th>
-                  <th class="left">Player</th>
-                  <th v-if="!selectedMap" class="left">Map</th>
                   <th class="left">Level</th>
                   <th class="num">Time</th>
                   <th class="num">EXP gained</th>
+                  <th class="num">Meso gained</th>
                   <th class="num">EXP / hr</th>
                   <th class="num">% / hr</th>
-                  <th class="num">Meso gained</th>
+                  <th class="left">Player</th>
+                  <th v-if="!selectedMap" class="left">Map</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="s in history" :key="s.id">
                   <td class="left dim">{{ when(s.startedAt) }}</td>
-                  <td class="left strong">{{ s.player }}</td>
-                  <td v-if="!selectedMap" class="left">{{ s.map }}</td>
                   <td class="left dim">{{ formatLevels(s.levelFrom, s.levelTo) }}</td>
                   <td class="num">{{ formatStay(s.seconds) }}</td>
                   <td class="num exp-text">+{{ fmt(s.expGained) }}</td>
+                  <td class="num meso">+{{ fmt(s.mesoGained) }}</td>
                   <td class="num exp-text">{{ formatPerHour(sessionRates(s).expPerHour) }}</td>
                   <td class="num">{{ pct(sessionRates(s).expPctPerHour) }}</td>
-                  <td class="num meso">+{{ fmt(s.mesoGained) }}</td>
+                  <td class="left strong" :title="s.player">{{ s.player }}</td>
+                  <td v-if="!selectedMap" class="left" :title="s.map">{{ s.map }}</td>
                 </tr>
               </tbody>
             </table>
@@ -205,7 +226,27 @@ tr.picked { background: #dff1ff !important; }
 tr.picked .map-btn { color: #1f6fc4; }
 button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; border-radius: 4px; }
 
-.exp { position: relative; min-width: 9rem; }
+/* Ranking: fixed-width number columns so only the map name flexes, and a long name is cut off instead of pushing them. */
+.ranking { table-layout: fixed; min-width: 720px; }
+.c-rank { width: 3.25rem; }
+.c-exp { width: 8.5rem; }
+.c-rate { width: 6.5rem; }
+.c-small { width: 5.5rem; }
+.ranking td.left { overflow: hidden; text-overflow: ellipsis; }
+.ranking .map-btn { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.exp { position: relative; }
+
+/* History: fixed layout so the whole row fits without sideways scrolling. Only the map flexes; it is cut
+   off with "…" and the full name is in the hover tooltip. */
+.history-table { table-layout: fixed; min-width: 0; }
+.history-table th, .history-table td { padding: 9px 6px; }
+.history-table td.left { overflow: hidden; text-overflow: ellipsis; }
+.h-when { width: 8.25rem; }
+.h-level { width: 6rem; }
+.h-time { width: 4rem; }
+.h-gain { width: 6.25rem; }
+.h-rate { width: 4.75rem; }
+.h-player { width: 7rem; }
 .bar { position: absolute; inset: 6px auto 6px 8px; max-width: calc(100% - 16px); background: linear-gradient(#a6ec7a, #5cc23e); border-radius: 6px; opacity: 0.55; }
 .val { position: relative; font-weight: 800; color: #1f6f12; }
 .exp-text { color: #2e9a1f; font-weight: 800; }
