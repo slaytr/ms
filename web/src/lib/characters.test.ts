@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { dayGain, formatSeen, specLeaders, rankCharacters, type CharacterEntry, type LevelPoint } from './characters';
+import { dayGain, formatSeen, richest, specLeaders, rankCharacters, type CharacterEntry, type LevelPoint } from './characters';
 
 const entry = (name: string, level: number, expPct: number | null, lastSeenAt = 0): CharacterEntry => ({
   playerKey: name,
@@ -11,6 +11,22 @@ const entry = (name: string, level: number, expPct: number | null, lastSeenAt = 
   lastSeenAt,
   dayFrom: null,
   dayTo: null,
+  meso: null,
+  mesoAt: null,
+});
+
+describe('richest', () => {
+  const rich = (name: string, meso: number | null) => ({ ...entry(name, 50, 0), meso, mesoAt: meso === null ? null : 1 });
+
+  it('takes the top 3 by latest meso and skips characters with no reading', () => {
+    const input = [rich('a', 5), rich('b', null), rich('c', 900), rich('d', 70), rich('e', 0), rich('f', 400)];
+    expect(richest(input).map((c) => c.name)).toEqual(['c', 'f', 'd']);
+    expect(input.map((c) => c.name)).toEqual(['a', 'b', 'c', 'd', 'e', 'f']);
+  });
+
+  it('is empty when nobody has a meso reading', () => {
+    expect(richest([rich('a', null)])).toEqual([]);
+  });
 });
 
 describe('rankCharacters', () => {
@@ -62,7 +78,7 @@ describe('dayGain', () => {
 
 describe('specLeaders', () => {
   const make = (name: string, job: string | null, level: number): CharacterEntry => ({
-    playerKey: name, name, job, level, expPct: 10, lastSeenAt: 0, dayFrom: null, dayTo: null,
+    playerKey: name, name, job, level, expPct: 10, lastSeenAt: 0, dayFrom: null, dayTo: null, meso: null, mesoAt: null,
   });
 
   it('puts the highest level of each spec in its slot, in spec order', () => {

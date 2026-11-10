@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { formatCompact } from '../../lib/format';
-import type { SpecSlot } from '../../lib/characters';
+import type { CharacterEntry, SpecSlot } from '../../lib/characters';
 import type { WeeklyRank } from '../../lib/rankings';
 import CharacterAvatar from './CharacterAvatar.vue';
 
@@ -8,8 +8,10 @@ import CharacterAvatar from './CharacterAvatar.vue';
 defineProps<{
   podium: readonly WeeklyRank[];
   jobs: readonly SpecSlot[];
-  /** Show just one of the two lists (the wide layout puts them on opposite sides of the page). */
-  only?: 'podium' | 'jobs';
+  /** The richest characters by their latest meso count (best first). */
+  rich?: readonly CharacterEntry[];
+  /** Show just one of the lists (the wide layout puts them on opposite sides of the page). */
+  only?: 'podium' | 'jobs' | 'rich';
   /** Lay the top 3 out as full-width rows instead of cards (for a narrow side column). */
   stack?: boolean;
 }>();
@@ -19,7 +21,7 @@ const MEDALS = ['gold', 'silver', 'bronze'] as const;
 
 <template>
   <div class="strip">
-    <section v-if="podium.length > 0 && only !== 'jobs'" aria-label="Weekly top 3">
+    <section v-if="podium.length > 0 && (!only || only === 'podium')" aria-label="Weekly top 3">
       <h3 v-if="!only">Weekly top 3 <span class="sub">EXP gained, last 7 days</span></h3>
       <ol class="chips" :class="{ stack }">
         <li v-for="(rank, index) in podium" :key="rank.playerKey" class="chip" :title="`${rank.player}: +${Math.round(rank.expGained).toLocaleString()} EXP`">
@@ -31,7 +33,7 @@ const MEDALS = ['gold', 'silver', 'bronze'] as const;
       </ol>
     </section>
 
-    <section v-if="jobs.length > 0 && only !== 'podium'" aria-label="Top by job">
+    <section v-if="jobs.length > 0 && (!only || only === 'jobs')" aria-label="Top by job">
       <h3 v-if="!only">Top by job</h3>
       <ul class="chips">
         <li v-for="slot in jobs" :key="slot.spec" class="chip" :title="slot.leader ? `${slot.leader.name}, Lv ${slot.leader.level}` : undefined">
@@ -41,6 +43,18 @@ const MEDALS = ['gold', 'silver', 'bronze'] as const;
           <span class="stat">Lv {{ slot.leader?.level }}</span>
         </li>
       </ul>
+    </section>
+
+    <section v-if="rich && rich.length > 0 && (!only || only === 'rich')" aria-label="Rich list">
+      <h3 v-if="!only">Rich list <span class="sub">latest meso count</span></h3>
+      <ol class="chips" :class="{ stack }">
+        <li v-for="(c, index) in rich" :key="c.playerKey" class="chip" :title="`${c.name}: ${(c.meso ?? 0).toLocaleString()} mesos`">
+          <span class="place" :class="MEDALS[index]">{{ index + 1 }}</span>
+          <CharacterAvatar :name="c.name" small />
+          <span class="name">{{ c.name }}</span>
+          <span class="stat">{{ formatCompact(c.meso ?? 0) }}</span>
+        </li>
+      </ol>
     </section>
   </div>
 </template>

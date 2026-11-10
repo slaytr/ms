@@ -19,7 +19,7 @@ import { useTracker } from '../composables/useTracker';
 import { formatClock } from '../lib/format';
 import { assessDetection } from '../lib/health';
 import { listCharacters, getWeeklySessions } from '../lib/api';
-import { specLeaders, type SpecSlot } from '../lib/characters';
+import { richest, specLeaders, type CharacterEntry, type SpecSlot } from '../lib/characters';
 import { expGainSeries } from '../lib/metrics';
 import { topByExp, type WeeklyRank } from '../lib/rankings';
 import {
@@ -116,12 +116,14 @@ watch(status, (now) => {
 // Leaderboard teaser for the welcome screen. A nicety: if it can't load, say so quietly and carry on.
 const podium = ref<readonly WeeklyRank[]>([]);
 const jobLeaders = ref<readonly SpecSlot[]>([]);
+const richList = ref<readonly CharacterEntry[]>([]);
 const leaderError = ref(false);
 onMounted(async () => {
   try {
     const [characters, week] = await Promise.all([listCharacters(), getWeeklySessions()]);
     podium.value = topByExp(week.sessions);
     jobLeaders.value = specLeaders(characters).filter((slot) => slot.leader !== null);
+    richList.value = richest(characters);
   } catch {
     leaderError.value = true;
   }
@@ -175,8 +177,8 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- Under 1200px the leaderboard sits in the column; wider, it moves to the sides (see the asides below). -->
-      <GameWindow v-if="status !== 'tracking' && (podium.length > 0 || jobLeaders.length > 0)" class="panel leaders" title="Leaderboard">
-        <LeaderStrip :podium="podium" :jobs="jobLeaders" />
+      <GameWindow v-if="status !== 'tracking' && (podium.length > 0 || jobLeaders.length > 0 || richList.length > 0)" class="panel leaders" title="Leaderboard">
+        <LeaderStrip :podium="podium" :jobs="jobLeaders" :rich="richList" />
       </GameWindow>
       <p v-else-if="status !== 'tracking' && leaderError" class="fine">The leaderboard couldn't load just now.</p>
 
@@ -289,9 +291,12 @@ onBeforeUnmount(() => {
         <ChangeLog :entries="CHANGELOG" />
       </GameWindow>
     </aside>
-    <aside v-if="status !== 'tracking' && jobLeaders.length > 0" class="side right" aria-label="Top by job">
-      <GameWindow title="Top by job">
+    <aside v-if="status !== 'tracking' && (jobLeaders.length > 0 || richList.length > 0)" class="side right" aria-label="Top by job and rich list">
+      <GameWindow v-if="jobLeaders.length > 0" title="Top by job">
         <LeaderStrip :podium="[]" :jobs="jobLeaders" only="jobs" />
+      </GameWindow>
+      <GameWindow v-if="richList.length > 0" title="Rich list">
+        <LeaderStrip :podium="[]" :jobs="[]" :rich="richList" only="rich" stack />
       </GameWindow>
     </aside>
   </div>

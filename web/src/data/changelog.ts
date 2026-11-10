@@ -11,6 +11,7 @@ export interface ChangeLogEntry {
 }
 
 export const CHANGELOG: readonly ChangeLogEntry[] = [
+  { date: '2026-11-10', text: 'Added a rich list under Top by job: the 3 richest characters by their latest meso count.' },
   { date: '2026-11-10', text: 'New players now enter their character name and pick their spec by hand, since name detection was unreliable.' },
   { date: '2026-11-10', text: 'Updated some of the text on the home page.' },
 ];

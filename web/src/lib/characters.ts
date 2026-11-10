@@ -22,6 +22,17 @@ export interface CharacterEntry {
   /** The earliest and latest readings inside the last 24 hours, or null when not tracked in that window. */
   readonly dayFrom: LevelPoint | null;
   readonly dayTo: LevelPoint | null;
+  /** The newest meso count we have for this character (null if the inventory was never open), and when it was read. */
+  readonly meso: number | null;
+  readonly mesoAt: number | null;
+}
+
+/** The richest characters, most mesos first, by the latest count we have. Characters with no meso reading are left out. */
+export function richest(characters: readonly CharacterEntry[], count = 3): readonly CharacterEntry[] {
+  return characters
+    .filter((c) => c.meso !== null && c.meso > 0)
+    .sort((a, b) => (b.meso ?? 0) - (a.meso ?? 0) || a.name.localeCompare(b.name))
+    .slice(0, count);
 }
 
 export interface DayGain {
