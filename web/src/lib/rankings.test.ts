@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { MapSession } from './maps';
-import { topByExp } from './rankings';
+import { topByExp, topByLevels, topByMesos } from './rankings';
 
 const session = (over: Partial<MapSession>): MapSession => ({
   id: 's',
@@ -52,5 +52,44 @@ describe('topByExp', () => {
     const input = [session({ playerKey: 'b' }), session({ playerKey: 'a', expGained: 5 })];
     topByExp(input);
     expect(input.map((s) => s.playerKey)).toEqual(['b', 'a']);
+  });
+});
+
+describe('topByLevels', () => {
+  it('ranks by the share of a level gained across all sessions (100 = one level) and reports it in levels', () => {
+    const ranked = topByLevels([
+      session({ playerKey: 'a', player: 'A', expPctGained: 60 }),
+      session({ playerKey: 'a', player: 'A', expPctGained: 80 }),
+      session({ playerKey: 'b', player: 'B', expPctGained: 100 }),
+      session({ playerKey: 'c', player: 'C', expPctGained: 0 }),
+    ]);
+    expect(ranked.map((r) => [r.player, r.levelsGained])).toEqual([['A', 1.4], ['B', 1]]);
+  });
+
+  it('is not thrown by a misread level label, since it never looks at levels', () => {
+    const ranked = topByLevels([session({ playerKey: 'a', player: 'A', levelFrom: 4, levelTo: 49, expPctGained: 30 })]);
+    expect(ranked[0].levelsGained).toBeCloseTo(0.3);
+  });
+
+  it('keeps only the top 3', () => {
+    const sessions = ['a', 'b', 'c', 'd'].map((k, i) => session({ playerKey: k, player: k, expPctGained: (i + 1) * 10 }));
+    expect(topByLevels(sessions).map((r) => r.player)).toEqual(['d', 'c', 'b']);
+  });
+});
+
+describe('topByMesos', () => {
+  it('adds each player mesos across sessions, ranks the most first and skips players with none', () => {
+    const ranked = topByMesos([
+      session({ playerKey: 'a', player: 'A', mesoGained: 400 }),
+      session({ playerKey: 'a', player: 'A', mesoGained: 400 }),
+      session({ playerKey: 'b', player: 'B', mesoGained: 500 }),
+      session({ playerKey: 'c', player: 'C', mesoGained: 0 }),
+    ]);
+    expect(ranked.map((r) => [r.player, r.mesoGained])).toEqual([['A', 800], ['B', 500]]);
+  });
+
+  it('breaks ties on the name', () => {
+    const ranked = topByMesos([session({ playerKey: 'b', player: 'B', mesoGained: 5 }), session({ playerKey: 'a', player: 'A', mesoGained: 5 })]);
+    expect(ranked.map((r) => r.player)).toEqual(['A', 'B']);
   });
 });

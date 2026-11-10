@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+
 import type { PotView } from '../lib/pot-tracker';
 
 /**
@@ -10,9 +12,10 @@ defineEmits<{ rescan: []; repot: [] }>();
 
 /** Item icons live in web/public/potions, named by the game's item id. */
 const iconUrl = (id: number) => `/potions/${id}.png`;
-/** An item with no icon file just shows its name. */
-const hideIcon = (event: Event) => {
-  (event.target as HTMLImageElement).style.visibility = 'hidden';
+/** Items whose icon file is missing: the table is icon-only, so these fall back to showing the name. */
+const noIcon = ref<ReadonlySet<number>>(new Set());
+const iconFailed = (id: number) => {
+  noIcon.value = new Set([...noIcon.value, id]);
 };
 const fmt = (n: number) => Math.round(n).toLocaleString();
 /** Change in stock since counting began: negative = ran down, positive = restocked or looted. Null when a count is unknown. */
@@ -51,10 +54,11 @@ const fmtNet = (n: number | null) => (n === null ? '—' : n > 0 ? `+${fmt(n)}` 
         <tbody>
           <tr v-for="row in pots.rows" :key="row.id" :class="{ idle: row.used === 0 }">
             <td class="item">
-              <span class="icon" :title="row.name">
-                <img :src="iconUrl(row.id)" alt="" width="27" height="30" loading="lazy" @error="hideIcon" />
+              <span class="icon" role="img" :aria-label="row.name" :title="row.name">
+                <img v-if="!noIcon.has(row.id)" :src="iconUrl(row.id)" alt="" width="27" height="30" loading="lazy" @error="iconFailed(row.id)" />
+                <span v-else class="fallback">{{ row.name }}</span>
+                <span v-if="row.source === 'quick'" class="qs" title="Counted from your quick slots, so no inventory needed">QS</span>
               </span>
-              <span class="label">{{ row.name }}</span><span v-if="row.source === 'quick'" class="qs" title="Counted from your quick slots, so no inventory needed">QS</span>
             </td>
             <td class="num" :title="row.stale ? 'Last good reading: this count isn\'t readable right now' : undefined">{{ row.now === null ? '—' : fmt(row.now) }}{{ row.stale ? '?' : '' }}</td>
             <td class="num used">{{ row.used > 0 ? fmt(row.used) : '·' }}</td>
@@ -90,6 +94,7 @@ h3 { margin: 0; font: 400 1rem / 1.2 'Lilita One', sans-serif; }
 .note { margin: 4px 0 0; font-size: 11px; color: #6b4a22; }
 .note.warn { color: #a23a00; }
 .qs { margin-left: 5px; padding: 0 5px; font: 800 9px / 1.6 'Nunito', sans-serif; letter-spacing: 0.04em; color: #fff; background: #3fa02a; border-radius: 999px; vertical-align: middle; }
+.icon .qs { position: absolute; right: -5px; bottom: -5px; margin: 0; padding: 0 3px; font-size: 7px; line-height: 1.5; }
 .note.paused { padding: 3px 6px; color: #2c5d18; background: #eaf8dd; border-radius: 6px; }
 .summary { margin: 4px 0 6px; font-variant-numeric: tabular-nums; font-size: 12px; }
 .summary strong { font: 400 1.3rem / 1.1 'Lilita One', sans-serif; color: #2e9a1f; }
@@ -100,10 +105,10 @@ h3 { margin: 0; font: 400 1rem / 1.2 'Lilita One', sans-serif; }
 table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
 th { text-align: left; font-size: 10px; color: #6b4a22; border-bottom: 2px solid #ecdcae; padding: 1px 3px; }
 td { padding: 1px 3px; border-bottom: 1px solid #f1e6c4; }
-.item { display: flex; align-items: center; gap: 6px; }
-.icon { flex: none; display: grid; place-items: center; width: 32px; height: 34px; background: #fff6dc; border: 2px solid #d9c48a; border-radius: 6px; }
+.item { width: 1%; padding-right: 6px; }
+.icon { position: relative; display: grid; place-items: center; width: 32px; height: 34px; background: #fff6dc; border: 2px solid #d9c48a; border-radius: 6px; }
 .icon img { display: block; image-rendering: pixelated; }
-.label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fallback { max-width: 28px; overflow: hidden; font-size: 8px; line-height: 1; text-align: center; word-break: break-all; }
 tr.idle .icon img { opacity: 0.45; filter: grayscale(0.6); }
 .num { text-align: right; }
 .used { font-weight: 800; color: #2e9a1f; }

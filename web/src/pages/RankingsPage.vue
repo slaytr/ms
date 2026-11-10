@@ -2,10 +2,11 @@
 import { computed, onMounted, ref } from 'vue';
 
 import CharacterAvatar from '../components/home/CharacterAvatar.vue';
+import RankList, { type RankRow } from '../components/home/RankList.vue';
 import SkyScene from '../components/home/SkyScene.vue';
 import { getWeeklySessions } from '../lib/api';
 import { formatStay } from '../lib/maps';
-import { topByExp } from '../lib/rankings';
+import { topByExp, topByLevels, topByMesos, type WeeklyRank } from '../lib/rankings';
 import type { MapSession } from '../lib/maps';
 
 const sessions = ref<readonly MapSession[]>([]);
@@ -14,6 +15,14 @@ const loading = ref(true);
 const error = ref<string | null>(null);
 
 const podium = computed(() => topByExp(sessions.value));
+
+const detailOf = (rank: WeeklyRank) => [rank.level !== null ? `Lv ${rank.level}` : null, rank.job].filter(Boolean).join(' · ');
+const levelRows = computed<readonly RankRow[]>(() =>
+  topByLevels(sessions.value).map((r) => ({ key: r.playerKey, player: r.player, detail: detailOf(r), value: `+${r.levelsGained.toFixed(1)}` })),
+);
+const mesoRows = computed<readonly RankRow[]>(() =>
+  topByMesos(sessions.value).map((r) => ({ key: r.playerKey, player: r.player, detail: detailOf(r), value: `+${fmt(r.mesoGained)}` })),
+);
 
 const fmt = (n: number) => Math.round(n).toLocaleString();
 const pct = (n: number) => `${n.toFixed(1)}%`;
@@ -63,6 +72,11 @@ onMounted(async () => {
           </p>
         </li>
       </ol>
+
+      <div v-if="!loading && !error" class="more">
+        <RankList title="Most levels gained" subtitle="Levels climbed, last 7 days" :rows="levelRows" empty="Nobody has gained any EXP in the last 7 days yet." />
+        <RankList title="Most mesos gained" subtitle="Mesos picked up, last 7 days" :rows="mesoRows" empty="No mesos tracked in the last 7 days yet. Mesos only show while the inventory is open." />
+      </div>
     </main>
   </div>
 </template>
@@ -130,6 +144,9 @@ onMounted(async () => {
 .meta { margin: 4px 0 0; font-size: 0.85rem; color: #6b4a22; }
 .exp { margin: 8px 0 0; font: 400 1.9rem 'Lilita One', sans-serif; color: #2e9a1f; font-variant-numeric: tabular-nums; }
 .unit { font-size: 1rem; }
+
+@media (min-width: 720px) { .more { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }
+.more { display: grid; gap: 16px; }
 
 /* Wide enough for a podium: 2nd | 1st | 3rd, with the winner raised. */
 @media (min-width: 720px) {
