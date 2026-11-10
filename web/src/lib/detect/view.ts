@@ -41,6 +41,13 @@ const SOLVE_MARGIN = 8;
 /** Keeps the normal equations well-posed at the edges of a partial solve (negligible against the data). */
 const RIDGE = 1e-6;
 
+/** Longest bottom margin (shadow, border) tried below a client whose title bar was found in the frame. */
+const MAX_BOTTOM_MARGIN = 24;
+/** A title bar is a flat band at least this tall, much taller than any line of game art. */
+const TITLE_BAR_MIN_ROWS = 16;
+/** Only the top of the frame is searched for the title bar. */
+const TITLE_BAR_SEARCH_ROWS = 120;
+
 const FIT_ANCHORS = ['exp', 'level'] as const;
 
 // ---------------------------------------------------------------------
@@ -260,6 +267,33 @@ function fitMisses(luma: Uint8Array, width: number, view: View, anchors: readonl
 }
 
 /**
+ * The title bar of a window capture: the flat band of one colour that sits above the client, found down the
+ * middle of the frame. Its left and right ends are the client's edges and its bottom is the client's top.
+ * Null when the frame has no such band.
+ */
+export function findTitleBar(luma: Uint8Array, width: number, height: number): { left: number; top: number; width: number } | null {
+  const mid = width >> 1;
+  const at = (x: number, y: number) => luma[y * width + x];
+  const limit = Math.min(height, TITLE_BAR_SEARCH_ROWS);
+  let runStart = 0;
+  let found: { start: number; end: number } | null = null;
+  for (let y = 1; y <= limit; y++) {
+    if (y < limit && at(mid, y) === at(mid, y - 1)) continue;
+    if (y - runStart >= TITLE_BAR_MIN_ROWS && !found) found = { start: runStart, end: y };
+    runStart = y;
+  }
+  if (!found) return null;
+  // A row just above the band's bottom clears the title text, the window buttons and the rounded top corners.
+  const y = found.end - 3;
+  const colour = at(mid, y);
+  let left = mid;
+  while (left > 0 && at(left - 1, y) === colour) left--;
+  let right = mid;
+  while (right < width - 1 && at(right + 1, y) === colour) right++;
+  return { left, top: found.end, width: right - left + 1 };
+}
+
+/**
  * Works out how a frame from a window taller than native maps onto the native client, or null if it
  * doesn't look like the Classic client at any known scale (or the status bar isn't visible to fit against).
  */
@@ -271,31 +305,27 @@ export function fitView(luma: Uint8Array, width: number, height: number, templat
   if (anchors.length < FIT_ANCHORS.length) return null;
 
   let best: Fit | null = null;
-  for (const { top, border } of WINDOW_FRAMES) {
-    const clientHeight = height - top - border;
-    const clientWidth = width - 2 * border;
+  const tryClient = (left: number, top: number, clientWidth: number, clientHeight: number) => {
     const scale = clientHeight / NATIVE.height;
-    if (scale < MIN_SCALE || scale > MAX_SCALE) continue;
-
+    if (clientWidth <= 0 || scale < MIN_SCALE || scale > MAX_SCALE) return;
     // The native width is whatever the window's aspect ratio leaves, rounded by the client; try the neighbours.
     const exact = clientWidth / scale;
     const widths = new Set([Math.floor(exact) - 1, Math.floor(exact), Math.ceil(exact), Math.ceil(exact) + 1]);
     for (const nativeWidth of widths) {
-      const view: View = {
-        sourceWidth: width,
-        sourceHeight: height,
-        left: border,
-        top,
-        clientWidth,
-        clientHeight,
-        width: nativeWidth,
-        height: NATIVE.height,
-      };
+      const view: View = { sourceWidth: width, sourceHeight: height, left, top, clientWidth, clientHeight, width: nativeWidth, height: NATIVE.height };
       const misses = fitMisses(luma, width, view, anchors);
       if (best === null || misses < best.misses) best = { misses, view };
     }
-  }
-  return best !== null && best.misses <= MAX_FIT_MISS ? best.view : null;
+  };
+
+  for (const { top, border } of WINDOW_FRAMES) tryClient(border, top, width - 2 * border, height - top - border);
+  if (best !== null && (best as Fit).misses <= MAX_FIT_MISS) return (best as Fit).view;
+
+  // Not a frame we know: the capture may include margins (a window shadow, display scaling), so find the
+  // client from the title bar's flat band and try each bottom margin.
+  const bar = findTitleBar(luma, width, height);
+  if (bar) for (let bottom = 0; bottom <= MAX_BOTTOM_MARGIN; bottom++) tryClient(bar.left, bar.top, bar.width, height - bar.top - bottom);
+  return best !== null && (best as Fit).misses <= MAX_FIT_MISS ? (best as Fit).view : null;
 }
 
 /** True when `view` was fitted to frames of this size (a resized window needs a new fit). */

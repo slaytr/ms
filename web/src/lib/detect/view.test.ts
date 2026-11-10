@@ -6,7 +6,7 @@ import { loadFrame } from './fixture-io.ts';
 import { ANCHOR_HOME, NATIVE, REFERENCE_CLIENT } from './layout.ts';
 import { toLuma } from './mask.ts';
 import { borderless, upscaleCapture, windowed, type WindowLayout } from './scale-fixture.ts';
-import { fitView, unscaleRegion, unscaleView, type View } from './view.ts';
+import { findTitleBar, fitView, unscaleRegion, unscaleView, type View } from './view.ts';
 
 /** Native fixture with an open inventory, a long street/map name and everything else on screen. */
 const NATIVE_FILE = 'other_1368x800_1794190494806.png';
@@ -112,6 +112,29 @@ describe('fitView', () => {
     const data = new Uint8ClampedArray(frame.data);
     data.fill(40, (frame.height - 200) * frame.width * 4); // everything in the bottom 200 rows
     expect(fitView(toLuma({ ...frame, data }), frame.width, frame.height, DEFAULT_TEMPLATES)).toBeNull();
+  });
+
+  // A 2560x1440 client captured with a 43px title bar and uneven margins (5 left, 9 right, 14 below: window
+  // shadow plus display scaling), which none of the fixed frame sizes describe. Not in labels.json: its name
+  // and map use letters the fonts lack, and harvest skips scaled frames, so it only tests the fit.
+  describe('a capture with margins around the window', () => {
+    const FILE = 'other_2574x1506_1794300300000.png';
+    const frame = loadFrame(FILE);
+
+    it('finds the client from the title bar', () => {
+      expect(findTitleBar(toLuma(frame), frame.width, frame.height)).toEqual({ left: 5, top: 52, width: 2560 });
+    });
+
+    it('fits it and reads EXP and level exactly', () => {
+      const result = detectFrame(frame, DEFAULT_TEMPLATES);
+      expect(result.state.view).toMatchObject({ left: 5, top: 52, clientWidth: 2560, clientHeight: 1440, width: 1366, height: NATIVE.height });
+      expect({ exp: result.exp, pct: result.expPct, level: result.level }).toEqual({ exp: 77525, pct: 26.35, level: 40 });
+    });
+  });
+
+  it('finds no title bar in a frame without one', () => {
+    const noise = { width: 600, height: 400, data: new Uint8ClampedArray(600 * 400 * 4).map((_, i) => (i * 37) % 251) };
+    expect(findTitleBar(toLuma(noise), noise.width, noise.height)).toBeNull();
   });
 
   it('leaves a native-size window alone (no view)', () => {
