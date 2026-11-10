@@ -5,6 +5,7 @@ import type { MapSession } from './maps';
 import type { Reading } from './metrics';
 import type { NxStatus } from './nx-economy';
 import type { PlayerSnapshot } from './snapshot';
+import { createTtlCache } from './ttl-cache';
 
 interface Envelope<T> {
   success: boolean;
@@ -142,16 +143,25 @@ export function openLootCrates(fingerprint: string, indexes: readonly number[]):
   return request('/api/loot/open', { method: 'POST', body: JSON.stringify({ fingerprint, indexes }) });
 }
 
+/**
+ * The Maps, Characters and Rankings pages (and the home page's leaderboard) read the same few lists, which
+ * change slowly. Each is kept for a minute, so flipping between tabs doesn't refetch them. A reload starts fresh.
+ */
+const LIST_TTL_MS = 60_000;
+const mapSessionsCache = createTtlCache<MapSession[]>(LIST_TTL_MS);
+const charactersCache = createTtlCache<CharacterEntry[]>(LIST_TTL_MS);
+const weeklyCache = createTtlCache<WeeklySessions>(LIST_TTL_MS);
+
 export function listMapSessions(): Promise<MapSession[]> {
-  return request('/api/maps/sessions');
+  return mapSessionsCache.get(() => request('/api/maps/sessions'));
 }
 
 export function listCharacters(): Promise<CharacterEntry[]> {
-  return request('/api/characters');
+  return charactersCache.get(() => request('/api/characters'));
 }
 
 export function getWeeklySessions(): Promise<WeeklySessions> {
-  return request('/api/rankings/week');
+  return weeklyCache.get(() => request('/api/rankings/week'));
 }
 
 export function getSession(id: string): Promise<SessionDetail> {

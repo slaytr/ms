@@ -16,6 +16,8 @@ const UPSTREAM = 'https://classicrank.com/api/v1/characters';
 const USER_AGENT = 'ms-app-data-collector (personal project)';
 export const REFRESH_AFTER_MS = 3 * 60 * 60 * 1000;
 const MISS_TTL_MS = 10 * 60 * 1000;
+/** Browsers keep a sprite for a day: it changes rarely and is refreshed here every 3 hours anyway. */
+const IMAGE_MAX_AGE_SECONDS = 24 * 60 * 60;
 const MIN_GAP_MS = 1000;
 const MAX_MISS_ENTRIES = 200;
 const NAME_PATTERN = /^[A-Za-z0-9]{2,20}$/;
@@ -105,7 +107,7 @@ export default async function avatarRoutes(fastify) {
       }
 
       if (!avatar) return reply.code(404).send({ success: false, data: null, error: 'No sprite found for that character.' });
-      return reply.type('image/png').header('Cache-Control', 'public, max-age=300').send(avatar.png);
+      return reply.type('image/png').header('Cache-Control', `public, max-age=${IMAGE_MAX_AGE_SECONDS}`).send(avatar.png);
     },
   );
 }

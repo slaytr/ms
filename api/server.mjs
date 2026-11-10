@@ -25,13 +25,24 @@ import { runMigrations } from './migrate.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'web', 'dist');
 const PORT = Number(process.env.PORT ?? 4174);
+const IMAGE_FILE = /.(png|webp|jpe?g|gif|svg|ico)$/i;
+const IMAGE_MAX_AGE_SECONDS = 24 * 60 * 60;
 
 export async function buildServer() {
   const fastify = Fastify({ logger: process.env.NODE_ENV !== 'test' });
   const hasDist = existsSync(join(DIST, 'index.html'));
 
   if (hasDist) {
-    await fastify.register(fastifyStatic, { root: DIST, prefix: '/' });
+    await fastify.register(fastifyStatic, {
+      root: DIST,
+      prefix: '/',
+      // Pictures (item icons, logo, favicon) are kept by browsers for a day. Pages and code still revalidate
+      // (the plugin's own header would override ours, so it is switched off and every file is set here).
+      cacheControl: false,
+      setHeaders(reply, path) {
+        reply.header('Cache-Control', IMAGE_FILE.test(path) ? `public, max-age=${IMAGE_MAX_AGE_SECONDS}` : 'public, max-age=0');
+      },
+    });
   } else {
     fastify.log.warn('web/dist is missing. Run `npm run build`, or use `npm run web:dev` for the UI.');
   }
@@ -49,7 +60,8 @@ export async function buildServer() {
 
   fastify.setNotFoundHandler((request, reply) => {
     if (hasDist && request.method === 'GET' && !request.url.startsWith('/api')) {
-      return reply.type('text/html').sendFile('index.html', DIST);
+      // Always revalidated, so a deploy is picked up (the page points at hashed assets that change).
+      return reply.header('Cache-Control', 'public, max-age=0').type('text/html').sendFile('index.html', DIST);
     }
     return reply.code(404).send({ success: false, data: null, error: 'Not found.' });
   });
