@@ -353,6 +353,8 @@ function nextDigit(mask: Bitmap, from: number, within: number, digits: Inventory
     const hit = digitAt(mask, col, digits);
     if (hit) return { at: col, hit };
   }
+  // A remnant already learned as harmless (a labelled count ended in exactly this) is the icon, even when it is digit-shaped.
+  if (options.strictTail && from > 0 && first - from <= NEXT_DIGIT_REACH && isKnownTail(mask, from, options.tails)) return null;
   if (looksLikeDigit(mask, first)) return 'unknown';
   // Right after a digit already read, a remnant that wide and tall is a damaged digit, not the icon's noise.
   if (options.strictTail && from > 0 && first - from <= NEXT_DIGIT_REACH && looksLikeDamagedDigit(mask, first) && !isKnownTail(mask, from, options.tails)) return 'unknown';

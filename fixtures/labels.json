@@ -898,5 +898,48 @@
         "-"
       ]
     ]
+  },
+  "inventory-closed_1368x800_1794297120590.png": {
+    "exp": "37,272[4.98%]",
+    "level": "51",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "Victoria Road",
+    "map": "Tree Dungeon, Forest Up North VIII",
+    "quickSlots": [
+      [
+        "Blue Potion:278",
+        "Orange Potion:898",
+        "Pure Water:295",
+        "?:396"
+      ],
+      [
+        "White Potion:157",
+        "Lemon:784",
+        "Meat:5",
+        "-"
+      ]
+    ]
+  },
+  "inventory-closed_1368x800_1794297702730.png": {
+    "level": "51",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "quickSlots": [
+      [
+        "Blue Potion:274",
+        "Orange Potion:849",
+        "Pure Water:292",
+        "?:396"
+      ],
+      [
+        "White Potion:157",
+        "Lemon:776",
+        "Meat:4",
+        "-"
+      ]
+    ],
+    "street": "Victoria Road",
+    "map": "Tree Dungeon, Forest Up North VIII"
   }
 }

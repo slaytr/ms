@@ -13,7 +13,8 @@ import { EMPTY_TEMPLATES, type Frame } from './types.ts';
 interface Label {
   /** A frame from a window taller than the client's native size, so its UI is scaled up. */
   scaled?: boolean;
-  exp: string;
+  /** Absent when something (a tooltip) covers the EXP digits, so the frame can only teach other readers. */
+  exp?: string;
   level: string;
   meso?: string;
   name: string;
@@ -37,7 +38,7 @@ const open = fixtures.filter((f) => f.startsWith('inventory-open'));
 
 function truth(file: string) {
   const label = labels[file] as Label;
-  const [, rawExp, pct] = label.exp.match(/^(.*)\[(\d+\.\d+)%\]$/)!;
+  const [, rawExp, pct] = (label.exp ?? '0[0.00%]').match(/^(.*)\[(\d+\.\d+)%\]$/)!;
   return {
     exp: Number(rawExp.replace(/[,.]/g, '')),
     expPct: Number(pct),
@@ -56,7 +57,7 @@ describe('detectFrame on real Classic client captures', () => {
     expect(open.length).toBeGreaterThan(0);
   });
 
-  it.each(fixtures)('reads raw EXP, EXP% and level from %s', (file) => {
+  it.each(fixtures.filter((f) => (labels[f] as Label).exp !== undefined))('reads raw EXP, EXP% and level from %s', (file) => {
     const result = detectFrame(loadFrame(file), DEFAULT_TEMPLATES);
     expect(result.found.exp).toBe(true);
     expect(result.found.level).toBe(true);
