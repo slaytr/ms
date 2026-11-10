@@ -104,6 +104,9 @@ const trackerView = computed(() =>
     snapshot: tracker.current.value,
     readings: readings.value,
     rates: rates.value,
+    potSpend: tracker.potView.value
+      ? { mesos: tracker.potView.value.totals.mesos, unknownFor: tracker.potView.value.totals.mesosUnknownFor }
+      : null,
   }),
 );
 

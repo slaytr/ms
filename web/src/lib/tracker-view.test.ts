@@ -28,6 +28,31 @@ const snapshot = (over: Partial<PlayerSnapshot> = {}): PlayerSnapshot => ({
 const view = (readings: Reading[], snap: PlayerSnapshot | null = snapshot()) =>
   buildTrackerView({ name: 'PayYoBills', snapshot: snap, readings, rates: computeRates(readings) });
 
+describe('buildTrackerView net mesos', () => {
+  const earning = [reading(0, { meso: 1_000_000 }), reading(10, { meso: 1_500_000 })];
+
+  it('is meso gained minus what the pots cost', () => {
+    const v = buildTrackerView({ name: null, snapshot: snapshot(), readings: earning, rates: computeRates(earning), potSpend: { mesos: 120_000, unknownFor: 0 } });
+    expect(v.netMesos).toBe(380_000);
+    expect(v.netMesosCeiling).toBe(false);
+  });
+
+  it('goes negative when the pots cost more than was earned', () => {
+    const v = buildTrackerView({ name: null, snapshot: snapshot(), readings: earning, rates: computeRates(earning), potSpend: { mesos: 600_000, unknownFor: 0 } });
+    expect(v.netMesos).toBe(-100_000);
+  });
+
+  it('equals meso gained when no pots are counted, and is unknown before meso is read', () => {
+    expect(view(earning).netMesos).toBe(500_000);
+    expect(view([reading(0, { exp: 1 }), reading(5, { exp: 2 })]).netMesos).toBeNull();
+  });
+
+  it('flags a ceiling when a used pot has no NPC price', () => {
+    const v = buildTrackerView({ name: null, snapshot: snapshot(), readings: earning, rates: computeRates(earning), potSpend: { mesos: 0, unknownFor: 2 } });
+    expect(v.netMesosCeiling).toBe(true);
+  });
+});
+
 describe('buildTrackerView rates', () => {
   it('headline EXP/h uses the last hour while the average covers the whole session', () => {
     // 0-60 min: 60,000 EXP. 60-120 min: 120,000 EXP. Session avg = 90K/h, last hour = 120K/h.

@@ -37,6 +37,13 @@ export interface TrackerView {
   /** Null until meso has been read at least once. */
   readonly mesoPerHour: string | null;
   readonly mesoGained: number | null;
+  /**
+   * Meso gained minus what the pots used cost (NPC price), so a farm that burns more in pots than it
+   * earns shows red. Null until meso has been read. Pots that no NPC sells count for
+   * nothing, in which case `netMesosCeiling` is true: the real figure can only be lower.
+   */
+  readonly netMesos: number | null;
+  readonly netMesosCeiling: boolean;
   /** Meso hasn't been seen for a while (inventory closed), so its numbers are paused, not wrong. */
   readonly mesoStale: boolean;
   readonly elapsed: string;
@@ -50,6 +57,8 @@ export interface TrackerViewInput {
   readonly snapshot: PlayerSnapshot | null;
   readonly readings: readonly Reading[];
   readonly rates: Rates;
+  /** What the potion tracker says was spent on pots used; omitted or null when no pots are being counted. */
+  readonly potSpend?: { readonly mesos: number; readonly unknownFor: number } | null;
 }
 
 /** Rates over only the readings from the last hour, ending where the session rates end (now). */
@@ -65,7 +74,7 @@ function lastHourRates(readings: readonly Reading[], rates: Rates): Rates {
   );
 }
 
-export function buildTrackerView({ name, map = null, snapshot, readings, rates }: TrackerViewInput): TrackerView {
+export function buildTrackerView({ name, map = null, snapshot, readings, rates, potSpend = null }: TrackerViewInput): TrackerView {
   const level = snapshot?.level ?? null;
   const progress = levelProgress(level, snapshot?.exp ?? null);
   const eta = estimateEta(progress, rates.expPerHour, rates.elapsedMs);
@@ -95,6 +104,8 @@ export function buildTrackerView({ name, map = null, snapshot, readings, rates }
     ratesEstimated: hasRate && rates.elapsedMs < MIN_ELAPSED_FOR_ETA_MS,
     mesoPerHour: hasMeso ? perHour(rates.mesoPerHour) : null,
     mesoGained: hasMeso ? rates.mesoGained : null,
+    netMesos: hasMeso ? rates.mesoGained - (potSpend?.mesos ?? 0) : null,
+    netMesosCeiling: hasMeso && (potSpend?.unknownFor ?? 0) > 0,
     mesoStale: hasMeso && latest !== undefined && latest.takenAt - lastMeso.takenAt > MESO_STALE_AFTER_MS,
     elapsed: formatClock(rates.elapsedMs),
   };

@@ -20,6 +20,15 @@ const hero = computed(() => {
   return { text: '—', hint: 'Level or EXP not readable yet' };
 });
 
+/** "+1,200" in green, "-300" in red; exactly zero is shown plain. */
+const net = computed(() => {
+  const value = props.view.netMesos;
+  if (value === null) return null;
+  const rounded = Math.round(value);
+  if (rounded === 0) return { text: '0', tone: 'zero' };
+  return rounded > 0 ? { text: `+${fmt(rounded)}`, tone: 'up' } : { text: `-${fmt(-rounded)}`, tone: 'down' };
+});
+
 const percent = computed(() => (props.view.progress ? (props.view.progress.fraction * 100).toFixed(2) : null));
 </script>
 
@@ -76,6 +85,16 @@ const percent = computed(() => (props.view.progress ? (props.view.progress.fract
         <dt>Time to next level</dt>
         <dd class="level-time" :class="{ muted: view.eta.state !== 'ready' }">{{ hero.text }}</dd>
       </div>
+      <div
+        class="wide"
+        :title="view.netMesosCeiling ? 'Meso gained minus pot cost. Some pots used have no NPC price, so the real figure can be lower.' : 'Meso gained minus the NPC cost of the pots you used'"
+      >
+        <dt>Net mesos</dt>
+        <dd class="net" :class="net ? net.tone : 'muted'">
+          <template v-if="net">{{ net.text }}<span v-if="view.netMesosCeiling" class="approx">?</span></template>
+          <template v-else>—</template>
+        </dd>
+      </div>
     </dl>
 
     <p v-if="view.mesoGained === null" class="note">Open your inventory to track meso.</p>
@@ -120,6 +139,10 @@ const percent = computed(() => (props.view.progress ? (props.view.progress.fract
 .stats dd.gold { color: #c98a00; }
 .stats dd.green { color: #2e9a1f; }
 .stats dd.level-time { color: #2e9a1f; }
+.stats dd.net.up { color: #2e9a1f; }
+.stats dd.net.down { color: #c0392b; }
+.stats dd.net.zero { color: #6b4a22; }
+.stats dd.net .approx { font-size: 0.6em; }
 .stats dd.muted { color: #8f7a55; font-size: 1.05rem; }
 
 .note { margin: 6px 0 0; font-size: 12px; color: #8a5a00; }
