@@ -8,6 +8,7 @@ import {
   isOwner,
   labelSession,
   listRecentSessions,
+  listSessionsByFingerprint,
 } from '../store/sessions.mjs';
 
 const ok = (data) => ({ success: true, data, error: null });
@@ -52,6 +53,12 @@ const labelBody = {
   properties: { label: { type: 'string', minLength: 1, maxLength: 80 } },
 };
 
+const listQuery = {
+  type: 'object',
+  additionalProperties: false,
+  properties: { fingerprint: { type: 'string', pattern: '^[a-z0-9]{1,24}$', maxLength: 24 } },
+};
+
 const endBody = {
   type: 'object',
   additionalProperties: false,
@@ -84,7 +91,11 @@ const readingsBody = {
 };
 
 export default async function sessionRoutes(fastify) {
-  fastify.get('/api/sessions', async () => ok(await listRecentSessions()));
+  // With ?fingerprint= this is one character's own history (the home page's "Your sessions").
+  fastify.get('/api/sessions', { schema: { querystring: listQuery } }, async (request) => {
+    const { fingerprint: who } = request.query;
+    return ok(who ? await listSessionsByFingerprint(who) : await listRecentSessions());
+  });
 
   fastify.post('/api/sessions', { schema: { body: createBody } }, async (request, reply) => {
     const { label = '', character = '', fingerprint = null, start } = request.body ?? {};

@@ -10,6 +10,7 @@ import LeaderStrip from '../components/home/LeaderStrip.vue';
 import LevelBadge from '../components/home/LevelBadge.vue';
 import ExpChart from '../components/home/ExpChart.vue';
 import PotChart from '../components/home/PotChart.vue';
+import MySessions from '../components/home/MySessions.vue';
 import OverviewBox from '../components/home/OverviewBox.vue';
 import SkyScene from '../components/home/SkyScene.vue';
 import TrackingChecklist from '../components/home/TrackingChecklist.vue';
@@ -205,6 +206,10 @@ onBeforeUnmount(() => {
             </p>
           </div>
         </div>
+      </GameWindow>
+
+      <GameWindow v-if="status === 'idle' && profile" class="panel" title="Your sessions">
+        <MySessions :fingerprint="profile.fingerprint" />
       </GameWindow>
 
       <GameWindow v-if="hadSession" class="panel" title="Last session">

@@ -54,6 +54,27 @@ export async function listRecentSessions(limit = 20) {
   return rows;
 }
 
+/**
+ * One character's past sessions, newest first. Sessions that never recorded a reading are left out
+ * (a share that never showed the game). Level before/after come from the start/end snapshots.
+ */
+export async function listSessionsByFingerprint(fingerprint, limit = 50) {
+  const { rows } = await query(
+    `select s.id, s.label, s.character, s.started_at as "startedAt", s.ended_at as "endedAt",
+            (select count(*)::int from ms_readings r where r.session_id = s.id) as "readingCount",
+            (select max(r.taken_at) from ms_readings r where r.session_id = s.id) as "lastReadingAt",
+            (select n.level from ms_session_snapshots n where n.session_id = s.id and n.kind = 'start') as "startLevel",
+            (select n.level from ms_session_snapshots n where n.session_id = s.id and n.kind = 'end') as "endLevel"
+       from ms_capture_sessions s
+      where s.fingerprint = $1
+        and exists (select 1 from ms_readings r where r.session_id = s.id)
+      order by s.started_at desc
+      limit $2`,
+    [fingerprint, limit],
+  );
+  return rows;
+}
+
 export async function getSession(id) {
   const { rows } = await query(
     `select id, label, character, fingerprint, started_at as "startedAt", ended_at as "endedAt"

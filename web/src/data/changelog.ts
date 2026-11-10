@@ -11,6 +11,8 @@ export interface ChangeLogEntry {
 }
 
 export const CHANGELOG: readonly ChangeLogEntry[] = [
+  { date: '2026-11-10', text: 'Welcome back now has a Your sessions list: browse your past sessions and open one to see its EXP chart and rates.' },
+  { date: '2026-11-10', text: 'The name and spec form is skipped when we already know both.' },
   { date: '2026-11-10', text: 'Meso amounts on the rich list are hidden by default; use the eye icon in its header to show them.' },
   { date: '2026-11-10', text: 'Added a rich list under Top by job: the 3 richest characters by their latest meso count.' },
   { date: '2026-11-10', text: 'New players now enter their character name and pick their spec by hand, since name detection was unreliable.' },

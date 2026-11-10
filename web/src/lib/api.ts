@@ -84,6 +84,17 @@ export function listSessions(): Promise<SessionSummary[]> {
   return request('/api/sessions');
 }
 
+/** One of a character's past sessions, as listed on the home page. */
+export interface CharacterSession extends SessionSummary {
+  lastReadingAt: string | null;
+  startLevel: number | null;
+  endLevel: number | null;
+}
+
+export function listCharacterSessions(fingerprint: string): Promise<CharacterSession[]> {
+  return request(`/api/sessions?fingerprint=${encodeURIComponent(fingerprint)}`);
+}
+
 export function listMapSessions(): Promise<MapSession[]> {
   return request('/api/maps/sessions');
 }
