@@ -48,7 +48,7 @@ async function runOnServer() {
 }
 
 function ssh(extra) {
-  const output = execFileSync('railway', ['ssh', '--service', valueOf('--service') ?? 'ms', '--', 'node', 'scripts/pull-misses.mjs', '--on-server', ...extra], {
+  const output = execFileSync('railway', ['ssh', '--service', `"${valueOf('--service') ?? 'maplestory frontend'}"`, '--', 'node', 'scripts/pull-misses.mjs', '--on-server', ...extra], {
     encoding: 'utf8',
     maxBuffer: 400 * 1024 * 1024,
     // Windows resolves `railway` to railway.cmd only when a shell is involved.

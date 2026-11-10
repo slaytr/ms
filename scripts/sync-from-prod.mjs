@@ -88,7 +88,7 @@ async function restore(payload) {
 
 function dumpFromProd(service) {
   console.log(`Dumping from production (railway ssh --service ${service})...`);
-  const json = execFileSync('railway', ['ssh', '--service', service, '--', 'node', 'scripts/sync-from-prod.mjs', '--dump'], {
+  const json = execFileSync('railway', ['ssh', '--service', `"${service}"`, '--', 'node', 'scripts/sync-from-prod.mjs', '--dump'], {
     encoding: 'utf8',
     maxBuffer: 200 * 1024 * 1024,
     // Windows resolves `railway` to railway.cmd only when a shell is involved.
@@ -116,7 +116,7 @@ async function main() {
 
   assertLocalTarget();
   const serviceIndex = args.indexOf('--service');
-  const service = serviceIndex === -1 ? 'ms' : args[serviceIndex + 1];
+  const service = serviceIndex === -1 ? 'maplestory frontend' : args[serviceIndex + 1];
 
   const payload = dumpFromProd(service);
   console.log('Loading into local Postgres...');

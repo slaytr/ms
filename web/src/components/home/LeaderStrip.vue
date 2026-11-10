@@ -10,6 +10,8 @@ defineProps<{
   jobs: readonly SpecSlot[];
   /** The richest characters by their latest meso count (best first). */
   rich?: readonly CharacterEntry[];
+  /** Whether the rich list shows meso amounts. Hidden unless the viewer asks, since it is someone's wealth. */
+  showMesos?: boolean;
   /** Show just one of the lists (the wide layout puts them on opposite sides of the page). */
   only?: 'podium' | 'jobs' | 'rich';
   /** Lay the top 3 out as full-width rows instead of cards (for a narrow side column). */
@@ -46,13 +48,16 @@ const MEDALS = ['gold', 'silver', 'bronze'] as const;
     </section>
 
     <section v-if="rich && rich.length > 0 && (!only || only === 'rich')" aria-label="Rich list">
-      <h3 v-if="!only">Rich list <span class="sub">latest meso count</span></h3>
+      <h3 v-if="!only" class="with-toggle">
+        <span>Rich list <span class="sub">latest meso count</span></span>
+        <slot name="rich-toggle" />
+      </h3>
       <ol class="chips" :class="{ stack }">
-        <li v-for="(c, index) in rich" :key="c.playerKey" class="chip" :title="`${c.name}: ${(c.meso ?? 0).toLocaleString()} mesos`">
+        <li v-for="(c, index) in rich" :key="c.playerKey" class="chip" :title="showMesos ? `${c.name}: ${(c.meso ?? 0).toLocaleString()} mesos` : c.name">
           <span class="place" :class="MEDALS[index]">{{ index + 1 }}</span>
           <CharacterAvatar :name="c.name" small />
           <span class="name">{{ c.name }}</span>
-          <span class="stat">{{ formatCompact(c.meso ?? 0) }}</span>
+          <span class="stat" :class="{ hidden: !showMesos }">{{ showMesos ? formatCompact(c.meso ?? 0) : '•••••' }}</span>
         </li>
       </ol>
     </section>
@@ -62,6 +67,8 @@ const MEDALS = ['gold', 'silver', 'bronze'] as const;
 <style scoped>
 .strip { display: grid; gap: 10px; }
 h3 { margin: 0 0 6px; font: 400 0.95rem / 1.2 'Lilita One', sans-serif; text-align: center; }
+.with-toggle { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.stat.hidden { color: #6b4a22; letter-spacing: 0.1em; }
 .sub { font: 700 0.7rem 'Nunito', sans-serif; color: #6b4a22; }
 .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .chip { position: relative; display: grid; justify-items: center; align-content: start; gap: 1px; box-sizing: border-box; width: 96px; padding: 6px 4px; text-align: center; background: #fffdf3; border: 2px solid #d9c48a; border-radius: 10px; }

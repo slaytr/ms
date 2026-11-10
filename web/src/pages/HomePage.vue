@@ -4,6 +4,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import CharacterAvatar from '../components/home/CharacterAvatar.vue';
 import ChangeLog from '../components/home/ChangeLog.vue';
 import GameWindow from '../components/home/GameWindow.vue';
+import EyeToggle from '../components/home/EyeToggle.vue';
 import IdentityForm from '../components/home/IdentityForm.vue';
 import LeaderStrip from '../components/home/LeaderStrip.vue';
 import LevelBadge from '../components/home/LevelBadge.vue';
@@ -117,6 +118,8 @@ watch(status, (now) => {
 const podium = ref<readonly WeeklyRank[]>([]);
 const jobLeaders = ref<readonly SpecSlot[]>([]);
 const richList = ref<readonly CharacterEntry[]>([]);
+/** Meso amounts on the rich list stay hidden until the viewer reveals them. */
+const showMesos = ref(false);
 const leaderError = ref(false);
 onMounted(async () => {
   try {
@@ -178,7 +181,9 @@ onBeforeUnmount(() => {
 
       <!-- Under 1200px the leaderboard sits in the column; wider, it moves to the sides (see the asides below). -->
       <GameWindow v-if="status !== 'tracking' && (podium.length > 0 || jobLeaders.length > 0 || richList.length > 0)" class="panel leaders" title="Leaderboard">
-        <LeaderStrip :podium="podium" :jobs="jobLeaders" :rich="richList" />
+        <LeaderStrip :podium="podium" :jobs="jobLeaders" :rich="richList" :show-mesos="showMesos">
+          <template #rich-toggle><EyeToggle v-model:shown="showMesos" label="mesos" /></template>
+        </LeaderStrip>
       </GameWindow>
       <p v-else-if="status !== 'tracking' && leaderError" class="fine">The leaderboard couldn't load just now.</p>
 
@@ -296,7 +301,8 @@ onBeforeUnmount(() => {
         <LeaderStrip :podium="[]" :jobs="jobLeaders" only="jobs" />
       </GameWindow>
       <GameWindow v-if="richList.length > 0" title="Rich list">
-        <LeaderStrip :podium="[]" :jobs="[]" :rich="richList" only="rich" stack />
+        <template #aside><EyeToggle v-model:shown="showMesos" label="mesos" /></template>
+        <LeaderStrip :podium="[]" :jobs="[]" :rich="richList" :show-mesos="showMesos" only="rich" stack />
       </GameWindow>
     </aside>
   </div>
