@@ -1,12 +1,14 @@
 name: Deploy to Railway
 
-# Deploys the `ms` service (the SPA + /api/*, in the shared "runescape" project next to iron's `web`) on
-# every push to main, plus on demand via workflow_dispatch. Database migrations aren't a step here:
+# Deploys the maplestory app (the SPA + /api/*, Railway service "maplestory frontend", in the shared "runescape"
+# project next to iron's services) on
+# every push to main, plus on demand via workflow_dispatch. The service is addressed by ID, not name, so
+# renaming it in Railway can't break the deploy (service IDs are not secrets). Database migrations aren't a step here:
 # api/server.mjs runs them itself at boot (runMigrations()), so each deploy carries its own migrations.
 #
 # Needs one GitHub repository secret, RAILWAY_TOKEN: a Railway *project token* for the production
-# environment (Railway > project > Settings > Tokens). Railway's own GitHub auto-deploy for this service
-# must be switched off (service Settings > Source), or every push would deploy twice.
+# environment (Railway > project > Settings > Tokens). Railway's own GitHub auto-deploy must stay off
+# (service Settings > Source), or every push would deploy twice.
 on:
   push:
     branches: [main]
@@ -41,5 +43,5 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Railway CLI
         run: npm install -g @railway/cli
-      - name: Deploy ms service
-        run: railway up --service ms --ci
+      - name: Deploy maplestory frontend
+        run: railway up --service ad378f4d-e127-46bd-84db-1dabca842a44 --ci

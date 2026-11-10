@@ -162,7 +162,7 @@ The Classic UI uses exact pixel fonts, so we match pixels instead of OCR:
 
 ## Stack
 Fastify 5 + `pg` (api/, plain ESM `.mjs`), Vue 3 + Vite + TS (web/), Postgres 18,
-Railway for prod: service `ms` in the shared `runescape` project (iron owns `web`), same Postgres. Deploys: pushes to `main` run `.github/workflows/deploy-railway.yml` (typecheck + tests, then `railway up --service ms --ci` with the `RAILWAY_TOKEN` repo secret), like iron; Railway's own GitHub auto-deploy must stay off or it deploys twice. Manual deploy still works: `railway up --service ms`. CI skips the suites that need the gitignored `fixtures/*.png` (run full `npm test` locally). Tests: Vitest.
+Railway for prod: service `ms` in the shared `runescape` project (iron owns `web`), same Postgres. Deploys: pushes to `main` run `.github/workflows/deploy-railway.yml` (typecheck + tests, then `railway up --service <maplestory frontend's ID> --ci` with the `RAILWAY_TOKEN` repo secret), like iron; Railway's own GitHub auto-deploy must stay off or it deploys twice. Manual deploy: `railway up --service ad378f4d-e127-46bd-84db-1dabca842a44` (the Railway service is named "maplestory frontend"; it holds `DATABASE_URL`; there is no service called plain `ms` any more). CI skips the suites that need the gitignored `fixtures/*.png` (run full `npm test` locally). Tests: Vitest.
 
 ## Commands
 - `npm run db:up` / `db:down`: local Postgres (docker, port 5434)
