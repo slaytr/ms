@@ -11,8 +11,9 @@ import { FIXTURES_DIR, loadFrame } from './fixture-io.ts';
 import { quickSlotOrigin, quickTotals, readQuickSlots, type QuickSlots } from './quickslots.ts';
 import type { Frame } from './types.ts';
 
-const labels = JSON.parse(readFileSync(join(FIXTURES_DIR, 'labels.json'), 'utf8')) as Record<string, { quickSlots?: string[][] }>;
-const labelled = Object.keys(labels).filter((file) => labels[file].quickSlots);
+const labels = JSON.parse(readFileSync(join(FIXTURES_DIR, 'labels.json'), 'utf8')) as Record<string, { quickSlots?: string[][]; scaled?: boolean }>;
+/** Scaled frames need unscaling first; unscale-frame.test.ts covers them. */
+const labelled = Object.keys(labels).filter((file) => labels[file].quickSlots && !labels[file].scaled);
 const idByName = new Map(POTIONS.map((p) => [p.name, p.id]));
 const expOf = (frame: Frame) => detectFrame(frame, DEFAULT_TEMPLATES).state.exp;
 

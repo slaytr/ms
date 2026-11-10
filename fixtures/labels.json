@@ -941,5 +941,29 @@
     ],
     "street": "Victoria Road",
     "map": "Tree Dungeon, Forest Up North VIII"
+  },
+  "other_2560x1440_1794302247807.png": {
+    "scaled": true,
+    "exp": "240,706[32.15%]",
+    "level": "51",
+    "meso": "1,381,292",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "Victoria Road",
+    "map": "Tree Dungeon, Forest Up North VIII",
+    "quickSlots": [
+      [
+        "Blue Potion:248",
+        "Orange Potion:478",
+        "Pure Water:246",
+        "?:393"
+      ],
+      [
+        "White Potion:157",
+        "Lemon:770",
+        "Meat:4",
+        "-"
+      ]
+    ]
   }
 }

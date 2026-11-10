@@ -1,8 +1,6 @@
 import { DEFAULT_TEMPLATES } from '../lib/detect/default-templates.ts';
 import { detectFrame, INITIAL_STATE, type Detection, type DetectState } from '../lib/detect/detect.ts';
-import { DEFAULT_INVENTORY_TEMPLATES } from '../lib/detect/default-inventory-templates.ts';
-import { readUseTab } from '../lib/detect/inventory.ts';
-import { readQuickSlots } from '../lib/detect/quickslots.ts';
+import { readPots } from '../lib/detect/read-pots.ts';
 import { withInferredLevel } from '../lib/level-infer';
 
 /**
@@ -35,10 +33,8 @@ export function useDetector() {
     // If the level digits can't be read, work the level out from EXP and EXP%.
     const detection = withInferredLevel(raw, lastLevel);
     if (detection.level !== null) lastLevel = detection.level;
-    // The Use tab is only read in a native-size window (a scaled one would need the frame unscaled first).
-    const useTab = raw.state.mesos && !raw.state.view ? readUseTab(image, raw.state.mesos, DEFAULT_INVENTORY_TEMPLATES) : null;
-    // The quick-slot bar hangs off the EXP label and is always on screen, so it is read every tick.
-    const quickSlots = raw.state.exp && !raw.state.view ? readQuickSlots(image, raw.state.exp, DEFAULT_INVENTORY_TEMPLATES) : null;
+    // Pots: the Use tab and the quick-slot bar (a scaled window has them unscaled first).
+    const { useTab, quickSlots } = readPots(image, raw.state);
     return { ...detection, useTab, quickSlots };
   }
 

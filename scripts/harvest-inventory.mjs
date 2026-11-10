@@ -25,6 +25,7 @@ import { detectFrame } from '../web/src/lib/detect/detect.ts';
 import { loadFrame, FIXTURES_DIR } from '../web/src/lib/detect/fixture-io.ts';
 import { digitGlyphs, digitMask, mismatchAt, slotOrigin, useTabSelected, INVENTORY } from '../web/src/lib/detect/inventory.ts';
 import { quickSlotOrigin } from '../web/src/lib/detect/quickslots.ts';
+import { quickSlotRegion, unscaleColourRegions } from '../web/src/lib/detect/unscale-frame.ts';
 import { parseTemplates } from '../web/src/lib/detect/templates.ts';
 import { POTIONS } from '../web/src/data/potions.ts';
 
@@ -195,8 +196,12 @@ for (const [file, label] of Object.entries(labels)) {
     else learnGrid(useTabLearner, file, frame, label.useTab, (row, col) => slotOrigin(state.mesos, row, col));
   }
   if (label.quickSlots) {
-    if (!state.exp || state.view) problems.push(`${file}: no native-size EXP label found, quick slots skipped.`);
-    else queueGrid(quickSlots, file, frame, label.quickSlots, (row, col) => quickSlotOrigin(state.exp, row, col));
+    if (!state.exp) problems.push(`${file}: no EXP label found, quick slots skipped.`);
+    else {
+      // A taller window draws the bar scaled up; learn from it as the reader will see it, unscaled to native pixels.
+      const source = state.view ? unscaleColourRegions(frame, state.view, [quickSlotRegion(state.exp)]) : frame;
+      queueGrid(quickSlots, file, source, label.quickSlots, (row, col) => quickSlotOrigin(state.exp, row, col));
+    }
   }
 }
 
