@@ -25,6 +25,12 @@ The Classic UI uses exact pixel fonts, so we match pixels instead of OCR:
   bilinear) was tried and blurs glyphs too much to match. Limits: the title bar/border sizes in
   `WINDOW_FRAMES` (Windows display scaling above 100% changes them), and client heights under 768 aren't
   scaled at all. `ANCHOR_HOME` (layout.ts) is checked against a real frame by a test.
+  **Windows 11 captures with desktop margins** (a window shadow or wallpaper strip around the window, up to ~55px per side at
+  125-150% display scaling, so 2560x1440 clients arrive as 2593x1515, 2682x1576...) are fitted from the title bar's flat band
+  (`findTitleBar`); the bottom margin is searched up to `MAX_BOTTOM_MARGIN` = 64. No trimming needed; the fit costs ~450ms once.
+  Fixtures: `"scaled": true` frames labelled `"lossy": true` (JPEG, e.g. maple01-07) only test the readers, never teach them
+  (both harvest scripts skip them); `"harvest": true` frames (lossless, exact once unscaled) teach `harvest-templates.mjs` through
+  the same fit + unscale as the detector.
 - Digits are segmented at empty columns and matched to exact bitmap templates
   (templates.json). Unknown glyph => null reading. **Never guess a digit.**
 - Meso is read right-to-left and stops at a verified blank gap, so another window
@@ -85,7 +91,9 @@ The Classic UI uses exact pixel fonts, so we match pixels instead of OCR:
   pixels under the stack count ignored). A match needs a small colour difference AND a clear margin over the
   runner-up, else the slot is "an item we don't track" (null id). Icons come from `fixtures/potion-icons/` (gitignored;
   fetched from ms-classic.com, whose robots.txt allows it).
-- **Stack counts** are drawn over the icon in a proportional font (white fill, black outline). Only white runs bordered by
+- **Stack counts** are drawn over the icon in a proportional font (white fill, black outline). The fill fades from white to light blue down its height (bottom rows 153,204,255); video compression
+  drops that tint but a lossless capture keeps it, so `isCountBlue` accepts it. `inventory-templates.json` is merged (old + new variants),
+  not regenerated from scratch: a full re-harvest dropped a learned `7` because learning is order dependent. Only white runs bordered by
   black on both sides count (icon highlights aren't). Digits are matched left to right by exact shape with a 2px
   tolerance and a margin over the next digit; ink after the count that isn't digit-shaped is ignored, ink that is
   digit-shaped but unmatched makes the count null. **A count is right or null, never guessed.** A `1` that loses its
@@ -197,6 +205,15 @@ Railway for prod: service `maplestory frontend` (renamed from `ms`; `railway ssh
 - `npm run web:dev`: Vite dev server (proxies /api to 4174)
 - `npm run sync:prod`: mirror prod DB into local (skill: `sync-prod`)
 - `npm test`, `npm run typecheck`
+
+## Caching
+- **Data lists, 1 minute, client side.** `listMapSessions`, `listCharacters` and `getWeeklySessions` (Maps, Characters, Rankings and the
+  home leaderboard) go through `createTtlCache` (`lib/ttl-cache.ts`) in `lib/api.ts`: kept 60s in memory from when the data arrived, one
+  shared request for simultaneous callers, failures never kept. A reload starts fresh. The cached arrays are shared between pages,
+  so nothing may sort or mutate them in place.
+- **Images, 1 day.** `/api/avatar/:name` and every static image (`.png/.webp/.svg/...`, e.g. `/nx`, `/potions`) are sent with
+  `Cache-Control: public, max-age=86400`; pages and code stay `max-age=0` (revalidated by ETag) so a deploy is picked up. The static plugin's
+  own header is off (`cacheControl: false`) because it overrides `setHeaders`; `server.mjs` sets it for every file.
 
 ## Conventions
 - API envelope: `{ success, data, error }`.

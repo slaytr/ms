@@ -83,7 +83,7 @@ describe('detectFrame on real Classic client captures', () => {
     const positions = open.map((f) => detectFrame(loadFrame(f), DEFAULT_TEMPLATES).state.mesos);
     expect(positions.every((p) => p !== null)).toBe(true);
     expect(new Set(positions.map((p) => `${p!.x},${p!.y}`)).size).toBeGreaterThan(1);
-  });
+  }, SLOW_TEST_MS);
 
   it('still reads meso when another window overlaps the left of the field (world map frame)', () => {
     const covered = open.find((f) => f.endsWith('1794120030427.png'));
@@ -114,10 +114,21 @@ describe('character plate (name + job)', () => {
     expect(character.job).toBe(truth(file).job);
   });
 
-  it('gives the same fingerprint in every frame, whether or not the inventory is open', () => {
-    const prints = new Set(fixtures.map((f) => detectFrame(loadFrame(f), DEFAULT_TEMPLATES).character.fingerprint));
-    expect(prints.size).toBe(1);
-    expect([...prints][0]).toBeTruthy();
+  it('gives the same fingerprint in every frame of a character, whether or not the inventory is open', () => {
+    const printsByName = new Map<string, Set<string | null>>();
+    for (const file of fixtures) {
+      const { name } = truth(file);
+      const prints = printsByName.get(name) ?? new Set<string | null>();
+      prints.add(detectFrame(loadFrame(file), DEFAULT_TEMPLATES).character.fingerprint);
+      printsByName.set(name, prints);
+    }
+    expect(printsByName.size).toBeGreaterThan(1);
+    for (const prints of printsByName.values()) {
+      expect(prints.size).toBe(1);
+      expect([...prints][0]).toBeTruthy();
+    }
+    const all = [...printsByName.values()].map((prints) => [...prints][0]);
+    expect(new Set(all).size, 'different characters must not share a fingerprint').toBe(all.length);
   }, SLOW_TEST_MS);
 
   it('changes the fingerprint when the name pixels change (a different character)', () => {
@@ -166,7 +177,7 @@ describe('map name (minimap title, top left)', () => {
 
   it('reads several different maps, so the width of the panel is not what makes it work', () => {
     const maps = new Set(withMinimap.map((f) => detectFrame(loadFrame(f), DEFAULT_TEMPLATES).map.name));
-    expect(maps).toEqual(new Set(['Line 1 <Area 1>', 'Tree Dungeon, Forest Up North VIII', 'The Forest North of Ellinia', 'The Burnt Land III', 'Henesys Hunting Ground I', 'Dangerous Valley', 'Lith Harbor', 'Kerning City Construction Site', 'Remains <Tomb> I', 'Free Market <13>']));
+    expect(maps).toEqual(new Set(['Line 1 <Area 1>', 'Tree Dungeon, Forest Up North VIII', 'Tree Dungeon, Forest Up North IX', 'The Forest North of Ellinia', 'The Burnt Land III', 'Henesys Hunting Ground I', 'Dangerous Valley', 'Lith Harbor', 'Kerning City Construction Site', 'Remains <Tomb> I', 'Free Market <13>']));
   }, SLOW_TEST_MS);
 
   it('keeps a roman numeral as capital I\'s but reads the same bar as l inside a word', () => {
@@ -292,8 +303,10 @@ describe('windows taller than the client (UI scaled up)', () => {
 
   it('follows an inventory that was dragged somewhere else', () => {
     const layout = windowed(1080, 1920, 1366);
-    const positions = open.map((f) => detectFrame(upscaleCapture(loadFrame(f), layout), DEFAULT_TEMPLATES));
-    positions.forEach((result, i) => expect(result.meso).toBe(truth(open[i]).meso));
+    // Only native-size captures can be re-rendered as a taller window.
+    const native = open.filter((f) => !(labels[f] as Label).scaled);
+    const positions = native.map((f) => detectFrame(upscaleCapture(loadFrame(f), layout), DEFAULT_TEMPLATES));
+    positions.forEach((result, i) => expect(result.meso).toBe(truth(native[i]).meso));
     expect(new Set(positions.map((r) => `${r.state.mesos?.x},${r.state.mesos?.y}`)).size).toBeGreaterThan(1);
   }, SLOW_TEST_MS);
 

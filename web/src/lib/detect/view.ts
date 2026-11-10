@@ -41,8 +41,8 @@ const SOLVE_MARGIN = 8;
 /** Keeps the normal equations well-posed at the edges of a partial solve (negligible against the data). */
 const RIDGE = 1e-6;
 
-/** Longest bottom margin (shadow, border) tried below a client whose title bar was found in the frame. */
-const MAX_BOTTOM_MARGIN = 24;
+/** Longest bottom margin (shadow, border, wallpaper at 125%+ display scaling) tried below a client whose title bar was found in the frame. */
+const MAX_BOTTOM_MARGIN = 64;
 /** A title bar is a flat band at least this tall, much taller than any line of game art. */
 const TITLE_BAR_MIN_ROWS = 16;
 /** Only the top of the frame is searched for the title bar. */

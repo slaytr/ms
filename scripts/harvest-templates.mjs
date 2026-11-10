@@ -22,14 +22,17 @@ import { findAnchor } from '../web/src/lib/detect/anchor.ts';
 import { loadFrame, FIXTURES_DIR } from '../web/src/lib/detect/fixture-io.ts';
 import { ANCHOR_PAD, ANCHOR_SOURCES, ANCHOR_TOLERANCE, CHARACTER, EXP, LEVEL, MAP, MESO, SEARCH } from '../web/src/lib/detect/layout.ts';
 import { extractBitmap, inkBounds, toLuma } from '../web/src/lib/detect/mask.ts';
+import { EMPTY_TEMPLATES } from '../web/src/lib/detect/types.ts';
+import { fitView, unscaleView } from '../web/src/lib/detect/view.ts';
 import { expGlyphs, joinGlyphs, levelTiles, mapGlyphs, mesoGlyphs, textGlyphs } from '../web/src/lib/detect/readers.ts';
 
 const OUT = join(import.meta.dirname, '..', 'web', 'src', 'lib', 'detect', 'templates.json');
 const labels = JSON.parse(readFileSync(join(FIXTURES_DIR, 'labels.json'), 'utf8'));
-// Scaled-up frames are for the tests only: templates are learned from native-size frames.
-const files = Object.keys(labels).filter((name) => name.endsWith('.png') && !labels[name].scaled);
+// Scaled-up frames are for the tests only, unless labelled "harvest": true (a lossless capture whose unscaled glyphs
+// are exact, checked against the native templates). Lossy frames (JPEG) never teach anything.
+const files = Object.keys(labels).filter((name) => name.endsWith('.png') && !labels[name].lossy && (!labels[name].scaled || labels[name].harvest));
 
-const REFERENCE = files.find((name) => labels[name].meso && labels[name].exp && labels[name].level);
+const REFERENCE = files.find((name) => !labels[name].scaled && labels[name].meso && labels[name].exp && labels[name].level);
 if (!REFERENCE) throw new Error('labels.json needs at least one fixture labelled with exp, level and meso.');
 
 const POLARITY = {
@@ -117,10 +120,23 @@ function learnText(label, glyphs, file, line, { font = 'text', spaceGap = CHARAC
 
 for (const file of files) {
   const frame = loadFrame(file);
-  const luma = toLuma(frame);
+  let luma = toLuma(frame);
+  let width = frame.width;
+  let height = frame.height;
+  if (labels[file].scaled) {
+    // Read the frame as the detector does: fitted to the native client and unscaled.
+    const view = fitView(luma, width, height, { ...EMPTY_TEMPLATES, anchors });
+    if (!view) {
+      problems.push(`${file}: no window fit found, skipped.`);
+      continue;
+    }
+    luma = unscaleView(luma, width, view);
+    width = view.width;
+    height = view.height;
+  }
   const at = {};
   for (const name of Object.keys(anchors)) {
-    at[name] = findAnchor(luma, frame.width, frame.height, anchors[name], SEARCH[name](frame.width, frame.height), {
+    at[name] = findAnchor(luma, width, height, anchors[name], SEARCH[name](width, height), {
       polarity: POLARITY[name],
       tolerance: ANCHOR_TOLERANCE,
     });
@@ -133,12 +149,12 @@ for (const file of files) {
       problems.push(`${file}: labelled ${line} "${text}" but the minimap anchor was not found; skipped.`);
       continue;
     }
-    learnText(text, mapGlyphs(luma, frame.width, frame.height, at.minimap, line), file, line, { font: 'map', spaceGap: MAP.spaceGap });
+    learnText(text, mapGlyphs(luma, width, height, at.minimap, line), file, line, { font: 'map', spaceGap: MAP.spaceGap });
   }
   const need = [
-    [exp, 'exp', 'exp', () => expGlyphs(luma, frame.width, frame.height, at.exp), false],
-    [level, 'level', 'level', () => levelTiles(luma, frame.width, frame.height, at.level), true],
-    [meso, 'meso', 'mesos', () => mesoGlyphs(luma, frame.width, frame.height, at.mesos), true],
+    [exp, 'exp', 'exp', () => expGlyphs(luma, width, height, at.exp), false],
+    [level, 'level', 'level', () => levelTiles(luma, width, height, at.level), true],
+    [meso, 'meso', 'mesos', () => mesoGlyphs(luma, width, height, at.mesos), true],
   ];
   for (const [line, text] of [['name', name], ['job', job]]) {
     if (!text) continue;
@@ -146,7 +162,7 @@ for (const file of files) {
       problems.push(`${file}: labelled ${line} "${text}" but the level anchor was not found; skipped.`);
       continue;
     }
-    learnText(text, textGlyphs(luma, frame.width, frame.height, at.level, line), file, line);
+    learnText(text, textGlyphs(luma, width, height, at.level, line), file, line);
   }
   for (const [text, font, anchorName, extract, exact] of need) {
     if (!text) continue;

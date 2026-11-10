@@ -14,7 +14,7 @@ import { readQuickSlots } from './quickslots.ts';
 import { borderless, upscaleCapture, windowed } from './scale-fixture.ts';
 import { quickSlotRegion, unscaleColourRegions, useTabRegion } from './unscale-frame.ts';
 
-type Labels = Record<string, { quickSlots?: string[][]; useTab?: string[][] }>;
+type Labels = Record<string, { quickSlots?: string[][]; useTab?: string[][]; scaled?: boolean; lossy?: boolean }>;
 const labels = JSON.parse(readFileSync(join(FIXTURES_DIR, 'labels.json'), 'utf8')) as Labels;
 const idByName = new Map(POTIONS.map((p) => [p.name, p.id]));
 /** Only 1368x800 windowed captures of the native client can be re-rendered as a taller window. */
@@ -91,4 +91,35 @@ describe('a real 2560x1440 capture (the client scales its UI up, so the pots nee
     const frame = loadFrame('other_2560x1440_1794302247807.png');
     expect(readPots(frame, detectFrame(frame, DEFAULT_TEMPLATES).state).useTab).toBeNull();
   });
+});
+
+/** Real 2560x1440 captures (some windowed with desktop margins), labelled with the quick-slot bar. Lossy ones are JPEG-compressed. */
+const scaledBars = Object.keys(labels).filter((f) => labels[f].quickSlots && labels[f].scaled && /_2\d{3}x1\d{3}_/.test(f));
+
+describe('the quick-slot bar in real scaled captures', () => {
+  it('has fixtures to test against', () => {
+    expect(scaledBars.length).toBeGreaterThan(5);
+  });
+
+  it.each(scaledBars)('reads the right item, and a count that is right or null, never wrong: %s', (file) => {
+    const frame = loadFrame(file);
+    const { quickSlots } = readPots(frame, detectFrame(frame, DEFAULT_TEMPLATES).state);
+    expect(quickSlots).not.toBeNull();
+    const grid = labels[file].quickSlots!;
+    let tracked = 0;
+    let read = 0;
+    for (const slot of quickSlots!) {
+      const cell = grid[slot.row][slot.col];
+      const [name, count] = cell.split(':');
+      expect(slot.itemId, `[${slot.row},${slot.col}] ${cell}`).toBe(idByName.get(name) ?? null);
+      if (slot.itemId === null) continue;
+      tracked += 1;
+      if (slot.quantity !== null) {
+        expect(slot.quantity, `[${slot.row},${slot.col}] ${cell}`).toBe(Number(count));
+        read += 1;
+      }
+    }
+    // A lossless capture keeps every digit's pixels, so every tracked count must read; a JPEG may lose some.
+    if (!labels[file].lossy) expect(read, 'every tracked count should read').toBe(tracked);
+  }, 30_000);
 });

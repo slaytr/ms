@@ -187,6 +187,7 @@ function queueGrid(into, file, frame, grid, originOf) {
 for (const [file, label] of Object.entries(labels)) {
   if (!file.endsWith('.png')) continue;
   if (!label.useTab && !label.quickSlots) continue;
+  if (label.lossy) continue; // a compressed capture's digit shapes are noisy: it tests the reader but never teaches it
   const frame = loadFrame(file);
   const state = detectFrame(frame, templates).state;
 

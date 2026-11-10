@@ -130,13 +130,19 @@ function slotIsEmpty(frame: Frame, origin: Point): boolean {
 }
 
 const luma = ([r, g, b]: readonly [number, number, number]) => 0.299 * r + 0.587 * g + 0.114 * b;
+/**
+ * The count font fades from white to light blue down its height (the last rows are 153,204,255). Video
+ * compression drops that tint, but a lossless capture keeps it, and it must still read as the digit's fill.
+ */
+const isCountBlue = ([r, g, b]: readonly [number, number, number]) => b >= 235 && g >= 185 && r >= 140 && g - r <= 70 && b - g <= 70;
+
 /** Bright and colourless, but not the flat slot background (which also shows through the inside of a 0). Video compression dims some blocks of the white, hence the low bar. */
 const isWhite = (rgb: readonly [number, number, number]) => {
   const tint = Math.max(...rgb) - Math.min(...rgb);
   const l = luma(rgb);
   // Very bright pixels can carry more tint: the count is white over a yellow icon at times (255, 255, 211).
   const colourless = l >= 235 ? tint < 60 : l >= 190 && tint < 40;
-  return colourless && !isEmptyColor(rgb, 12);
+  return (colourless || isCountBlue(rgb)) && !isEmptyColor(rgb, 12);
 };
 const isBlack = (rgb: readonly [number, number, number]) => luma(rgb) < 70;
 

@@ -965,5 +965,279 @@
         "-"
       ]
     ]
+  },
+  "inventory-open_2560x1440_1794304000001.png": {
+    "scaled": true,
+    "lossy": true,
+    "exp": "153,311[52.11%]",
+    "level": "40",
+    "meso": "31,852",
+    "name": "Bellat{ryx}",
+    "job": "Bandit",
+    "street": "{Vi}ctoria Road",
+    "map": "Tree Dungeon, Forest Up Nort~h~ IX",
+    "quickSlots": [
+      [
+        "?",
+        "?:30",
+        "?",
+        "Lemon:240"
+      ],
+      [
+        "?",
+        "?",
+        "-",
+        "Meat:240"
+      ]
+    ]
+  },
+  "inventory-closed_2560x1440_1794304000002.png": {
+    "scaled": true,
+    "lossy": true,
+    "exp": "141,923[48.24%]",
+    "level": "40",
+    "name": "Bellat{ryx}",
+    "job": "Bandit",
+    "street": "{Vi}ctoria Road",
+    "map": "Tree Dungeon, Forest Up Nort~h~ IX",
+    "quickSlots": [
+      [
+        "?",
+        "?:30",
+        "?",
+        "Lemon:293"
+      ],
+      [
+        "?",
+        "?",
+        "-",
+        "Meat:328"
+      ]
+    ]
+  },
+  "inventory-open_2560x1440_1794304000003.png": {
+    "scaled": true,
+    "lossy": true,
+    "exp": "141,977[48.26%]",
+    "level": "40",
+    "meso": "25,261",
+    "name": "Bellat{ryx}",
+    "job": "Bandit",
+    "street": "{Vi}ctoria Road",
+    "map": "Tree Dungeon, Forest Up Nort~h~ IX",
+    "quickSlots": [
+      [
+        "?",
+        "?:30",
+        "?",
+        "Lemon:293"
+      ],
+      [
+        "?",
+        "?",
+        "-",
+        "Meat:327"
+      ]
+    ]
+  },
+  "inventory-open_2560x1440_1794304000004.png": {
+    "scaled": true,
+    "lossy": true,
+    "exp": "146,347[49.74%]",
+    "level": "40",
+    "meso": "27,810",
+    "name": "Bellat{ryx}",
+    "job": "Bandit",
+    "street": "{Vi}ctoria Road",
+    "map": "Tree Dungeon, Forest Up Nort~h~ IX",
+    "quickSlots": [
+      [
+        "?",
+        "?:30",
+        "?",
+        "Lemon:272"
+      ],
+      [
+        "?",
+        "?",
+        "-",
+        "Meat:289"
+      ]
+    ]
+  },
+  "inventory-open_2560x1440_1794304000005.png": {
+    "scaled": true,
+    "lossy": true,
+    "exp": "146,259[49.71%]",
+    "level": "40",
+    "meso": "27,741",
+    "name": "Bellat{ryx}",
+    "job": "Bandit",
+    "street": "{Vi}ctoria Road",
+    "map": "Tree Dungeon, Forest Up Nort~h~ IX",
+    "quickSlots": [
+      [
+        "?",
+        "?:30",
+        "?",
+        "Lemon:273"
+      ],
+      [
+        "?",
+        "?",
+        "-",
+        "Meat:289"
+      ]
+    ]
+  },
+  "inventory-open_2560x1440_1794304000006.png": {
+    "scaled": true,
+    "lossy": true,
+    "exp": "152,703[51.90%]",
+    "level": "40",
+    "meso": "31,312",
+    "name": "Bellat{ryx}",
+    "job": "Bandit",
+    "street": "{Vi}ctoria Road",
+    "map": "Tree Dungeon, Forest Up Nort~h~ IX",
+    "quickSlots": [
+      [
+        "?",
+        "?:30",
+        "?",
+        "Lemon:243"
+      ],
+      [
+        "?",
+        "?",
+        "-",
+        "Meat:251"
+      ]
+    ]
+  },
+  "inventory-open_2560x1440_1794304000007.png": {
+    "scaled": true,
+    "lossy": true,
+    "exp": "152,766[51.92%]",
+    "level": "40",
+    "meso": "31,384",
+    "name": "Bellat{ryx}",
+    "job": "Bandit",
+    "street": "{Vi}ctoria Road",
+    "map": "Tree Dungeon, Forest Up Nort~h~ IX",
+    "quickSlots": [
+      [
+        "?",
+        "?:30",
+        "?",
+        "Lemon:243"
+      ],
+      [
+        "?",
+        "?",
+        "-",
+        "Meat:249"
+      ]
+    ]
+  },
+  "inventory-open_2593x1515_1794304000008.png": {
+    "scaled": true,
+    "harvest": true,
+    "exp": "167,000[56.76%]",
+    "level": "40",
+    "meso": "39,208",
+    "name": "Bellat{ryx}",
+    "job": "Bandit",
+    "street": "{Vi}ctoria Road",
+    "map": "Tree Dungeon, Forest Up Nort~h~ IX",
+    "quickSlots": [
+      [
+        "?",
+        "?:30",
+        "?",
+        "Lemon:177"
+      ],
+      [
+        "?",
+        "?",
+        "-",
+        "Meat:141"
+      ]
+    ]
+  },
+  "inventory-open_2682x1576_1794304000009.png": {
+    "scaled": true,
+    "harvest": true,
+    "exp": "160,347[54.50%]",
+    "level": "40",
+    "meso": "35,430",
+    "name": "Bellat{ryx}",
+    "job": "Bandit",
+    "street": "{Vi}ctoria Road",
+    "map": "Tree Dungeon, Forest Up Nort~h~ IX",
+    "quickSlots": [
+      [
+        "?",
+        "?:30",
+        "?",
+        "Lemon:208"
+      ],
+      [
+        "?",
+        "?",
+        "-",
+        "Meat:184"
+      ]
+    ]
+  },
+  "inventory-open_2617x1549_1794304000010.png": {
+    "scaled": true,
+    "harvest": true,
+    "exp": "180,929[61.50%]",
+    "level": "40",
+    "meso": "47,005",
+    "name": "Bellat{ryx}",
+    "job": "Bandit",
+    "street": "{Vi}ctoria Road",
+    "map": "Tree Dungeon, Forest Up Nort~h~ IX",
+    "quickSlots": [
+      [
+        "?",
+        "?:30",
+        "?",
+        "Lemon:110"
+      ],
+      [
+        "?",
+        "?",
+        "-",
+        "Meat:53"
+      ]
+    ]
+  },
+  "inventory-open_2623x1555_1794304000011.png": {
+    "scaled": true,
+    "harvest": true,
+    "exp": "171,578[58.32%]",
+    "level": "40",
+    "meso": "41,878",
+    "name": "Bellat{ryx}",
+    "job": "Bandit",
+    "street": "{Vi}ctoria Road",
+    "map": "Tree Dungeon, Forest Up Nort~h~ IX",
+    "quickSlots": [
+      [
+        "?",
+        "?:30",
+        "?",
+        "Lemon:153"
+      ],
+      [
+        "?",
+        "?",
+        "-",
+        "Meat:108"
+      ]
+    ]
   }
 }
