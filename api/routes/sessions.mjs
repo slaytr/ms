@@ -1,3 +1,5 @@
+import { cleanIdentity } from '../lib/identity.mjs';
+import { saveIdentityForSession } from '../store/identities.mjs';
 import { refreshAvatar } from './avatar.mjs';
 import {
   MAX_READINGS_PER_BATCH,
@@ -57,6 +59,13 @@ const listQuery = {
   type: 'object',
   additionalProperties: false,
   properties: { fingerprint: { type: 'string', pattern: '^[a-z0-9]{1,24}$', maxLength: 24 } },
+};
+
+const identityBody = {
+  type: 'object',
+  required: ['name', 'job'],
+  additionalProperties: false,
+  properties: { name: { type: 'string', minLength: 1, maxLength: 80 }, job: { type: 'string', minLength: 1, maxLength: 80 } },
 };
 
 const endBody = {
@@ -127,6 +136,14 @@ export default async function sessionRoutes(fastify) {
   fastify.post('/api/sessions/:id/label', { schema: { ...ownerRoute.schema, body: labelBody }, preHandler: requireOwner }, async (request) => {
     await labelSession(request.params.id, request.body.label);
     return ok({ labelled: true });
+  });
+
+  // The player typed their name and spec: keep them against this session's fingerprint, for every browser and past session.
+  fastify.post('/api/sessions/:id/identity', { schema: { ...ownerRoute.schema, body: identityBody }, preHandler: requireOwner }, async (request, reply) => {
+    const identity = cleanIdentity(request.body.name, request.body.job);
+    if (!identity) return reply.code(400).send(fail('A name and a spec are both needed.'));
+    const saved = await saveIdentityForSession(request.params.id, identity);
+    return saved ? ok({ saved: true }) : reply.code(409).send(fail('This session has no character fingerprint to save against.'));
   });
 
   fastify.post('/api/sessions/:id/end', { schema: { ...ownerRoute.schema, body: endBody }, preHandler: requireOwner }, async (request) => {

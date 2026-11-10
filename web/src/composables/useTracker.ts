@@ -1,6 +1,6 @@
 import { computed, reactive, ref } from 'vue';
 
-import { createSession, endSession, labelSession, postReadings } from '../lib/api';
+import { createSession, endSession, labelSession, postReadings, saveSessionIdentity } from '../lib/api';
 import type { Detection, MapPlate } from '../lib/detect/detect.ts';
 import { coreReady } from '../lib/health';
 import { mapLabel } from '../lib/map-label';
@@ -59,6 +59,8 @@ export function useTracker() {
   let latestSnapshot: PlayerSnapshot | null = null;
   /** The name and spec the player entered; overrides whatever the detector reads. */
   let identity: PlayerIdentity | null = null;
+  /** The session the current identity was last saved against, so it is sent once per session, not every tick. */
+  let identitySavedFor = '';
   /** The same latest-known state, reactive, for the live overlay (level and EXP are present even on a tick that missed them). */
   const current = ref<PlayerSnapshot | null>(null);
   /** The map the player is on now. Holds the last readable one while the minimap is covered or unreadable. */
@@ -127,6 +129,23 @@ export function useTracker() {
     }
   }
 
+  /**
+   * Keeps the typed name and spec against the character on the server, once per session. Needs a session
+   * (it is the proof of who is asking), so it runs again after the session is created and on later ticks
+   * until it succeeds.
+   */
+  async function syncIdentity(): Promise<void> {
+    if (!identity || !session.id || identitySavedFor === session.id) return;
+    const sessionId = session.id;
+    identitySavedFor = sessionId; // claimed before the request so overlapping ticks don't send it twice
+    try {
+      await saveSessionIdentity(sessionId, session.token, identity.name, identity.job);
+    } catch (cause) {
+      identitySavedFor = ''; // try again on the next tick
+      message.value = `Could not save your name, will retry: ${(cause as Error).message}`;
+    }
+  }
+
   async function record(detection: Detection): Promise<void> {
     const { meso, exp, expPct, level } = detection;
     // Nothing readable this tick (e.g. alt-tabbed): don't store an empty row.
@@ -137,6 +156,7 @@ export function useTracker() {
     pending = [...pending, reading];
     if (!(await ensureSession(detection))) return;
     await nameFromMap(detection);
+    await syncIdentity();
     if (pending.length >= UPLOAD_EVERY) await flush();
   }
 
@@ -184,6 +204,7 @@ export function useTracker() {
       pending = [];
       latestSnapshot = null;
       identity = null;
+      identitySavedFor = '';
       current.value = null;
       map.value = null;
       session.id = '';
@@ -246,6 +267,7 @@ export function useTracker() {
     /** The player told us who they are: use it for this session's snapshots from now on, including the one saved at the end. */
     setIdentity: (next: PlayerIdentity | null) => {
       identity = next;
+      void syncIdentity();
       if (latestSnapshot) {
         latestSnapshot = applyIdentity(latestSnapshot, identity);
         current.value = latestSnapshot;

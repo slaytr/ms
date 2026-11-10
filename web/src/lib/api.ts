@@ -66,6 +66,23 @@ export function endSession(sessionId: string, ownerToken: string, end: PlayerSna
   });
 }
 
+/** Keeps the player's typed name and spec against this session's character, for every browser and past session. */
+export function saveSessionIdentity(sessionId: string, ownerToken: string, name: string, job: string): Promise<{ saved: boolean }> {
+  return request(`/api/sessions/${sessionId}/identity`, {
+    method: 'POST',
+    headers: { 'x-owner-token': ownerToken },
+    body: JSON.stringify({ name, job }),
+  });
+}
+
+/** The name and spec saved for a character, or null when none is known. */
+export async function getSavedIdentity(fingerprint: string): Promise<{ name: string; job: string } | null> {
+  const { identity } = await request<{ identity: { name: string; job: string } | null }>(
+    `/api/identity?fingerprint=${encodeURIComponent(fingerprint)}`,
+  );
+  return identity;
+}
+
 export interface SessionSummary {
   id: string;
   label: string;

@@ -69,8 +69,8 @@ with e as (
 )
 select s.id,
        s.label as map,
-       coalesce(nullif(st.name, ''), nullif(s.character, ''), 'Unknown') as player,
-       coalesce(nullif(st.job, ''), nullif(en.job, '')) as job,
+       coalesce(nullif(st.name, ''), nullif(s.character, ''), nullif(ci.name, ''), 'Unknown') as player,
+       coalesce(nullif(st.job, ''), nullif(en.job, ''), nullif(ci.job, '')) as job,
        coalesce(s.fingerprint, lower(coalesce(nullif(st.name, ''), nullif(s.character, ''), s.id::text))) as "playerKey",
        extract(epoch from sp.first_at) * 1000 as "startedAt",
        extract(epoch from (sp.last_at - sp.first_at)) as seconds,
@@ -82,6 +82,7 @@ select s.id,
   join span sp on sp.session_id = s.id
   left join ms_session_snapshots st on st.session_id = s.id and st.kind = 'start'
   left join ms_session_snapshots en on en.session_id = s.id and en.kind = 'end'
+  left join ms_character_identities ci on ci.fingerprint = s.fingerprint
   left join exp_gain eg on eg.session_id = s.id
   left join pct_gain pg on pg.session_id = s.id
   left join meso_gain mg on mg.session_id = s.id

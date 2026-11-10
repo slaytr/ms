@@ -134,6 +134,11 @@ The Classic UI uses exact pixel fonts, so we match pixels instead of OCR:
 - **No auth.** The player is identified from the screen: `character.fingerprint` (hash of the name
   pixels) is the identity, the readable name/job are a nicety. The profile
   (`lib/profile.ts`) lives in localStorage; a name we can't read yet is typed in by the player.
+- **Typed identity is kept on the server too.** When the player enters a name and spec, the tracker posts them to
+  `POST /api/sessions/:id/identity` (owner token required; the fingerprint is taken from the stored session, never the
+  client), saved in `ms_character_identities` (migration 009, seeded from existing snapshots). Listings (characters, maps,
+  rankings) use the detected/snapshot name first and fall back to this row. `GET /api/identity?fingerprint=` lets a new
+  browser skip the form for a character we already know. `sync:prod` copies the table.
 - The text font draws capital I and lowercase l identically; `resolveLookalikes` decides by position.
 - `web/src/data/expTable.ts` is the Classic EXP table; level-ups use it for exact EXP gained.
 

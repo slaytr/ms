@@ -16,15 +16,18 @@ const CHARACTERS_SQL = `
 with latest as (
   select distinct on (sn.session_id)
          sn.session_id, sn.name, sn.job, sn.level, sn.exp_pct, sn.taken_at, sn.fingerprint,
-         s.character as typed_name, s.fingerprint as session_fingerprint
+         s.character as typed_name, s.fingerprint as session_fingerprint,
+         ci.name as saved_name, ci.job as saved_job
     from ms_session_snapshots sn
     join ms_capture_sessions s on s.id = sn.session_id
+    left join ms_character_identities ci on ci.fingerprint = coalesce(sn.fingerprint, s.fingerprint)
    where sn.level is not null
    order by sn.session_id, sn.taken_at desc
 ), named as (
-  select coalesce(nullif(name, ''), nullif(typed_name, '')) as name,
+  -- The detected name wins; what the player typed in (saved against the fingerprint) fills the gaps.
+  select coalesce(nullif(name, ''), nullif(typed_name, ''), nullif(saved_name, '')) as name,
          coalesce(fingerprint, session_fingerprint) as fingerprint,
-         job, level, exp_pct, taken_at
+         coalesce(nullif(job, ''), nullif(saved_job, '')) as job, level, exp_pct, taken_at
     from latest
 ), keyed as (
   select *, coalesce(fingerprint, lower(name)) as player_key

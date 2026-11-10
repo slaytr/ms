@@ -19,7 +19,7 @@ import { execFileSync } from 'node:child_process';
 import { pool, withTransaction, closePool } from '../api/db.mjs';
 
 /** Synced tables in FK-safe order. `ms_schema_migrations` is deliberately excluded: each environment tracks its own. */
-const TABLES = ['ms_capture_sessions', 'ms_session_snapshots', 'ms_readings', 'ms_character_avatars'];
+const TABLES = ['ms_capture_sessions', 'ms_session_snapshots', 'ms_readings', 'ms_character_avatars', 'ms_character_identities'];
 
 /**
  * Explicit column lists where `select *` would be wrong. owner_token is a

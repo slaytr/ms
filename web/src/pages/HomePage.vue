@@ -20,7 +20,7 @@ import { usePopOut } from '../composables/usePopOut';
 import { useTracker } from '../composables/useTracker';
 import { formatClock } from '../lib/format';
 import { assessDetection } from '../lib/health';
-import { listCharacters, getWeeklySessions } from '../lib/api';
+import { getSavedIdentity, listCharacters, getWeeklySessions } from '../lib/api';
 import { richest, specLeaders, type CharacterEntry, type SpecSlot } from '../lib/characters';
 import { expGainSeries } from '../lib/metrics';
 import { topByExp, type WeeklyRank } from '../lib/rankings';
@@ -76,6 +76,21 @@ watch(
 
 const showHint = computed(
   () => status.value === 'tracking' && tracker.ticks.value >= HINT_AFTER_TICKS && !lastDetection.value?.found.character,
+);
+// A character we have been told about before (from any browser) needn't be asked again.
+watch(
+  fingerprint,
+  async (fp) => {
+    if (!fp || !needsIdentity(profile.value, fp)) return;
+    try {
+      const saved = await getSavedIdentity(fp);
+      // Detection may have filled the gaps while we waited, or the player may have typed their own.
+      if (saved && fingerprint.value === fp && needsIdentity(profile.value, fp)) saveIdentity(saved.name, saved.job);
+    } catch {
+      // A nicety: if the lookup fails the form simply shows and the player types it in.
+    }
+  },
+  { immediate: true },
 );
 const askIdentity = computed(() => status.value === 'tracking' && needsIdentity(profile.value, fingerprint.value));
 const hadSession = computed(() => status.value === 'idle' && readings.value.length > 1);
