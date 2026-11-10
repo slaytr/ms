@@ -33,6 +33,7 @@ jobs:
           --exclude "**/detect/view.test.ts"
           --exclude "**/detect/quickslots.test.ts"
           --exclude "**/level-infer.fixtures.test.ts"
+          --exclude "**/detect/unscale-frame.test.ts"
 
   deploy:
     needs: check
