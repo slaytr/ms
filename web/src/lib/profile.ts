@@ -67,9 +67,14 @@ export function withIdentity(
   return { fingerprint, name, job: spec, level: base?.level ?? null, confirmed: true, updatedAt: now };
 }
 
-/** True when this on-screen character hasn't been named by the player yet, so we should ask. */
+/**
+ * True when we don't yet know both the name and the job of this on-screen character, so we should ask.
+ * Known means the player typed them in, or the detector read them (it never guesses, so a read is trusted).
+ */
 export function needsIdentity(profile: CharacterProfile | null, fingerprint: string | null): boolean {
-  return fingerprint !== null && !(profile?.fingerprint === fingerprint && profile.confirmed);
+  if (fingerprint === null) return false;
+  const known = profile?.fingerprint === fingerprint && profile.name !== null && profile.job !== null;
+  return !known;
 }
 
 /** Same data, ignoring the timestamp: used to skip pointless writes on every tick. */

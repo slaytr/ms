@@ -76,10 +76,12 @@ describe('player-entered identity', () => {
     expect(withIdentity(saved, 'abc123', 'Bill', '', 9)).toBe(saved);
   });
 
-  it('asks only for a character that has not been confirmed', () => {
+  it('asks only when the name or job of this character is still unknown', () => {
     expect(needsIdentity(null, null)).toBe(false);
     expect(needsIdentity(null, 'abc123')).toBe(true);
-    expect(needsIdentity(saved, 'abc123')).toBe(true);
+    expect(needsIdentity({ ...saved, name: null }, 'abc123')).toBe(true);
+    expect(needsIdentity({ ...saved, job: null }, 'abc123')).toBe(true);
+    expect(needsIdentity({ ...saved, name: 'Bill', job: 'Cleric', confirmed: false }, 'abc123')).toBe(false);
     expect(needsIdentity(entered, 'abc123')).toBe(false);
     expect(needsIdentity(entered, 'zzz999')).toBe(true);
   });
