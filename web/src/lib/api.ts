@@ -1,7 +1,9 @@
+import type { StoredSlot } from './bag';
 import type { CharacterEntry } from './characters';
 import type { WeeklySessions } from './rankings';
 import type { MapSession } from './maps';
 import type { Reading } from './metrics';
+import type { NxStatus } from './nx-economy';
 import type { PlayerSnapshot } from './snapshot';
 
 interface Envelope<T> {
@@ -110,6 +112,34 @@ export interface CharacterSession extends SessionSummary {
 
 export function listCharacterSessions(fingerprint: string): Promise<CharacterSession[]> {
   return request(`/api/sessions?fingerprint=${encodeURIComponent(fingerprint)}`);
+}
+
+/** A character's loot box state as the server keeps it: NX, the bag in stored form, and the last opening. */
+export interface LootState {
+  readonly nx: NxStatus;
+  readonly bag: readonly StoredSlot[];
+  readonly opened: number;
+  /** Item ids from the most recent opening. */
+  readonly lastOpen: readonly number[];
+}
+
+export function getLoot(fingerprint: string): Promise<LootState> {
+  return request(`/api/loot?fingerprint=${encodeURIComponent(fingerprint)}`);
+}
+
+/** Buys 1 or 11 crates with the character's NX. The server checks the balance and the bag room. */
+export function buyLootCrates(fingerprint: string, count: 1 | 11): Promise<LootState> {
+  return request('/api/loot/buy', { method: 'POST', body: JSON.stringify({ fingerprint, count }) });
+}
+
+/** Moves what is in one bag slot to another (swapping if it is filled), and remembers it. */
+export function moveLootSlot(fingerprint: string, from: number, to: number): Promise<LootState> {
+  return request('/api/loot/move', { method: 'POST', body: JSON.stringify({ fingerprint, from, to }) });
+}
+
+/** Opens the crates in the given bag slots. The server rolls the items. */
+export function openLootCrates(fingerprint: string, indexes: readonly number[]): Promise<LootState> {
+  return request('/api/loot/open', { method: 'POST', body: JSON.stringify({ fingerprint, indexes }) });
 }
 
 export function listMapSessions(): Promise<MapSession[]> {

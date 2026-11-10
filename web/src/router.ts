@@ -4,6 +4,7 @@ import CapturePage from './pages/CapturePage.vue';
 import CharactersPage from './pages/CharactersPage.vue';
 import RankingsPage from './pages/RankingsPage.vue';
 import MapsPage from './pages/MapsPage.vue';
+import LootPage from './pages/LootPage.vue';
 
 /** The home page is mounted by App.vue (kept alive so a screen share survives navigation), so its route renders nothing. */
 const HomePlaceholder = { render: () => null };
@@ -15,6 +16,8 @@ export const router = createRouter({
     { path: '/maps', name: 'maps', component: MapsPage, meta: { title: 'Maps | Bill\'s Personal Super Duper Maplestory Classic Tracker' } },
     { path: '/characters', name: 'characters', component: CharactersPage, meta: { title: "Characters | Bill's Personal Super Duper Maplestory Classic Tracker" } },
     { path: '/rankings', name: 'rankings', component: RankingsPage, meta: { title: "Rankings | Bill's Personal Super Duper Maplestory Classic Tracker" } },
+    { path: '/loot', name: 'loot', component: LootPage, meta: { title: "Loot | Bill's Personal Super Duper Maplestory Classic Tracker" } },
+    { path: '/nx', redirect: '/loot' },
     // Not linked from anywhere: reach the testing tools by typing /testing.
     { path: '/testing', name: 'testing', component: CapturePage, meta: { title: 'Testing tools' } },
     { path: '/capture', redirect: '/testing' },

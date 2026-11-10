@@ -142,6 +142,28 @@ The Classic UI uses exact pixel fonts, so we match pixels instead of OCR:
 - The text font draws capital I and lowercase l identically; `resolveLookalikes` decides by position.
 - `web/src/data/expTable.ts` is the Classic EXP table; level-ups use it for exact EXP gained.
 
+## Loot tab (loot box simulator)
+- `/loot` (`pages/LootPage.vue`; `/nx` redirects) simulates cash-shop crates in a MapleStory Item Inventory look (`components/nx/`).
+  It needs a saved character profile (the tracker's localStorage profile, with a name); without one it shows a gate pointing
+  at the Tracker, and with one it shows the character's sprite and name on the left. Crates and the items from them share one
+  96-slot bag (`lib/bag.ts`): a bought crate takes the first free slot, and an opened crate's item lands in the first free slot
+  (left to right, top to bottom), so it replaces its crate in place.
+- **Persistent and server-authoritative.** State is per character (fingerprint) in `ms_loot_state` (migration 012: the bag as
+  JSON, NX spent, crates opened, last opening). `GET /api/loot`, `POST /api/loot/buy` (1 or 11) and `POST /api/loot/open` do the
+  work in one transaction with the row locked; **items are rolled on the server**. The rules are the same TS the page uses
+  (`api/lib/loot.mjs` imports `web/src/lib/{bag,loot-box,nx-economy}.ts` and `data/crates.ts` through Node type stripping, so
+  those files must stay erasable-syntax-only and `engines.node` is >=22.18).
+- **Moving items.** Slots drag and drop (HTML5 drag events in `InventoryWindow.vue`): onto an empty slot moves, onto a filled one
+  swaps, like the game. `POST /api/loot/move` saves the position (`moveSlot` in `lib/bag.ts`); the page redraws at once and
+  reverts with a notice if saving fails. Mouse only: no touch or keyboard way to move yet.
+- **NX economy** (`lib/nx-economy.ts`): every character starts with 7,000 NX and gets +35,000 for each full 200,000 EXP gained
+  across ALL their sessions (EXP gained is computed from `ms_readings` with the same level-up handling as `store/maps.mjs`).
+  Earned NX is derived every time, never stored; only spent NX is. A character must have at least one session on record. Crates and their
+  items/rates live in `data/crates.ts` (Nexon's published list, nexon.com/maplestory/general-post/46331); add a crate by adding an
+  entry there. Rolling and pricing are pure in `lib/loot-box.ts` (weighted by rate over the actual total, since the published
+  rates are rounded). Icons are `web/public/nx/<itemId>.png` (from meowdb.com, which blocks plain HTTP clients: they were
+  fetched through a real browser); a test checks every listed item has one. State is in memory only, nothing is saved.
+
 ## Pop-out tracker
 - `components/PipTracker.vue` is the overlay: time to level, progress bar, EXP/h, meso/h, meso gained.
   `usePopOut` opens it in Chrome/Edge's Document Picture-in-Picture window (always on top) and falls
