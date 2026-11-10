@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      # The suites that read real game screenshots are skipped here: those PNGs live in fixtures/ but are
+      # gitignored (see .gitignore), so a fresh checkout has none. Run the full `npm test` locally.
+      - run: >-
+          npx vitest run
+          --exclude "**/detect/detect.test.ts"
+          --exclude "**/detect/inventory.test.ts"
+          --exclude "**/detect/view.test.ts"
+          --exclude "**/detect/quickslots.test.ts"
+          --exclude "**/level-infer.fixtures.test.ts"

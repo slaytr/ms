@@ -1,0 +1,45 @@
+name: Deploy to Railway
+
+# Deploys the `ms` service (the SPA + /api/*, in the shared "runescape" project next to iron's `web`) on
+# every push to main, plus on demand via workflow_dispatch. Database migrations aren't a step here:
+# api/server.mjs runs them itself at boot (runMigrations()), so each deploy carries its own migrations.
+#
+# Needs one GitHub repository secret, RAILWAY_TOKEN: a Railway *project token* for the production
+# environment (Railway > project > Settings > Tokens). Railway's own GitHub auto-deploy for this service
+# must be switched off (service Settings > Source), or every push would deploy twice.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      # Fixture-based suites are skipped: their screenshots are gitignored, so CI has none (see ci.yml).
+      - run: >-
+          npx vitest run
+          --exclude "**/detect/detect.test.ts"
+          --exclude "**/detect/inventory.test.ts"
+          --exclude "**/detect/view.test.ts"
+          --exclude "**/detect/quickslots.test.ts"
+          --exclude "**/level-infer.fixtures.test.ts"
+
+  deploy:
+    needs: check
+    runs-on: ubuntu-latest
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+      - name: Deploy ms service
+        run: railway up --service ms --ci
