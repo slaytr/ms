@@ -28,6 +28,19 @@ const BLANK = {
   meso: null,
 } as const;
 
+/** Who the player says they are (typed in), tied to the on-screen fingerprint it was entered for. */
+export interface PlayerIdentity {
+  readonly fingerprint: string;
+  readonly name: string;
+  readonly job: string;
+}
+
+/** Puts the player's own name and spec on a snapshot of that same character; any other snapshot is returned as is. */
+export function applyIdentity(snapshot: PlayerSnapshot, identity: PlayerIdentity | null): PlayerSnapshot {
+  if (!identity || snapshot.fingerprint !== identity.fingerprint) return snapshot;
+  return { ...snapshot, name: identity.name, job: identity.job };
+}
+
 /** What one detection says on its own. Unread values stay null: a snapshot never guesses. */
 export function snapshotFrom(detection: Detection, takenAt: number): PlayerSnapshot {
   return carryForward(null, detection, takenAt);

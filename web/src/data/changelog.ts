@@ -11,5 +11,6 @@ export interface ChangeLogEntry {
 }
 
 export const CHANGELOG: readonly ChangeLogEntry[] = [
+  { date: '2026-11-10', text: 'New players now enter their character name and pick their spec by hand, since name detection was unreliable.' },
   { date: '2026-11-10', text: 'Updated some of the text on the home page.' },
 ];

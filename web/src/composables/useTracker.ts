@@ -7,7 +7,7 @@ import { mapLabel } from '../lib/map-label';
 import { computeRates, type Reading } from '../lib/metrics';
 import { emptyPotHistory, recordPotHistory, type PotHistory } from '../lib/pot-history';
 import { buildPotView,observePots, observeQuick, pausePots, rescanPots, resumePots, startPotTracking } from '../lib/pot-tracker';
-import { carryForward, snapshotFrom, type PlayerSnapshot } from '../lib/snapshot';
+import { applyIdentity, carryForward, snapshotFrom, type PlayerIdentity, type PlayerSnapshot } from '../lib/snapshot';
 import { useDetector } from './useDetector';
 import { useMissReporter } from './useMissReporter';
 import { useScreenCapture } from './useScreenCapture';
@@ -57,6 +57,8 @@ export function useTracker() {
   let sessionLabel = '';
   /** Latest known state of the player, carried forward across ticks; becomes the session's end snapshot. */
   let latestSnapshot: PlayerSnapshot | null = null;
+  /** The name and spec the player entered; overrides whatever the detector reads. */
+  let identity: PlayerIdentity | null = null;
   /** The same latest-known state, reactive, for the live overlay (level and EXP are present even on a tick that missed them). */
   const current = ref<PlayerSnapshot | null>(null);
   /** The map the player is on now. Holds the last readable one while the minimap is covered or unreadable. */
@@ -81,11 +83,13 @@ export function useTracker() {
     if (session.id) return true;
     try {
       sessionLabel ||= (detection && mapLabel(detection.map)) || '';
+      const fingerprint = detection?.character.fingerprint ?? null;
+      const known = identity && identity.fingerprint === fingerprint ? identity : null;
       const created = await createSession({
         label: sessionLabel,
-        character: options.character ?? detection?.character.name ?? '',
-        fingerprint: detection?.character.fingerprint ?? null,
-        start: detection ? snapshotFrom(detection, Date.now()) : null,
+        character: options.character ?? known?.name ?? detection?.character.name ?? '',
+        fingerprint,
+        start: detection ? applyIdentity(snapshotFrom(detection, Date.now()), identity) : null,
       });
       session.id = created.id;
       session.token = created.ownerToken;
@@ -145,7 +149,7 @@ export function useTracker() {
         ticks.value += 1;
         lastDetection.value = detection;
         streak.value = coreReady(detection) ? streak.value + 1 : 0;
-        latestSnapshot = carryForward(latestSnapshot, detection, Date.now());
+        latestSnapshot = applyIdentity(carryForward(latestSnapshot, detection, Date.now()), identity);
         current.value = latestSnapshot;
         if (mapLabel(detection.map)) map.value = detection.map;
         await record(detection);
@@ -179,6 +183,7 @@ export function useTracker() {
       savedCount.value = 0;
       pending = [];
       latestSnapshot = null;
+      identity = null;
       current.value = null;
       map.value = null;
       session.id = '';
@@ -237,6 +242,14 @@ export function useTracker() {
     /** Repot: freeze pot counting while restocking, or carry on from the restocked inventory. */
     togglePotsPaused: () => {
       pots.value = pots.value.paused ? resumePots(pots.value) : pausePots(pots.value);
+    },
+    /** The player told us who they are: use it for this session's snapshots from now on, including the one saved at the end. */
+    setIdentity: (next: PlayerIdentity | null) => {
+      identity = next;
+      if (latestSnapshot) {
+        latestSnapshot = applyIdentity(latestSnapshot, identity);
+        current.value = latestSnapshot;
+      }
     },
     missFramesSent: misses.sent,
     missFrameError: misses.error,

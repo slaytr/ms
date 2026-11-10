@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { clearProfile, loadProfile, mergeProfile, sameProfile, saveProfile, withTypedName, type CharacterProfile } from './profile';
+import {
+  clearProfile,
+  loadProfile,
+  mergeProfile,
+  needsIdentity,
+  sameProfile,
+  saveProfile,
+  withIdentity,
+  withTypedName,
+  type CharacterProfile,
+} from './profile';
 
 const plate = (over: Partial<{ fingerprint: string | null; name: string | null; job: string | null }> = {}) => ({
   fingerprint: 'abc123',
@@ -9,7 +19,7 @@ const plate = (over: Partial<{ fingerprint: string | null; name: string | null; 
   ...over,
 });
 
-const saved: CharacterProfile = { fingerprint: 'abc123', name: 'PayYoBills', job: 'Wizard (Ice,Lightning)', level: 49, updatedAt: 1 };
+const saved: CharacterProfile = { fingerprint: 'abc123', name: 'PayYoBills', job: 'Wizard (Ice,Lightning)', level: 49, confirmed: false, updatedAt: 1 };
 
 function fakeStore(initial: Record<string, string> = {}) {
   const data = new Map(Object.entries(initial));
@@ -46,6 +56,37 @@ describe('mergeProfile', () => {
     const frozen = Object.freeze({ ...saved });
     expect(() => mergeProfile(frozen, plate(), 50, 9)).not.toThrow();
     expect(frozen.level).toBe(49);
+  });
+});
+
+describe('player-entered identity', () => {
+  const entered = withIdentity(null, 'abc123', '  Bill  ', 'Assassin', 7)!;
+
+  it('builds a confirmed profile from a name and a spec', () => {
+    expect(entered).toEqual({ fingerprint: 'abc123', name: 'Bill', job: 'Assassin', level: null, confirmed: true, updatedAt: 7 });
+  });
+
+  it('keeps the known level for the same character', () => {
+    expect(withIdentity(saved, 'abc123', 'Bill', 'Cleric', 9)?.level).toBe(49);
+    expect(withIdentity(saved, 'zzz999', 'Bill', 'Cleric', 9)?.level).toBeNull();
+  });
+
+  it('needs both a name and a spec', () => {
+    expect(withIdentity(saved, 'abc123', '   ', 'Cleric', 9)).toBe(saved);
+    expect(withIdentity(saved, 'abc123', 'Bill', '', 9)).toBe(saved);
+  });
+
+  it('asks only for a character that has not been confirmed', () => {
+    expect(needsIdentity(null, null)).toBe(false);
+    expect(needsIdentity(null, 'abc123')).toBe(true);
+    expect(needsIdentity(saved, 'abc123')).toBe(true);
+    expect(needsIdentity(entered, 'abc123')).toBe(false);
+    expect(needsIdentity(entered, 'zzz999')).toBe(true);
+  });
+
+  it('is not overwritten by what the detector reads afterwards', () => {
+    const next = mergeProfile(entered, plate({ name: 'Garbled', job: 'Wizard (Fire,Poison)' }), 50, 9);
+    expect(next).toMatchObject({ name: 'Bill', job: 'Assassin', level: 50, confirmed: true });
   });
 });
 

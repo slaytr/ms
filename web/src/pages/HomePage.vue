@@ -4,6 +4,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import CharacterAvatar from '../components/home/CharacterAvatar.vue';
 import ChangeLog from '../components/home/ChangeLog.vue';
 import GameWindow from '../components/home/GameWindow.vue';
+import IdentityForm from '../components/home/IdentityForm.vue';
 import LeaderStrip from '../components/home/LeaderStrip.vue';
 import LevelBadge from '../components/home/LevelBadge.vue';
 import ExpChart from '../components/home/ExpChart.vue';
@@ -24,9 +25,10 @@ import { topByExp, type WeeklyRank } from '../lib/rankings';
 import {
   loadProfile,
   mergeProfile,
+  needsIdentity,
   sameProfile,
   saveProfile,
-  withTypedName,
+  withIdentity,
   type CharacterProfile,
 } from '../lib/profile';
 import { buildTrackerView } from '../lib/tracker-view';
@@ -40,7 +42,6 @@ const tracker = useTracker();
 const { capture, status, message, lastDetection, confirmed, rates, latest, readings } = tracker;
 
 const profile = ref<CharacterProfile | null>(loadProfile());
-const typedName = ref('');
 
 // Identify the player from what the screen shows. There are no accounts: the profile lives in this browser.
 watch(lastDetection, (detection) => {
@@ -52,17 +53,29 @@ watch(lastDetection, (detection) => {
   }
 });
 
-const knownName = computed(() => {
-  const fingerprint = lastDetection.value?.character.fingerprint;
-  return fingerprint && profile.value?.fingerprint === fingerprint ? profile.value.name : null;
-});
+const fingerprint = computed(() => lastDetection.value?.character.fingerprint ?? null);
+const knownProfile = computed(() =>
+  fingerprint.value && profile.value?.fingerprint === fingerprint.value ? profile.value : null,
+);
+const knownName = computed(() => knownProfile.value?.name ?? null);
 const health = computed(() => assessDetection(lastDetection.value, knownName.value));
-const displayName = computed(() => lastDetection.value?.character.name ?? knownName.value);
+// Name detection is unreliable, so what the player told us wins; the detector's read is only a fallback.
+const displayName = computed(() => knownName.value ?? lastDetection.value?.character.name ?? null);
+const displayJob = computed(() => knownProfile.value?.job ?? lastDetection.value?.character.job ?? profile.value?.job ?? null);
+
+// A returning player's saved name and spec go straight onto this session's snapshots.
+watch(
+  [knownProfile, fingerprint],
+  ([known, fp]) => {
+    tracker.setIdentity(known?.confirmed && fp && known.name && known.job ? { fingerprint: fp, name: known.name, job: known.job } : null);
+  },
+  { immediate: true },
+);
 
 const showHint = computed(
   () => status.value === 'tracking' && tracker.ticks.value >= HINT_AFTER_TICKS && !lastDetection.value?.found.character,
 );
-const askForName = computed(() => status.value === 'tracking' && health.value.character === 'unreadable');
+const askIdentity = computed(() => status.value === 'tracking' && needsIdentity(profile.value, fingerprint.value));
 const hadSession = computed(() => status.value === 'idle' && readings.value.length > 1);
 
 // The small always-on-top overlay. It shares this page's state, so it updates on every tick.
@@ -122,12 +135,12 @@ const potCharts = computed(() =>
   })),
 );
 
-function saveTypedName() {
-  if (!profile.value) return;
-  const next = withTypedName(profile.value, typedName.value);
+function saveIdentity(name: string, job: string) {
+  if (!fingerprint.value) return;
+  const next = withIdentity(profile.value, fingerprint.value, name, job, Date.now());
+  if (!next) return;
   profile.value = next;
   saveProfile(next);
-  typedName.value = '';
 }
 
 onBeforeUnmount(() => {
@@ -206,13 +219,7 @@ onBeforeUnmount(() => {
 
           <TrackingChecklist :health="health" :detection="lastDetection" :name="displayName" />
 
-          <form v-if="askForName" class="name-form" @submit.prevent="saveTypedName">
-            <label for="typed-name">We can't read every letter of your name yet. What is it?</label>
-            <div class="name-row">
-              <input id="typed-name" v-model="typedName" maxlength="20" autocomplete="off" placeholder="Character name" />
-              <button type="submit" :disabled="!typedName.trim()">Save name</button>
-            </div>
-          </form>
+          <IdentityForm v-if="askIdentity" id-suffix="checking" @save="saveIdentity" />
 
           <div v-if="showHint" class="hint">
             <p><strong>Can't see your status bar yet.</strong> Check that:</p>
@@ -230,19 +237,13 @@ onBeforeUnmount(() => {
           <OverviewBox
             class="overview-box"
             :name="displayName"
-            :job="lastDetection?.character.job ?? profile?.job ?? null"
+            :job="displayJob"
             :view="trackerView"
             :pots="tracker.potView.value"
             @rescan="tracker.rescanPots()"
             @repot="tracker.togglePotsPaused()"
           >
-            <form v-if="askForName" class="name-form" @submit.prevent="saveTypedName">
-              <label for="typed-name">We can't read every letter of your name yet. What is it?</label>
-              <div class="name-row">
-                <input id="typed-name" v-model="typedName" maxlength="20" autocomplete="off" placeholder="Character name" />
-                <button type="submit" :disabled="!typedName.trim()">Save name</button>
-              </div>
-            </form>
+            <IdentityForm v-if="askIdentity" id-suffix="docked" @save="saveIdentity" />
 
             <div class="popout">
               <button class="popout-btn" type="button" :disabled="popOut.isOpen.value" @click="popOut.open()">
@@ -390,7 +391,7 @@ onBeforeUnmount(() => {
 .cta:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-2px); }
 .cta:active:not(:disabled) { transform: translateY(6px); box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.55), 0 2px 0 #a24a00, 0 6px 10px rgba(74, 42, 14, 0.3); }
 .cta:disabled { cursor: progress; filter: saturate(0.7); }
-.cta:focus-visible, .stop:focus-visible, .name-row button:focus-visible {
+.cta:focus-visible, .stop:focus-visible {
   outline: 4px solid #fff;
   outline-offset: 2px;
   box-shadow: 0 0 0 7px var(--ink);
@@ -415,12 +416,6 @@ onBeforeUnmount(() => {
 .banner.done { background: #eaffd9; border-color: #6cc24a; animation: settle 0.4s ease-out; }
 @keyframes settle { from { transform: scale(0.97); } to { transform: scale(1); } }
 
-.name-form { margin-top: 14px; padding: 12px; background: #fff8e0; border: 2px solid #f0b030; border-radius: 10px; }
-.name-form label { display: block; margin-bottom: 8px; font-weight: 800; }
-.name-row { display: flex; gap: 8px; }
-.name-row input { flex: 1; min-width: 0; padding: 8px 10px; font: inherit; font-weight: 700; color: var(--ink); background: #fff; border: 2px solid var(--ink); border-radius: 8px; }
-.name-row button { padding: 8px 14px; font: 400 1.05rem 'Lilita One', sans-serif; color: #fff; background: #2f8fe0; border: 2px solid var(--ink); border-radius: 8px; cursor: pointer; }
-.name-row button:disabled { opacity: 0.5; cursor: default; }
 
 .hint { margin-top: 14px; padding: 12px; background: #fff8e0; border: 2px solid #f0b030; border-radius: 10px; }
 .hint p { margin: 0 0 6px; }

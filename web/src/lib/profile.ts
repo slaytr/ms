@@ -8,6 +8,8 @@ export interface CharacterProfile {
   readonly name: string | null;
   readonly job: string | null;
   readonly level: number | null;
+  /** True once the player entered their own name and spec: those then win over anything detected. */
+  readonly confirmed: boolean;
   readonly updatedAt: number;
 }
 
@@ -29,11 +31,14 @@ export function mergeProfile(
 ): CharacterProfile | null {
   if (!plate.fingerprint) return previous;
   const same = previous?.fingerprint === plate.fingerprint ? previous : null;
+  const confirmed = same?.confirmed ?? false;
   return {
     fingerprint: plate.fingerprint,
-    name: plate.name ?? same?.name ?? null,
-    job: plate.job ?? same?.job ?? null,
+    // What the player told us beats what the detector reads.
+    name: confirmed ? same!.name : (plate.name ?? same?.name ?? null),
+    job: confirmed ? same!.job : (plate.job ?? same?.job ?? null),
     level: level ?? same?.level ?? null,
+    confirmed,
     updatedAt: now,
   };
 }
@@ -44,10 +49,35 @@ export function withTypedName(profile: CharacterProfile, typed: string): Charact
   return name ? { ...profile, name } : profile;
 }
 
+/**
+ * A new player tells us who they are: a name and a spec. Returns the profile unchanged if either is blank.
+ * The profile may be null on the first tick, so the caller passes the fingerprint seen on screen.
+ */
+export function withIdentity(
+  profile: CharacterProfile | null,
+  fingerprint: string,
+  typedName: string,
+  job: string,
+  now: number,
+): CharacterProfile | null {
+  const name = typedName.trim().slice(0, MAX_NAME_LENGTH);
+  const spec = job.trim();
+  if (!name || !spec) return profile;
+  const base = profile?.fingerprint === fingerprint ? profile : null;
+  return { fingerprint, name, job: spec, level: base?.level ?? null, confirmed: true, updatedAt: now };
+}
+
+/** True when this on-screen character hasn't been named by the player yet, so we should ask. */
+export function needsIdentity(profile: CharacterProfile | null, fingerprint: string | null): boolean {
+  return fingerprint !== null && !(profile?.fingerprint === fingerprint && profile.confirmed);
+}
+
 /** Same data, ignoring the timestamp: used to skip pointless writes on every tick. */
 export function sameProfile(a: CharacterProfile | null, b: CharacterProfile | null): boolean {
   if (a === null || b === null) return a === b;
-  return a.fingerprint === b.fingerprint && a.name === b.name && a.job === b.job && a.level === b.level;
+  return (
+    a.fingerprint === b.fingerprint && a.name === b.name && a.job === b.job && a.level === b.level && a.confirmed === b.confirmed
+  );
 }
 
 function parseProfile(raw: unknown): CharacterProfile | null {
@@ -62,6 +92,7 @@ function parseProfile(raw: unknown): CharacterProfile | null {
     name: text(p.name),
     job: text(p.job),
     level,
+    confirmed: p.confirmed === true,
     updatedAt: typeof p.updatedAt === 'number' ? p.updatedAt : 0,
   };
 }
