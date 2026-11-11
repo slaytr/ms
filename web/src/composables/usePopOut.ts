@@ -74,6 +74,16 @@ export function usePopOut(title: string) {
       win.document.body.style.margin = '0';
       const mount = win.document.createElement('div');
       win.document.body.appendChild(mount);
+      // Ask again for the size: the browser may have opened the window larger than requested. It can
+      // still refuse (there is a minimum window size), in which case the window just stays as it is.
+      try {
+        win.resizeTo(
+          size.width + (win.outerWidth - win.innerWidth),
+          size.height + (win.outerHeight - win.innerHeight),
+        );
+      } catch {
+        // Resizing is a nicety; the pop-out works at whatever size the browser allowed.
+      }
       win.addEventListener('pagehide', release);
       popWindow.value = win;
       target.value = mount;

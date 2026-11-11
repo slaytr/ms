@@ -14,6 +14,7 @@ import MySessions from '../components/home/MySessions.vue';
 import OverviewBox from '../components/home/OverviewBox.vue';
 import SkyScene from '../components/home/SkyScene.vue';
 import TrackingChecklist from '../components/home/TrackingChecklist.vue';
+import PipCompact from '../components/PipCompact.vue';
 import PipTracker from '../components/PipTracker.vue';
 import { CHANGELOG } from '../data/changelog';
 import { usePopOut } from '../composables/usePopOut';
@@ -97,6 +98,9 @@ const hadSession = computed(() => status.value === 'idle' && readings.value.leng
 
 // The small always-on-top overlay. It shares this page's state, so it updates on every tick.
 const popOut = usePopOut('Level tracker');
+// The compact overlay: a single green bar (EXP gained + EXP/hour). Its own window, so both can be open.
+const compactPopOut = usePopOut('EXP bar');
+const COMPACT_SIZE = { width: 240, height: 28 };
 const trackerView = computed(() =>
   buildTrackerView({
     name: displayName.value,
@@ -127,11 +131,27 @@ watch(lockedIn, (isLocked) => {
   }, LOCK_IN_MS);
 });
 watch(status, (now) => {
-  if (now === 'idle') popOut.close();
+  if (now === 'idle') {
+    popOut.close();
+    compactPopOut.close();
+  }
   if (now !== 'tracking') {
     clearDockTimer();
     docked.value = false;
   }
+  if (now === 'idle') peakExpPerHour.value = 0;
+});
+// Highest EXP/h of this session = 100% on the compact bar. Early projections (first ~2 minutes) swing
+// wildly off one kill, so they never set the peak.
+const peakExpPerHour = ref(0);
+watch(trackerView, (view) => {
+  const rate = view.expPerHourValue;
+  if (rate !== null && !view.ratesEstimated && rate > peakExpPerHour.value) peakExpPerHour.value = rate;
+});
+const compactFill = computed(() => {
+  const rate = trackerView.value.expPerHourValue;
+  if (rate === null || peakExpPerHour.value <= 0) return 1;
+  return Math.min(1, Math.max(0, rate / peakExpPerHour.value));
 });
 // Leaderboard teaser for the welcome screen. A nicety: if it can't load, say so quietly and carry on.
 const podium = ref<readonly WeeklyRank[]>([]);
@@ -279,7 +299,11 @@ onBeforeUnmount(() => {
               <button class="popout-btn" type="button" :disabled="popOut.isOpen.value" @click="popOut.open()">
                 {{ popOut.isOpen.value ? 'Tracker is popped out' : 'Pop out tracker' }}
               </button>
+              <button class="popout-btn compact-btn" type="button" :disabled="compactPopOut.isOpen.value" @click="compactPopOut.open(COMPACT_SIZE)">
+                {{ compactPopOut.isOpen.value ? 'Bar is popped out' : 'Pop out compact bar' }}
+              </button>
               <p v-if="popOut.error.value" class="alert-inline" role="alert">{{ popOut.error.value }}</p>
+              <p v-if="compactPopOut.error.value" class="alert-inline" role="alert">{{ compactPopOut.error.value }}</p>
             </div>
 
             <button class="stop" type="button" @click="tracker.stop()">Stop tracking</button>
@@ -308,6 +332,9 @@ onBeforeUnmount(() => {
       <!-- Rendered inside the pop-out window while it is open. -->
       <Teleport v-if="popOut.target.value" :to="popOut.target.value">
         <PipTracker :view="trackerView" />
+      </Teleport>
+      <Teleport v-if="compactPopOut.target.value" :to="compactPopOut.target.value">
+        <PipCompact :view="trackerView" :fill="compactFill" />
       </Teleport>
     </main>
 
@@ -457,6 +484,7 @@ onBeforeUnmount(() => {
 
 .popout { margin-top: 14px; }
 .popout-btn { padding: 8px 16px; font: 400 1.1rem 'Lilita One', sans-serif; color: #fff; background: #2f8fe0; border: 3px solid var(--ink); border-radius: 12px; box-shadow: 0 4px 0 #1e5f9e; cursor: pointer; }
+.compact-btn { margin-left: 8px; background: #3fa02a; box-shadow: 0 4px 0 #2a6f1a; }
 .popout-btn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 #1e5f9e; }
 .popout-btn:disabled { opacity: 0.6; cursor: default; box-shadow: none; }
 .popout-btn:focus-visible { outline: 4px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 7px var(--ink); }
@@ -471,8 +499,11 @@ onBeforeUnmount(() => {
 .chart-summary { margin: 0 0 0.5rem; font-size: 1.1rem; }
 .chart-summary strong { font: 400 1.7rem 'Lilita One', sans-serif; font-variant-numeric: tabular-nums; }
 .dim { color: #6b4a22; }
-.overview-box .popout { margin-top: 0; }
-.overview-box .stop { margin-top: 12px; display: block; }
+/* Overview buttons: all full width, one even gap between each. */
+.overview-box .popout { margin-top: 12px; display: grid; gap: 12px; }
+.overview-box .popout-btn, .overview-box .stop { width: 100%; margin: 0; display: block; }
+.overview-box .alert-inline { margin: 0; }
+.overview-box .stop { margin-top: 12px; }
 .checking { max-width: 620px; }
 
 /* Checklist shrinks away to the left, then the overview and chart slide in. */

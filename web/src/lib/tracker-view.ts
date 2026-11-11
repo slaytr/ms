@@ -26,6 +26,8 @@ export interface TrackerView {
   readonly etaText: string | null;
   /** EXP/h over the last hour of play (the whole session while it's shorter than an hour). */
   readonly expPerHour: string;
+  /** The same last-hour figure as a number; null until there's a rate. */
+  readonly expPerHourValue: number | null;
   /** EXP/h averaged over the whole session. */
   readonly expPerHourAvg: string;
   /** Last-hour pace as a share of a level, e.g. "12.40%"; null until there's a rate. */
@@ -98,6 +100,7 @@ export function buildTrackerView({ name, map = null, snapshot, readings, rates, 
     eta,
     etaText: eta.state === 'ready' ? formatEta(eta.ms) : null,
     expPerHour: perHour(recent.expPerHour),
+    expPerHourValue: hasRate ? recent.expPerHour : null,
     expPerHourAvg: perHour(rates.expPerHour),
     expPctPerHour: hasRate ? `${recent.expPctPerHour.toFixed(2)}%` : null,
     expGained: rates.expGained,
