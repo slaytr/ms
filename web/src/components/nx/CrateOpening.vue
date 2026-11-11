@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import { planFor } from '../../lib/open-fx';
+import { SPIN_COLORS, planFor } from '../../lib/open-fx';
 
 const props = defineProps<{
   crateIconId: number;
@@ -24,6 +24,8 @@ const phase = ref<'shake' | 'spin' | 'locked'>('shake');
 const shown = ref(props.itemId);
 /** 0 = just started (fast, blurred) .. 1 = about to lock (slow, sharp). */
 const slow = ref(0);
+/** Slot border colour: cycles through the tier colours with the reel, then settles on the real tier. */
+const border = ref<string | null>(null);
 const timers: number[] = [];
 const later = (fn: () => void, ms: number) => timers.push(window.setTimeout(fn, ms));
 
@@ -57,10 +59,12 @@ function spin(list: number[], i: number) {
   shown.value = list[i];
   slow.value = i / list.length;
   if (i === list.length - 1) {
+    border.value = plan.value.color;
     phase.value = 'locked';
     later(finish, plan.value.holdMs);
     return;
   }
+  border.value = SPIN_COLORS[i % SPIN_COLORS.length];
   later(() => spin(list, i + 1), 40 + slow.value ** 3 * 320);
 }
 
@@ -82,7 +86,7 @@ onBeforeUnmount(() => timers.forEach((t) => clearTimeout(t)));
       <template v-else>
         <div v-if="phase === 'locked'" class="glow" />
         <template v-if="phase === 'locked'"><span v-for="b in bits" :key="b.key" class="bit" :style="b.style" /></template>
-        <div class="slot" :class="{ fast: slow < 0.5 }">
+        <div class="slot" :class="{ fast: slow < 0.5, tinted: border }" :style="border ? { '--b': border } : undefined">
           <img class="item" :class="{ lock: phase === 'locked' }" :src="`/nx/${shown}.png`" alt="" draggable="false" />
         </div>
         <template v-if="phase === 'locked'">
@@ -103,7 +107,7 @@ onBeforeUnmount(() => timers.forEach((t) => clearTimeout(t)));
 .t-epic .crate, .t-legendary .crate { filter: drop-shadow(0 0 14px var(--c)); }
 
 .slot { position: relative; z-index: 2; display: grid; place-items: center; width: 150px; height: 150px; background: linear-gradient(#fffdf0, #e9dfbd); border: 4px solid #4a2a0e; border-radius: 14px; box-shadow: inset 0 0 0 3px #fff6, 0 6px 0 #00000055; overflow: hidden; }
-.t-legendary .slot, .t-epic .slot { border-color: var(--c); box-shadow: 0 0 22px var(--c), inset 0 0 0 3px #fff6; }
+.slot.tinted { border-color: var(--b); box-shadow: 0 0 22px var(--b), inset 0 0 0 3px #fff6; }
 .item { image-rendering: pixelated; transform: scale(2.6); }
 .slot.fast .item { filter: blur(1.5px); animation: flick 0.08s linear infinite; }
 .item.lock { animation: lock 0.55s cubic-bezier(0.2, 1.8, 0.4, 1) both; }

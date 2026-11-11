@@ -121,8 +121,33 @@ async function act(run: () => Promise<LootState>, reveal_: 'first' | 'last') {
   }
 }
 
+/**
+ * Opens crates one at a time: each gets its own server roll and its own animation, and lands in the bag
+ * before the next starts. Other crates keep their slots (an opened crate only frees its own), so the
+ * indexes stay valid. A refusal stops the run; what was already opened stays opened.
+ */
+async function openEach(fingerprint: string, indexes: readonly number[]) {
+  if (busy.value) return;
+  busy.value = true;
+  notice.value = null;
+  try {
+    for (const index of indexes) {
+      const next = await openLootCrates(fingerprint, [index]);
+      await playOpening(next.lastOpen ?? []);
+      const changed = changedSlots(loot.value?.bag, next.bag);
+      loot.value = next;
+      fresh.value = new Set(changed);
+      reveal.value = changed[0] ?? null;
+    }
+  } catch (cause) {
+    notice.value = (cause as Error).message;
+  } finally {
+    busy.value = false;
+  }
+}
+
 const buy = (count: 1 | 11) => profile && act(() => buyLootCrates(profile.fingerprint, count), 'last');
-const open = (indexes: readonly number[]) => profile && indexes.length > 0 && act(() => openLootCrates(profile.fingerprint, indexes), 'first');
+const open = (indexes: readonly number[]) => profile && indexes.length > 0 && openEach(profile.fingerprint, indexes);
 
 /**
  * Dragging an item to another slot. The bag redraws at once and the move is saved in the background, so it

@@ -30,4 +30,7 @@ const PLANS: Record<FxTier, FxPlan> = {
   legendary: { tier: 'legendary', shakeMs: 900, spinSteps: 26, holdMs: 2600, particles: 56, rays: true, flash: true, color: '#ffc83d' },
 };
 
-export const planFor = (rate: number): FxPlan => PLANS[tierFor(rate)];
+/** Every tier's colour, in rarity order: the slot border cycles through these while the reel spins. */
+export const SPIN_COLORS: readonly string[] = Object.values(PLANS).map((p) => p.color);
+
+export const planFor= (rate: number): FxPlan => PLANS[tierFor(rate)];
