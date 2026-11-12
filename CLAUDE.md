@@ -230,4 +230,13 @@ Railway for prod: service `maplestory frontend` (renamed from `ms`; `railway ssh
 - Immutable updates; small files; no `console.log` in app code.
 
 ## Skills (.claude/skills)
-`sync-prod`, `migrate-prod`, `run-local`.
+`sync-prod`, `migrate-prod`, `run`.
+
+## Admin editor (/admin)
+- `/admin` (not linked; bare layout) edits sessions: map name, player name/job/fingerprint (for unnamed sessions), start/end
+  snapshot level/EXP/meso, and individual readings (gains are derived from readings, so fixing them fixes the gains), plus
+  bulk "set level A to B", delete, map rename (all sessions) and character rename (`ms_character_identities` + sessions).
+- **Two gates.** The page only opens when the saved browser profile's name is `PayYoBills` (`lib/admin.ts`), but that is
+  localStorage, so anyone could fake it: the real gate is `api/routes/admin.mjs`, which needs the `ADMIN_TOKEN` env var in an
+  `x-admin-token` header (constant-time compare, wrong guesses rate limited). Unset = every `/api/admin` route returns 503.
+  Set it in prod with `railway variables --service "maplestory frontend" --set ADMIN_TOKEN=...`; locally it is in `.env.local`.

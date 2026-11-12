@@ -7,7 +7,7 @@ import HomePage from './pages/HomePage.vue';
 
 const route = useRoute();
 /** The developer test bench keeps its own bare layout. */
-const showNav = computed(() => route.name !== 'testing');
+const showNav = computed(() => route.name !== 'testing' && route.name !== 'admin');
 const isHome = computed(() => route.name === 'home');
 </script>
 

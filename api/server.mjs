@@ -11,6 +11,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 
+import adminRoutes from './routes/admin.mjs';
 import avatarRoutes from './routes/avatar.mjs';
 import characterRoutes from './routes/characters.mjs';
 import devDbRoutes from './routes/dev-db.mjs';
@@ -47,6 +48,7 @@ export async function buildServer() {
     fastify.log.warn('web/dist is missing. Run `npm run build`, or use `npm run web:dev` for the UI.');
   }
 
+  await fastify.register(adminRoutes);
   await fastify.register(avatarRoutes);
   await fastify.register(sessionRoutes);
   await fastify.register(mapRoutes);

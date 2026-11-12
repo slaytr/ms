@@ -5,6 +5,7 @@ import CharactersPage from './pages/CharactersPage.vue';
 import RankingsPage from './pages/RankingsPage.vue';
 import MapsPage from './pages/MapsPage.vue';
 import LootPage from './pages/LootPage.vue';
+import AdminPage from './pages/AdminPage.vue';
 
 /** The home page is mounted by App.vue (kept alive so a screen share survives navigation), so its route renders nothing. */
 const HomePlaceholder = { render: () => null };
@@ -20,6 +21,8 @@ export const router = createRouter({
     { path: '/nx', redirect: '/loot' },
     // Not linked from anywhere: reach the testing tools by typing /testing.
     { path: '/testing', name: 'testing', component: CapturePage, meta: { title: 'Testing tools' } },
+    // Not linked either. The page only opens for the PayYoBills character, and its API needs ADMIN_TOKEN.
+    { path: '/admin', name: 'admin', component: AdminPage, meta: { title: 'Admin' } },
     { path: '/capture', redirect: '/testing' },
     { path: '/:rest(.*)*', redirect: '/' },
   ],
