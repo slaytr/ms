@@ -1,5 +1,5 @@
 ---
-name: run-local
+name: run
 description: Boot the local database (if needed) and run the app against it. Use when asked to run, start, or preview the app locally.
 ---
 
