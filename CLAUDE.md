@@ -236,7 +236,6 @@ Railway for prod: service `maplestory frontend` (renamed from `ms`; `railway ssh
 - `/admin` (not linked; bare layout) edits sessions: map name, player name/job/fingerprint (for unnamed sessions), start/end
   snapshot level/EXP/meso, and individual readings (gains are derived from readings, so fixing them fixes the gains), plus
   bulk "set level A to B", delete, map rename (all sessions) and character rename (`ms_character_identities` + sessions).
-- **Two gates.** The page only opens when the saved browser profile's name is `PayYoBills` (`lib/admin.ts`), but that is
-  localStorage, so anyone could fake it: the real gate is `api/routes/admin.mjs`, which needs the `ADMIN_TOKEN` env var in an
-  `x-admin-token` header (constant-time compare, wrong guesses rate limited). Unset = every `/api/admin` route returns 503.
-  Set it in prod with `railway variables --service "maplestory frontend" --set ADMIN_TOKEN=...`; locally it is in `.env.local`.
+- **Not secure, by choice.** The page only opens when the saved browser profile's name is `PayYoBills` (`lib/admin.ts`), and
+  every `/api/admin` call sends that name in an `x-admin-user` header which `api/routes/admin.mjs` checks (`api/lib/admin-auth.mjs`).
+  Both come from the browser, so anyone who knows the name can get in; there is no token or secret (an earlier `ADMIN_TOKEN` gate was removed).

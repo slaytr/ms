@@ -1,12 +1,10 @@
 /**
- * Admin editor API. There are no accounts, and the "who is this" the page sees comes from the
- * browser (localStorage), which anyone can fake, so the page's PayYoBills check is only a courtesy.
- * The real gate is here: every /api/admin route needs the ADMIN_TOKEN env var in an x-admin-token
- * header. With ADMIN_TOKEN unset the whole API refuses (it is off by default).
+ * Admin editor API. There are no accounts: the browser names its saved character in an
+ * x-admin-user header and only PayYoBills passes. That name is client-supplied, so this is a
+ * courtesy gate, not security (by choice).
  */
 
-import { isAdminToken } from '../lib/admin-auth.mjs';
-import { createLimiter } from '../lib/rate-limit.mjs';
+import { isAdminUser } from '../lib/admin-auth.mjs';
 import {
   deleteAdminSession,
   deleteReadings,
@@ -30,9 +28,6 @@ const fingerprint = { type: 'string', pattern: '^[a-z0-9]{1,24}$', maxLength: 24
 const nullableNumber = (min, max) => ({ type: ['number', 'null'], minimum: min, maximum: max });
 const nullableInt = (min, max) => ({ type: ['integer', 'null'], minimum: min, maximum: max });
 const nullableText = (max) => ({ type: ['string', 'null'], maxLength: max });
-
-/** Failed-token attempts per client, so the token can't be brute forced over HTTP. */
-const failedAttempts = createLimiter({ limit: 20, windowMs: 15 * 60 * 1000 });
 
 /** Fields of a start/end snapshot an admin may change. Absent = untouched, null = cleared. */
 const snapshotPatch = {
@@ -92,12 +87,8 @@ function cleanText(value, max) {
 
 export default async function adminRoutes(fastify) {
   fastify.addHook('onRequest', async (request, reply) => {
-    const expected = process.env.ADMIN_TOKEN;
-    if (!expected) return reply.code(503).send(fail('Admin is not configured on this server.'));
-    if (isAdminToken(request.headers['x-admin-token'], expected)) return undefined;
-    // Only wrong guesses count against the limit, so the admin is never locked out by their own edits.
-    if (!failedAttempts.allow(request.ip)) return reply.code(429).send(fail('Too many wrong tokens. Try again later.'));
-    return reply.code(403).send(fail('Wrong admin token.'));
+    if (isAdminUser(request.headers['x-admin-user'])) return undefined;
+    return reply.code(403).send(fail('Admin is only for PayYoBills.'));
   });
 
   fastify.get('/api/admin/check', async () => ok({ admin: true }));

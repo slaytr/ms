@@ -1,6 +1,6 @@
 /** Pure helpers for the /admin editor: who may see it, and turning form text into API patches. */
 
-/** The one character whose browser is offered the admin page (the API still needs the admin token). */
+/** The one character whose browser is offered the admin page (the API only checks the same name; not secure by choice). */
 export const ADMIN_CHARACTER = 'PayYoBills';
 
 export function isAdminProfile(profile: { readonly name: string | null } | null): boolean {

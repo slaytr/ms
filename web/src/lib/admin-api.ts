@@ -1,6 +1,6 @@
 import type { AdminSnapshot, SnapshotPatch } from './admin';
 
-/** Client for /api/admin/*. Every call carries the admin token the API checks (kept in this browser only). */
+/** Client for /api/admin/*. Every call names the admin character in x-admin-user, which the API checks (a courtesy, not security). */
 
 interface Envelope<T> {
   success: boolean;
@@ -8,27 +8,8 @@ interface Envelope<T> {
   error: string | null;
 }
 
-const TOKEN_KEY = 'maple-metrics:admin-token';
-
-export function loadAdminToken(): string {
-  try {
-    return localStorage.getItem(TOKEN_KEY) ?? '';
-  } catch {
-    return ''; // storage blocked: the token just has to be typed each visit
-  }
-}
-
-export function saveAdminToken(token: string): void {
-  try {
-    if (token) localStorage.setItem(TOKEN_KEY, token);
-    else localStorage.removeItem(TOKEN_KEY);
-  } catch {
-    // Not persisted.
-  }
-}
-
 async function call<T>(token: string, method: string, path: string, body?: unknown): Promise<T> {
-  const headers: Record<string, string> = { 'x-admin-token': token };
+  const headers: Record<string, string> = { 'x-admin-user': token };
   // Fastify rejects an empty body that claims to be JSON, so the header goes only with a body.
   if (body !== undefined) headers['content-type'] = 'application/json';
   const response = await fetch(`/api/admin${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });

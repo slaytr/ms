@@ -21,7 +21,7 @@ export const router = createRouter({
     { path: '/nx', redirect: '/loot' },
     // Not linked from anywhere: reach the testing tools by typing /testing.
     { path: '/testing', name: 'testing', component: CapturePage, meta: { title: 'Testing tools' } },
-    // Not linked either. The page only opens for the PayYoBills character, and its API needs ADMIN_TOKEN.
+    // Not linked either. The page only opens for the PayYoBills character, and its API checks the same name (not secure, by choice).
     { path: '/admin', name: 'admin', component: AdminPage, meta: { title: 'Admin' } },
     { path: '/capture', redirect: '/testing' },
     { path: '/:rest(.*)*', redirect: '/' },
