@@ -557,7 +557,7 @@ onBeforeUnmount(() => {
 .overview-box .popout { margin-top: 12px; display: grid; gap: 12px; }
 .overview-box .popout-btn, .overview-box .stop, .overview-box .reset { width: 100%; margin: 0; display: block; }
 .overview-box .alert-inline { margin: 0; }
-.overview-box .stop { margin-top: 12px; }
+.overview-box .stop, .overview-box .reset { margin-top: 12px; }
 .checking { max-width: 620px; }
 
 /* Checklist shrinks away to the left, then the overview and chart slide in. */
