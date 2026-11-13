@@ -308,11 +308,6 @@ onBeforeUnmount(() => {
               <li>Windows display scaling is 100% (scaling blurs the pixels we read).</li>
             </ul>
           </div>
-
-          <button class="stop" type="button" @click="tracker.stop()">Stop tracking</button>
-          <button class="reset" :class="{ confirming: confirmingReset }" type="button" @click="resetSession()">
-            {{ confirmingReset ? 'Click again to reset' : 'Reset session' }}
-          </button>
         </GameWindow>
 
         <div v-else key="docked" class="dashboard">
