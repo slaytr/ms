@@ -12,6 +12,8 @@ export interface WeeklyRank {
   readonly expPctGained: number;
   /** Levels gained: the share of a level gained / 100, so 1.4 is a level and 40%. Wraps level-ups and ignores the level label. */
   readonly levelsGained: number;
+  /** Average EXP per hour tracked over the window (total EXP gained / total time). 0 with no time on record. */
+  readonly expPerHour: number;
   /** Mesos gained (only counted while the inventory is open, so it can undercount). */
   readonly mesoGained: number;
   readonly seconds: number;
@@ -19,6 +21,9 @@ export interface WeeklyRank {
 }
 
 export const PODIUM_SIZE = 3;
+
+/** Less tracked time than this says nothing reliable about a pace (one lucky pull would top the list). */
+export const MIN_EFFICIENCY_SECONDS = 30 * 60;
 
 /** Adds up each player's sessions over the window, unranked. Input is not modified. */
 function weeklyTotals(sessions: readonly MapSession[]): readonly WeeklyRank[] {
@@ -30,16 +35,19 @@ function weeklyTotals(sessions: readonly MapSession[]): readonly WeeklyRank[] {
     const newest = group.reduce((a, b) => (b.startedAt > a.startedAt ? b : a));
     const latestWithJob = [...group].sort((a, b) => b.startedAt - a.startedAt).find((s) => s.job);
     const expPctGained = group.reduce((total, s) => total + s.expPctGained, 0);
+    const seconds = group.reduce((total, s) => total + s.seconds, 0);
+    const expGained = group.reduce((total, s) => total + s.expGained, 0);
     return {
       playerKey,
       player: newest.player,
       job: latestWithJob?.job ?? null,
       level: newest.levelTo ?? newest.levelFrom,
-      expGained: group.reduce((total, s) => total + s.expGained, 0),
+      expGained,
       expPctGained,
       levelsGained: expPctGained / 100,
+      expPerHour: seconds > 0 ? expGained / (seconds / 3600) : 0,
       mesoGained: group.reduce((total, s) => total + s.mesoGained, 0),
-      seconds: group.reduce((total, s) => total + s.seconds, 0),
+      seconds,
       sessions: group.length,
     };
   });
@@ -61,6 +69,17 @@ export function topByLevels(sessions: readonly MapSession[], limit: number = POD
   return weeklyTotals(sessions)
     .filter((rank) => rank.levelsGained > 0)
     .sort((a, b) => b.levelsGained - a.levelsGained || a.player.localeCompare(b.player))
+    .slice(0, limit);
+}
+
+/**
+ * The `limit` most efficient players: the highest average EXP per hour tracked, best first. Players with less than
+ * MIN_EFFICIENCY_SECONDS on record are left out; ties go to the name.
+ */
+export function topByEfficiency(sessions: readonly MapSession[], limit: number = PODIUM_SIZE): readonly WeeklyRank[] {
+  return weeklyTotals(sessions)
+    .filter((rank) => rank.seconds >= MIN_EFFICIENCY_SECONDS && rank.expPerHour > 0)
+    .sort((a, b) => b.expPerHour - a.expPerHour || a.player.localeCompare(b.player))
     .slice(0, limit);
 }
 

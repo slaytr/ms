@@ -5,8 +5,9 @@ import CharacterAvatar from '../components/home/CharacterAvatar.vue';
 import RankList, { type RankRow } from '../components/home/RankList.vue';
 import SkyScene from '../components/home/SkyScene.vue';
 import { getWeeklySessions } from '../lib/api';
+import { formatCompact } from '../lib/format';
 import { formatStay } from '../lib/maps';
-import { topByExp, topByLevels, topByMesos, type WeeklyRank } from '../lib/rankings';
+import { topByEfficiency, topByExp, topByLevels, topByMesos, type WeeklyRank } from '../lib/rankings';
 import type { MapSession } from '../lib/maps';
 
 const sessions = ref<readonly MapSession[]>([]);
@@ -19,6 +20,14 @@ const podium = computed(() => topByExp(sessions.value));
 const detailOf = (rank: WeeklyRank) => [rank.level !== null ? `Lv ${rank.level}` : null, rank.job].filter(Boolean).join(' · ');
 const levelRows = computed<readonly RankRow[]>(() =>
   topByLevels(sessions.value).map((r) => ({ key: r.playerKey, player: r.player, detail: detailOf(r), value: `+${r.levelsGained.toFixed(1)}` })),
+);
+const efficientRows = computed<readonly RankRow[]>(() =>
+  topByEfficiency(sessions.value).map((r) => ({
+    key: r.playerKey,
+    player: r.player,
+    detail: detailOf(r),
+    value: `${formatCompact(r.expPerHour)}/h`,
+  })),
 );
 const mesoRows = computed<readonly RankRow[]>(() =>
   topByMesos(sessions.value).map((r) => ({ key: r.playerKey, player: r.player, detail: detailOf(r), value: `+${fmt(r.mesoGained)}` })),
@@ -75,6 +84,7 @@ onMounted(async () => {
 
       <div v-if="!loading && !error" class="more">
         <RankList title="Most levels gained" subtitle="Levels climbed, last 7 days" :rows="levelRows" empty="Nobody has gained any EXP in the last 7 days yet." />
+        <RankList title="Most efficient" subtitle="Average EXP per hour tracked, last 7 days (30+ min)" :rows="efficientRows" empty="Nobody has 30 minutes of tracked EXP in the last 7 days yet." />
         <RankList title="Most mesos gained" subtitle="Mesos picked up, last 7 days" :rows="mesoRows" empty="No mesos tracked in the last 7 days yet. Mesos only show while the inventory is open." />
       </div>
     </main>

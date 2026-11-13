@@ -27,7 +27,7 @@ import { assessDetection } from '../lib/health';
 import { getSavedIdentity, listCharacters, getWeeklySessions } from '../lib/api';
 import { richest, specLeaders, type CharacterEntry, type SpecSlot } from '../lib/characters';
 import { expGainSeries } from '../lib/metrics';
-import { topByExp, type WeeklyRank } from '../lib/rankings';
+import { topByEfficiency, topByExp, type WeeklyRank } from '../lib/rankings';
 import {
   loadProfile,
   mergeProfile,
@@ -160,6 +160,7 @@ const compactFill = computed(() => {
 // Leaderboard teaser for the welcome screen. A nicety: if it can't load, say so quietly and carry on.
 const podium = ref<readonly WeeklyRank[]>([]);
 const jobLeaders = ref<readonly SpecSlot[]>([]);
+const efficient = ref<readonly WeeklyRank[]>([]);
 const richList = ref<readonly CharacterEntry[]>([]);
 /** Meso amounts on the rich list stay hidden until the viewer reveals them. */
 const showMesos = ref(false);
@@ -169,6 +170,7 @@ onMounted(async () => {
     const [characters, week] = await Promise.all([listCharacters(), getWeeklySessions()]);
     podium.value = topByExp(week.sessions);
     jobLeaders.value = specLeaders(characters).filter((slot) => slot.leader !== null);
+    efficient.value = topByEfficiency(week.sessions);
     richList.value = richest(characters);
   } catch {
     leaderError.value = true;
@@ -204,7 +206,7 @@ onBeforeUnmount(() => {
     <main class="content" :class="{ wide: status === 'tracking' && docked, 'has-live': grinders.length > 0 }">
       <!-- Whoever is grinding sits on top. The logo goes below it until a window is shared, then it is gone. -->
       <LiveGrinders v-if="grinders.length > 0" :grinders="grinders" />
-      <header v-else class="logo">
+      <header v-if="status !== 'tracking'" class="logo">
         <p class="ribbon">Bill's Personal</p>
         <h1 class="title" aria-label="Bill's Personal Super Duper Maplestory Classic Tracker">
           <span class="line l1" data-text="Super Duper" aria-hidden="true"><span>Super Duper</span></span>
@@ -225,8 +227,8 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- Under 1200px the leaderboard sits in the column; wider, it moves to the sides (see the asides below). -->
-      <GameWindow v-if="status !== 'tracking' && (podium.length > 0 || jobLeaders.length > 0 || richList.length > 0)" class="panel leaders" title="Leaderboard">
-        <LeaderStrip :podium="podium" :jobs="jobLeaders" :rich="richList" :show-mesos="showMesos">
+      <GameWindow v-if="status !== 'tracking' && (podium.length > 0 || efficient.length > 0 || jobLeaders.length > 0 || richList.length > 0)" class="panel leaders" title="Leaderboard">
+        <LeaderStrip :podium="podium" :efficient="efficient" :jobs="jobLeaders" :rich="richList" :show-mesos="showMesos">
           <template #rich-toggle><EyeToggle v-model:shown="showMesos" label="mesos" /></template>
         </LeaderStrip>
       </GameWindow>
@@ -361,6 +363,9 @@ onBeforeUnmount(() => {
         <ChangeLog :entries="CHANGELOG" />
       </GameWindow>
     </aside>
+      <GameWindow v-if="efficient.length > 0" title="Most efficient top 3">
+        <LeaderStrip :podium="[]" :efficient="efficient" :jobs="[]" only="efficient" stack />
+      </GameWindow>
     <aside v-if="status !== 'tracking' && (jobLeaders.length > 0 || richList.length > 0)" class="side right" aria-label="Top by job and rich list">
       <GameWindow v-if="jobLeaders.length > 0" title="Top by job">
         <LeaderStrip :podium="[]" :jobs="jobLeaders" only="jobs" />

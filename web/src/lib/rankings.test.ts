@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { MapSession } from './maps';
-import { topByExp, topByLevels, topByMesos } from './rankings';
+import { MIN_EFFICIENCY_SECONDS, topByEfficiency, topByExp, topByLevels, topByMesos } from './rankings';
 
 const session = (over: Partial<MapSession>): MapSession => ({
   id: 's',
@@ -74,6 +74,37 @@ describe('topByLevels', () => {
   it('keeps only the top 3', () => {
     const sessions = ['a', 'b', 'c', 'd'].map((k, i) => session({ playerKey: k, player: k, expPctGained: (i + 1) * 10 }));
     expect(topByLevels(sessions).map((r) => r.player)).toEqual(['d', 'c', 'b']);
+  });
+});
+
+describe('topByEfficiency', () => {
+  it('ranks by average EXP per hour tracked, not by the total', () => {
+    const ranked = topByEfficiency([
+      session({ playerKey: 'slow', player: 'Slow', seconds: 4 * 3600, expGained: 2000 }), // 500 EXP/h
+      session({ playerKey: 'fast', player: 'Fast', seconds: 3600, expGained: 1000 }), // 1000 EXP/h
+    ]);
+    expect(ranked.map((r) => [r.player, r.expPerHour])).toEqual([['Fast', 1000], ['Slow', 500]]);
+  });
+
+  it("adds a player's sessions together before dividing", () => {
+    const [rank] = topByEfficiency([
+      session({ playerKey: 'a', player: 'A', seconds: 3600, expGained: 1000 }),
+      session({ playerKey: 'a', player: 'A', seconds: 3600, expGained: 500 }),
+    ]);
+    expect(rank.expPerHour).toBeCloseTo(750);
+  });
+
+  it('leaves out players with too little time on record', () => {
+    const ranked = topByEfficiency([
+      session({ playerKey: 'brief', player: 'Brief', seconds: MIN_EFFICIENCY_SECONDS - 1, expGained: 9000 }),
+      session({ playerKey: 'ok', player: 'Ok', seconds: MIN_EFFICIENCY_SECONDS, expGained: 10 }),
+    ]);
+    expect(ranked.map((r) => r.player)).toEqual(['Ok']);
+  });
+
+  it('skips players who gained nothing and keeps only the top 3', () => {
+    const sessions = ['a', 'b', 'c', 'd', 'e'].map((k, i) => session({ playerKey: k, player: k, expGained: i * 10 }));
+    expect(topByEfficiency(sessions).map((r) => r.player)).toEqual(['e', 'd', 'c']);
   });
 });
 

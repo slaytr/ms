@@ -7,13 +7,15 @@ import CharacterAvatar from './CharacterAvatar.vue';
 /** A compact leaderboard for the home page: the week's top 3 by EXP, then the best character of each job. */
 defineProps<{
   podium: readonly WeeklyRank[];
+  /** The week's most efficient players (average EXP per hour), best first. */
+  efficient?: readonly WeeklyRank[];
   jobs: readonly SpecSlot[];
   /** The richest characters by their latest meso count (best first). */
   rich?: readonly CharacterEntry[];
   /** Whether the rich list shows meso amounts. Hidden unless the viewer asks, since it is someone's wealth. */
   showMesos?: boolean;
   /** Show just one of the lists (the wide layout puts them on opposite sides of the page). */
-  only?: 'podium' | 'jobs' | 'rich';
+  only?: 'podium' | 'efficient' | 'jobs' | 'rich';
   /** Lay the top 3 out as full-width rows instead of cards (for a narrow side column). */
   stack?: boolean;
 }>();
@@ -31,6 +33,18 @@ const MEDALS = ['gold', 'silver', 'bronze'] as const;
           <CharacterAvatar :name="rank.player" small />
           <span class="name">{{ rank.player }}</span>
           <span class="stat">+{{ formatCompact(rank.expGained) }}</span>
+        </li>
+      </ol>
+    </section>
+
+    <section v-if="efficient && efficient.length > 0 && (!only || only === 'efficient')" aria-label="Most efficient top 3">
+      <h3 v-if="!only">Most efficient <span class="sub">average EXP/h, last 7 days</span></h3>
+      <ol class="chips" :class="{ stack }">
+        <li v-for="(rank, index) in efficient" :key="rank.playerKey" class="chip" :title="`${rank.player}: +${Math.round(rank.expPerHour).toLocaleString()} EXP per hour`">
+          <span class="place" :class="MEDALS[index]">{{ index + 1 }}</span>
+          <CharacterAvatar :name="rank.player" small />
+          <span class="name">{{ rank.player }}</span>
+          <span class="stat">{{ formatCompact(rank.expPerHour) }}/h</span>
         </li>
       </ol>
     </section>
