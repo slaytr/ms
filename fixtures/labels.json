@@ -1263,5 +1263,20 @@
     "job": "Wizard (Ice,Lightning)",
     "street": "Hidden Street",
     "map": "T~h~e Forest of E{vi}l II"
+  },
+  "other_1362x795_1794600000062.png": {
+    "exp": "[83.50%]",
+    "level": "62",
+    "name": "ARI{KA}DOU",
+    "job": "Assassin",
+    "street": "Hidden Street",
+    "map": "T~h~e Forest of E{vi}l II"
+  },
+  "other_1348x788_1794600000047.png": {
+    "exp": "28,949[5.21%]",
+    "level": "47",
+    "job": "Assassin",
+    "street": "{Wa}rning Street",
+    "map": "T~h~e Swamp of Despair II"
   }
 }

@@ -54,7 +54,7 @@ describe('draft level glyphs', () => {
   });
 
   it('are part of the shipped templates, with real digits kept as they are', () => {
-    for (const char of ['2', '6', '7', '8']) expect(DEFAULT_TEMPLATES.fonts.level[char], char).toBeDefined();
+    for (const char of ['2', '6', '7', '8']) expect(DEFAULT_TEMPLATES.fonts.level[char], char).toBeDefined(); // 2, 6 and 7 are real now, 8 is drafted
     expect(DEFAULT_TEMPLATES.fonts.level['5']).toEqual(HARVESTED['5']);
   });
 });

@@ -17,7 +17,8 @@ interface Label {
   exp?: string;
   level: string;
   meso?: string;
-  name: string;
+  /** Absent when the window's edge cuts the name plate off, so the frame can only teach other readers. */
+  name?: string;
   job: string;
   /** The minimap title; absent for a frame where the minimap is hidden. */
   street?: string;
@@ -40,11 +41,12 @@ function truth(file: string) {
   const label = labels[file] as Label;
   const [, rawExp, pct] = (label.exp ?? '0[0.00%]').match(/^(.*)\[(\d+\.\d+)%\]$/)!;
   return {
-    exp: Number(rawExp.replace(/[,.]/g, '')),
+    // No raw EXP on the bar (the game hides it above 1M): only the percent is shown.
+    exp: rawExp === '' ? null : Number(rawExp.replace(/[,.]/g, '')),
     expPct: Number(pct),
     level: Number(label.level),
     meso: label.meso ? Number(label.meso.replace(/,/g, '')) : null,
-    name: label.name.replace(/[{}]/g, ''),
+    name: label.name === undefined ? null : label.name.replace(/[{}]/g, ''),
     job: label.job,
     street: label.street === undefined ? null : plain(label.street),
     map: label.map === undefined ? null : plain(label.map),
@@ -107,7 +109,9 @@ describe('detectFrame on real Classic client captures', () => {
 });
 
 describe('character plate (name + job)', () => {
-  it.each(fixtures)('reads the name and job from %s', (file) => {
+  const withName = fixtures.filter((f) => (labels[f] as Label).name !== undefined);
+
+  it.each(withName)('reads the name and job from %s', (file) => {
     const { character, found } = detectFrame(loadFrame(file), DEFAULT_TEMPLATES);
     expect(found.character).toBe(true);
     expect(character.name).toBe(truth(file).name);
@@ -116,8 +120,8 @@ describe('character plate (name + job)', () => {
 
   it('gives the same fingerprint in every frame of a character, whether or not the inventory is open', () => {
     const printsByName = new Map<string, Set<string | null>>();
-    for (const file of fixtures) {
-      const { name } = truth(file);
+    for (const file of withName) {
+      const name = truth(file).name!;
       const prints = printsByName.get(name) ?? new Set<string | null>();
       prints.add(detectFrame(loadFrame(file), DEFAULT_TEMPLATES).character.fingerprint);
       printsByName.set(name, prints);
@@ -177,7 +181,7 @@ describe('map name (minimap title, top left)', () => {
 
   it('reads several different maps, so the width of the panel is not what makes it work', () => {
     const maps = new Set(withMinimap.map((f) => detectFrame(loadFrame(f), DEFAULT_TEMPLATES).map.name));
-    expect(maps).toEqual(new Set(['Line 1 <Area 1>', 'Line 1 <Area 4>', 'Tree Dungeon, Forest Up North VIII', 'Tree Dungeon, Forest Up North IX', 'The Forest North of Ellinia', 'The Burnt Land III', 'Henesys Hunting Ground I', 'Dangerous Valley', 'Lith Harbor', 'Kerning City Construction Site', 'Remains <Tomb> I', 'Free Market <13>', 'The Forest of Evil I', 'The Forest of Evil II']));
+    expect(maps).toEqual(new Set(['Line 1 <Area 1>', 'Line 1 <Area 4>', 'Tree Dungeon, Forest Up North VIII', 'Tree Dungeon, Forest Up North IX', 'The Forest North of Ellinia', 'The Burnt Land III', 'Henesys Hunting Ground I', 'Dangerous Valley', 'Lith Harbor', 'Kerning City Construction Site', 'Remains <Tomb> I', 'Free Market <13>', 'The Forest of Evil I', 'The Forest of Evil II', 'The Swamp of Despair II']));
   }, SLOW_TEST_MS);
 
   it('keeps a roman numeral as capital I\'s but reads the same bar as l inside a word', () => {
@@ -363,6 +367,15 @@ describe('parsers', () => {
     expect(parseMeso('21,59')).toBeNull();
     expect(parseMeso('')).toBeNull();
     expect(parseMeso('72?,592')).toBeNull();
+  });
+
+  it('tells a capital I from a lowercase l by the letters around it', () => {
+    expect(resolveLookalikes('ARIKADOU')).toBe('ARIKADOU'); // among capitals
+    expect(resolveLookalikes('ALI')).toBe('ALI'); // ends a run of capitals
+    expect(resolveLookalikes('PayYoBIIIs')).toBe('PayYoBllls');
+    expect(resolveLookalikes('EIIe')).toBe('Elle');
+    expect(resolveLookalikes('MeI')).toBe('Mel');
+    expect(resolveLookalikes('IceI')).toBe('Icel'); // starts a word, then a lowercase l
   });
 
   it('parseExp reads a percent-only bar (no raw EXP shown above 1M) as a percent with no raw EXP', () => {

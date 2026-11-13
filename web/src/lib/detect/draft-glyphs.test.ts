@@ -13,6 +13,11 @@ const HARVESTED = parseTemplates(raw).fonts.text;
 const variants = (set: Readonly<Record<string, readonly Bitmap[]>>) =>
   Object.entries(set).flatMap(([char, list]) => list.map((bitmap, index) => ({ char, index, bitmap })));
 
+/** The drafts the shipped templates still use: once a letter is harvested its draft is dropped, so it is no longer read. */
+const STILL_DRAFTED: Readonly<Record<string, readonly Bitmap[]>> = Object.fromEntries(
+  Object.entries(DRAFT_TEXT_GLYPHS).filter(([char]) => !(char in HARVESTED)),
+);
+
 describe('draft text glyphs', () => {
   it('are well-formed cells the segmenter could produce', () => {
     for (const { char, index, bitmap } of variants(DRAFT_TEXT_GLYPHS)) {
@@ -45,14 +50,14 @@ describe('draft text glyphs', () => {
   });
 
   it('read back as themselves', () => {
-    for (const { char, bitmap } of variants(DRAFT_TEXT_GLYPHS)) {
+    for (const { char, bitmap } of variants(STILL_DRAFTED)) {
       expect(classify(bitmap, withDrafts(HARVESTED), GLYPH_TOLERANCE)).toBe(char);
     }
   });
 
   it('read with one wrong pixel', () => {
     const set = withDrafts(HARVESTED);
-    for (const { char, bitmap } of variants(DRAFT_TEXT_GLYPHS)) {
+    for (const { char, bitmap } of variants(STILL_DRAFTED)) {
       const flipped = bitmap.map((row, y) => (y === 5 ? (row[0] === '#' ? '.' : '#') + row.slice(1) : row));
       expect(classify(flipped, set, GLYPH_TOLERANCE), `${char} with a flipped pixel`).toBe(char);
     }
@@ -65,7 +70,8 @@ describe('draft text glyphs', () => {
   });
 
   it('are what the shipped templates use for letters nobody has harvested', () => {
-    expect(DEFAULT_TEMPLATES.fonts.text.R).toEqual(DRAFT_TEXT_GLYPHS.R);
+    const [drafted] = Object.keys(STILL_DRAFTED);
+    expect(DEFAULT_TEMPLATES.fonts.text[drafted]).toEqual(DRAFT_TEXT_GLYPHS[drafted]);
     expect(DEFAULT_TEMPLATES.fonts.text.P).toEqual(HARVESTED.P);
   });
 });

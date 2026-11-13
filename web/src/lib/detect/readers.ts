@@ -124,9 +124,17 @@ export function textGlyphs(luma: Uint8Array, width: number, height: number, orig
   return band ? glyphRun(luma, width, band, CHARACTER.polarity) : [];
 }
 
-/** A bar is a capital I when it starts a word ("Ice", "(Ice") and a lowercase l anywhere else ("Bills"). */
+/**
+ * A bar is a capital I when it starts a word ("Ice", "(Ice") or sits among capitals ("ARIKADOU": the nearest
+ * letters either side are capitals, or it ends the word after one), and a lowercase l anywhere else ("Bills", "Elle").
+ */
 export function resolveLookalikes(text: string): string {
-  return text.replace(/(?<=[^\s(\[{'"-])I/g, 'l');
+  return text.replace(/(?<=[^\s(\[{'"-])I/g, (bar, offset: number, whole: string) => {
+    const before = whole.slice(0, offset).replace(/I+$/, '').match(/[A-Za-z]$/)?.[0] ?? null;
+    const after = whole.slice(offset + 1).replace(/^I+/, '').match(/^[A-Za-z]/)?.[0] ?? null;
+    const amongCapitals = before !== null && /[A-Z]/.test(before) && (after === null || /[A-Z]/.test(after));
+    return amongCapitals ? bar : 'l';
+  });
 }
 
 /**
