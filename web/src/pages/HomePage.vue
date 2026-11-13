@@ -102,6 +102,25 @@ const hadSession = computed(() => status.value === 'idle' && readings.value.leng
 // The small always-on-top overlay. It shares this page's state, so it updates on every tick.
 const { grinders } = useLiveGrinders();
 const popOut = usePopOut('Level tracker');
+// Reset ends this session and starts a new one, so it asks for a second click before doing it.
+const RESET_CONFIRM_MS = 4000;
+const confirmingReset = ref(false);
+let resetTimer: ReturnType<typeof setTimeout> | null = null;
+function clearResetConfirm(): void {
+  if (resetTimer) clearTimeout(resetTimer);
+  resetTimer = null;
+  confirmingReset.value = false;
+}
+async function resetSession(): Promise<void> {
+  if (!confirmingReset.value) {
+    confirmingReset.value = true;
+    resetTimer = setTimeout(clearResetConfirm, RESET_CONFIRM_MS);
+    return;
+  }
+  clearResetConfirm();
+  await tracker.reset();
+  peakExpPerHour.value = 0; // a new session starts its own best pace
+}
 // The compact overlay: a single green bar (EXP gained + EXP/hour). Its own window, so both can be open.
 const compactPopOut = usePopOut('EXP bar');
 const COMPACT_SIZE = { width: 240, height: 28 };
@@ -196,6 +215,7 @@ function saveIdentity(name: string, job: string) {
 
 onBeforeUnmount(() => {
   clearDockTimer();
+  clearResetConfirm();
   void tracker.stop();
 });
 </script>
@@ -290,6 +310,9 @@ onBeforeUnmount(() => {
           </div>
 
           <button class="stop" type="button" @click="tracker.stop()">Stop tracking</button>
+          <button class="reset" :class="{ confirming: confirmingReset }" type="button" @click="resetSession()">
+            {{ confirmingReset ? 'Click again to reset' : 'Reset session' }}
+          </button>
         </GameWindow>
 
         <div v-else key="docked" class="dashboard">
@@ -328,6 +351,9 @@ onBeforeUnmount(() => {
             </div>
 
             <button class="stop" type="button" @click="tracker.stop()">Stop tracking</button>
+            <button class="reset" :class="{ confirming: confirmingReset }" type="button" @click="resetSession()">
+              {{ confirmingReset ? 'Click again to reset' : 'Reset session' }}
+            </button>
           </OverviewBox>
 
           <div class="charts">
@@ -529,7 +555,7 @@ onBeforeUnmount(() => {
 .dim { color: #6b4a22; }
 /* Overview buttons: all full width, one even gap between each. */
 .overview-box .popout { margin-top: 12px; display: grid; gap: 12px; }
-.overview-box .popout-btn, .overview-box .stop { width: 100%; margin: 0; display: block; }
+.overview-box .popout-btn, .overview-box .stop, .overview-box .reset { width: 100%; margin: 0; display: block; }
 .overview-box .alert-inline { margin: 0; }
 .overview-box .stop { margin-top: 12px; }
 .checking { max-width: 620px; }
@@ -550,6 +576,10 @@ onBeforeUnmount(() => {
 
 .stop { margin-top: 16px; padding: 8px 18px; font: 400 1.1rem 'Lilita One', sans-serif; color: #fff; background: #d6452c; border: 3px solid var(--ink); border-radius: 12px; box-shadow: 0 4px 0 #8f2412; cursor: pointer; }
 .stop:active { transform: translateY(3px); box-shadow: 0 1px 0 #8f2412; }
+.reset { margin-top: 12px; padding: 8px 18px; font: 400 1.1rem 'Lilita One', sans-serif; color: var(--ink); background: #ffe08a; border: 3px solid var(--ink); border-radius: 12px; box-shadow: 0 4px 0 #b08a1c; cursor: pointer; }
+.reset:active { transform: translateY(3px); box-shadow: 0 1px 0 #b08a1c; }
+.reset.confirming { color: #fff; background: #e8452c; box-shadow: 0 4px 0 #9c2410; }
+.reset:focus-visible { outline: 4px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 7px var(--ink); }
 
 .hidden-video { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 

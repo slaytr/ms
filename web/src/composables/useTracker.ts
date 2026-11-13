@@ -74,6 +74,8 @@ export function useTracker() {
   const map = ref<MapPlate | null>(null);
   let pending: readonly Reading[] = [];
   let timer: ReturnType<typeof setTimeout> | null = null;
+  /** True while a reset is closing the old session, so ticks hold off and nothing lands in the wrong one. */
+  let resetting = false;
 
   /** Wall clock, refreshed every second while tracking, so the time and per-hour projection never wait on a frame being read. */
   const now = ref(Date.now());
@@ -204,6 +206,10 @@ export function useTracker() {
   async function tick(): Promise<void> {
     const el = capture.video.value;
     if (status.value !== 'tracking' || !el) return;
+    if (resetting) {
+      timer = setTimeout(tick, 500);
+      return;
+    }
     if (paused.value) {
       // Paused: read nothing and record nothing, but keep the loop alive so resuming picks up within a tick.
       timer = setTimeout(tick, SAMPLE_INTERVAL_MS);
@@ -302,6 +308,45 @@ export function useTracker() {
     streak.value = 0;
   }
 
+  /**
+   * Closes the current session and starts a new one on the same shared window, without asking to share
+   * again. The player's typed name and spec carry over (same character); everything counted so far starts
+   * again from zero, and the next readable frame creates the new session.
+   */
+  async function reset(): Promise<void> {
+    if (status.value !== 'tracking' || resetting) return;
+    resetting = true;
+    try {
+      await flush();
+      if (session.id) await endSession(session.id, session.token, latestSnapshot).catch(() => undefined);
+      historyKey.value += 1;
+
+      readings.value = [];
+      pauses.value = [];
+      potsPausedByPause = false;
+      lastDetection.value = null;
+      ticks.value = 0;
+      streak.value = 0;
+      savedCount.value = 0;
+      pending = [];
+      latestSnapshot = null;
+      identitySavedFor = '';
+      current.value = null;
+      session.id = '';
+      session.token = '';
+      sessionLabel.value = options.label ?? '';
+      sentLabel = '';
+      partySize.value = MIN_PARTY_SIZE;
+      sentPartySize = MIN_PARTY_SIZE;
+      message.value = null;
+      pots.value = startPotTracking();
+      potHistory.value = emptyPotHistory;
+      now.value = Date.now();
+    } finally {
+      resetting = false;
+    }
+  }
+
   async function stop(): Promise<void> {
     if (status.value === 'idle') return;
     status.value = 'idle';
@@ -329,6 +374,7 @@ export function useTracker() {
     paused,
     pause,
     resume,
+    reset,
     latest,
     current,
     map,
