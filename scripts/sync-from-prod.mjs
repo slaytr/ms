@@ -27,7 +27,7 @@ const TABLES = ['ms_capture_sessions', 'ms_session_snapshots', 'ms_readings', 'm
  * machines. The local default generates a fresh one on insert.
  */
 const COLUMNS = {
-  ms_capture_sessions: ['id', 'label', 'character', 'fingerprint', 'started_at', 'ended_at'],
+  ms_capture_sessions: ['id', 'label', 'character', 'fingerprint', 'party_size', 'started_at', 'ended_at'],
   // bytea does not survive JSON, so the sprite travels as base64 (see DECODERS).
   ms_character_avatars: ['name_key', 'name', "encode(png, 'base64') as png", 'fetched_at'],
 };

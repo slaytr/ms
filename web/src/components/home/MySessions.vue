@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 
-import { getSession, listCharacterSessions, type CharacterSession, type SessionDetail } from '../../lib/api';
+import { getSession, labelSession, listCharacterSessions, setSessionPartySize, type CharacterSession, type SessionDetail } from '../../lib/api';
 import { formatClock, formatPerHour } from '../../lib/format';
 import { computeRates, expGainSeries } from '../../lib/metrics';
 import { levelRange, sessionDurationMs, sessionTitle } from '../../lib/session-list';
+import { cleanSessionName, partyText } from '../../lib/session-input';
+import { loadSessionToken } from '../../lib/session-tokens';
 import ExpChart from './ExpChart.vue';
+import SessionDetailsForm from './SessionDetailsForm.vue';
 
 /** The character's identity hash: the same fingerprint their sessions were saved under. */
 const props = defineProps<{ fingerprint: string }>();
@@ -28,6 +31,38 @@ const duration = (s: CharacterSession) => {
   return ms === null ? null : formatClock(ms);
 };
 const whole = (n: number) => Math.round(n).toLocaleString();
+
+// Only sessions started in this browser can be edited: the saved owner token is the proof they're yours.
+const editError = ref<string | null>(null);
+
+function patchSession(id: string, patch: Partial<CharacterSession>) {
+  sessions.value = sessions.value.map((s) => (s.id === id ? { ...s, ...patch } : s));
+}
+
+async function rename(s: CharacterSession, text: string) {
+  const token = loadSessionToken(s.id);
+  const label = cleanSessionName(text);
+  if (!token || !label) return;
+  editError.value = null;
+  try {
+    await labelSession(s.id, token, label);
+    patchSession(s.id, { label });
+  } catch (cause) {
+    editError.value = `Couldn't rename that session: ${(cause as Error).message}`;
+  }
+}
+
+async function changeParty(s: CharacterSession, size: number) {
+  const token = loadSessionToken(s.id);
+  if (!token) return;
+  editError.value = null;
+  try {
+    await setSessionPartySize(s.id, token, size);
+    patchSession(s.id, { partySize: size });
+  } catch (cause) {
+    editError.value = `Couldn't save the party size: ${(cause as Error).message}`;
+  }
+}
 
 async function load(fingerprint: string) {
   loading.value = true;
@@ -53,6 +88,7 @@ async function toggle(id: string) {
   openId.value = id;
   detail.value = null;
   detailError.value = null;
+  editError.value = null;
   try {
     const loaded = await getSession(id);
     // The player may have clicked another session while this one loaded.
@@ -79,7 +115,7 @@ watch(() => props.fingerprint, load, { immediate: true });
             <span v-if="levelRange(s)" class="lv">{{ levelRange(s) }}</span>
           </span>
           <span class="sub">
-            {{ day(s.startedAt) }}, {{ time(s.startedAt) }}<template v-if="duration(s)"> · {{ duration(s) }}</template>
+            {{ day(s.startedAt) }}, {{ time(s.startedAt) }}<template v-if="duration(s)"> · {{ duration(s) }}</template> · {{ partyText(s.partySize) }}
           </span>
         </button>
 
@@ -87,6 +123,17 @@ watch(() => props.fingerprint, load, { immediate: true });
           <p v-if="detailError" class="msg" role="alert">{{ detailError }}</p>
           <p v-else-if="!detail || !rates" class="msg">Loading…</p>
           <template v-else>
+            <SessionDetailsForm
+              v-if="loadSessionToken(s.id)"
+              class="edit"
+              :id-suffix="`past-${s.id}`"
+              :name="s.label"
+              :party-size="s.partySize"
+              :allow-blank="false"
+              @rename="(text) => rename(s, text)"
+              @party-size="(size) => changeParty(s, size)"
+            />
+            <p v-if="editError" class="msg" role="alert">{{ editError }}</p>
             <dl class="stats">
               <div><dt>EXP gained</dt><dd>{{ whole(rates.expGained) }}</dd></div>
               <div><dt>EXP per hour</dt><dd>{{ formatPerHour(rates.expPerHour) }}</dd></div>
@@ -125,6 +172,7 @@ watch(() => props.fingerprint, load, { immediate: true });
 .lv { flex: none; font: 400 1rem 'Lilita One', sans-serif; color: #6b4a22; }
 .sub { font-size: 0.9rem; color: #6b4a22; }
 .detail { padding: 0 10px 10px; }
+.edit { margin-bottom: 8px; }
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 0 0 8px; }
 .stats div { padding: 6px 8px; background: #fff6dc; border: 2px solid #d9c48a; border-radius: 8px; text-align: center; }
 .stats dt { font-size: 0.8rem; color: #6b4a22; }

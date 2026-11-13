@@ -29,12 +29,12 @@ async function upsertSnapshot(client, sessionId, kind, snapshot) {
 }
 
 /** Creates the session and, in the same transaction, its starting snapshot. */
-export async function createSession({ label, character, fingerprint, start }) {
+export async function createSession({ label, character, fingerprint, start, partySize = 1 }) {
   return withTransaction(async (client) => {
     const { rows } = await query(
-      `insert into ms_capture_sessions (label, character, fingerprint) values ($1, $2, $3)
+      `insert into ms_capture_sessions (label, character, fingerprint, party_size) values ($1, $2, $3, $4)
        returning id, owner_token as "ownerToken", started_at as "startedAt"`,
-      [label, character, fingerprint ?? null],
+      [label, character, fingerprint ?? null, partySize],
       client,
     );
     if (start) await upsertSnapshot(client, rows[0].id, 'start', start);
@@ -44,7 +44,7 @@ export async function createSession({ label, character, fingerprint, start }) {
 
 export async function listRecentSessions(limit = 20) {
   const { rows } = await query(
-    `select s.id, s.label, s.character, s.started_at as "startedAt", s.ended_at as "endedAt",
+    `select s.id, s.label, s.character, s.party_size as "partySize", s.started_at as "startedAt", s.ended_at as "endedAt",
             (select count(*)::int from ms_readings r where r.session_id = s.id) as "readingCount"
        from ms_capture_sessions s
       order by s.started_at desc
@@ -60,7 +60,7 @@ export async function listRecentSessions(limit = 20) {
  */
 export async function listSessionsByFingerprint(fingerprint, limit = 50) {
   const { rows } = await query(
-    `select s.id, s.label, s.character, s.started_at as "startedAt", s.ended_at as "endedAt",
+    `select s.id, s.label, s.character, s.party_size as "partySize", s.started_at as "startedAt", s.ended_at as "endedAt",
             (select count(*)::int from ms_readings r where r.session_id = s.id) as "readingCount",
             (select max(r.taken_at) from ms_readings r where r.session_id = s.id) as "lastReadingAt",
             (select n.level from ms_session_snapshots n where n.session_id = s.id and n.kind = 'start') as "startLevel",
@@ -77,7 +77,7 @@ export async function listSessionsByFingerprint(fingerprint, limit = 50) {
 
 export async function getSession(id) {
   const { rows } = await query(
-    `select id, label, character, fingerprint, started_at as "startedAt", ended_at as "endedAt"
+    `select id, label, character, fingerprint, party_size as "partySize", started_at as "startedAt", ended_at as "endedAt"
        from ms_capture_sessions where id = $1`,
     [id],
   );
@@ -130,6 +130,11 @@ export async function appendReadings(sessionId, readings) {
 /** Sets the session's display name (the tracker names it after the map once the map has been read). */
 export async function labelSession(id, label) {
   await query('update ms_capture_sessions set label = $2 where id = $1', [id, label]);
+}
+
+/** Sets how many players were in the party (already validated to 1-6 by the route). */
+export async function setPartySize(id, partySize) {
+  await query('update ms_capture_sessions set party_size = $2 where id = $1', [id, partySize]);
 }
 
 /** Marks the session ended (once) and records the closing snapshot, if the client sent one. */

@@ -37,6 +37,8 @@ export interface NewSession {
   readonly fingerprint: string | null;
   /** Where the player stands as the session begins; saved with the session. */
   readonly start: PlayerSnapshot | null;
+  /** How many players were in the party (1-6), as the player typed it. */
+  readonly partySize?: number;
 }
 
 export function createSession(input: NewSession): Promise<CreatedSession> {
@@ -57,6 +59,14 @@ export function labelSession(sessionId: string, ownerToken: string, label: strin
     method: 'POST',
     headers: { 'x-owner-token': ownerToken },
     body: JSON.stringify({ label }),
+  });
+}
+
+export function setSessionPartySize(sessionId: string, ownerToken: string, partySize: number): Promise<{ partySize: number }> {
+  return request(`/api/sessions/${sessionId}/party-size`, {
+    method: 'POST',
+    headers: { 'x-owner-token': ownerToken },
+    body: JSON.stringify({ partySize }),
   });
 }
 
@@ -90,6 +100,8 @@ export interface SessionSummary {
   id: string;
   label: string;
   character: string;
+  /** How many players were in the party, as the player typed it (1 = solo). */
+  partySize: number;
   startedAt: string;
   endedAt: string | null;
   readingCount: number;
@@ -164,18 +176,6 @@ export function getWeeklySessions(): Promise<WeeklySessions> {
   return weeklyCache.get(() => request('/api/rankings/week'));
 }
 
-export function getSession(id: string): Promise<SessionDetail> {
-  return request(`/api/sessions/${id}`);
-}
-
-export interface MissFrameUpload {
-  readonly width: number;
-  readonly height: number;
-  readonly missing: readonly string[];
-  readonly detection: object;
-  readonly sessionId?: string;
-  readonly png: Blob;
-}
 /** Someone grinding right now: latest level and EXP%, and EXP gained so far this session. */
 export interface LiveGrinder {
   id: string;
@@ -190,6 +190,18 @@ export function listLiveGrinders(): Promise<LiveGrinder[]> {
   return request('/api/live');
 }
 
+export function getSession(id: string): Promise<SessionDetail> {
+  return request(`/api/sessions/${id}`);
+}
+
+export interface MissFrameUpload {
+  readonly width: number;
+  readonly height: number;
+  readonly missing: readonly string[];
+  readonly detection: object;
+  readonly sessionId?: string;
+  readonly png: Blob;
+}
 
 /** A PNG as base64 text, in chunks so a multi-megabyte frame doesn't overflow the call stack. */
 async function toBase64(blob: Blob): Promise<string> {

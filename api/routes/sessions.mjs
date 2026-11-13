@@ -1,4 +1,5 @@
 import { cleanIdentity } from '../lib/identity.mjs';
+import { cleanPartySize, cleanSessionLabel, MAX_PARTY_SIZE, MIN_PARTY_SIZE } from '../lib/session-input.mjs';
 import { saveIdentityForSession } from '../store/identities.mjs';
 import { refreshAvatar } from './avatar.mjs';
 import {
@@ -11,6 +12,7 @@ import {
   labelSession,
   listRecentSessions,
   listSessionsByFingerprint,
+  setPartySize,
 } from '../store/sessions.mjs';
 
 const ok = (data) => ({ success: true, data, error: null });
@@ -37,11 +39,14 @@ const snapshot = {
   },
 };
 
+const partySize = { type: 'integer', minimum: MIN_PARTY_SIZE, maximum: MAX_PARTY_SIZE };
+
 const createBody = {
   type: 'object',
   additionalProperties: false,
   properties: {
     label: { type: 'string', maxLength: 80, default: '' },
+    partySize,
     character: { type: 'string', maxLength: 40, default: '' },
     fingerprint,
     start: snapshot,
@@ -53,6 +58,13 @@ const labelBody = {
   required: ['label'],
   additionalProperties: false,
   properties: { label: { type: 'string', minLength: 1, maxLength: 80 } },
+};
+
+const partySizeBody = {
+  type: 'object',
+  required: ['partySize'],
+  additionalProperties: false,
+  properties: { partySize },
 };
 
 const listQuery = {
@@ -107,8 +119,8 @@ export default async function sessionRoutes(fastify) {
   });
 
   fastify.post('/api/sessions', { schema: { body: createBody } }, async (request, reply) => {
-    const { label = '', character = '', fingerprint = null, start } = request.body ?? {};
-    const session = await createSession({ label, character, fingerprint, start });
+    const { label = '', character = '', fingerprint = null, start, partySize = 1 } = request.body ?? {};
+    const session = await createSession({ label: cleanSessionLabel(label) ?? '', character, fingerprint, start, partySize });
     // Refresh our saved sprite in the background; it never delays or fails the session.
     refreshAvatar(character, request.log).catch((error) => request.log.error({ err: error }, 'avatar refresh crashed'));
     return reply.code(201).send(ok(session));
@@ -133,9 +145,19 @@ export default async function sessionRoutes(fastify) {
     async (request) => ok({ inserted: await appendReadings(request.params.id, request.body.readings) }),
   );
 
-  fastify.post('/api/sessions/:id/label', { schema: { ...ownerRoute.schema, body: labelBody }, preHandler: requireOwner }, async (request) => {
-    await labelSession(request.params.id, request.body.label);
+  fastify.post('/api/sessions/:id/label', { schema: { ...ownerRoute.schema, body: labelBody }, preHandler: requireOwner }, async (request, reply) => {
+    const label = cleanSessionLabel(request.body.label);
+    if (!label) return reply.code(400).send(fail('The session name must be text with at least one character.'));
+    await labelSession(request.params.id, label);
     return ok({ labelled: true });
+  });
+
+  // The player typed how many people were in their party (1-6).
+  fastify.post('/api/sessions/:id/party-size', { schema: { ...ownerRoute.schema, body: partySizeBody }, preHandler: requireOwner }, async (request, reply) => {
+    const size = cleanPartySize(request.body.partySize);
+    if (size === null) return reply.code(400).send(fail('Party size must be a whole number from 1 to 6.'));
+    await setPartySize(request.params.id, size);
+    return ok({ partySize: size });
   });
 
   // The player typed their name and spec: keep them against this session's fingerprint, for every browser and past session.

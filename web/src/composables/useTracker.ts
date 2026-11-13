@@ -1,12 +1,14 @@
 import { computed, reactive, ref } from 'vue';
 
-import { createSession, endSession, labelSession, postReadings, saveSessionIdentity } from '../lib/api';
+import { createSession, endSession, labelSession, postReadings, saveSessionIdentity, setSessionPartySize } from '../lib/api';
 import type { Detection, MapPlate } from '../lib/detect/detect.ts';
 import { coreReady } from '../lib/health';
 import { mapLabel } from '../lib/map-label';
 import { computeRates, type Reading } from '../lib/metrics';
 import { emptyPotHistory, recordPotHistory, type PotHistory } from '../lib/pot-history';
 import { buildPotView,observePots, observeQuick, pausePots, rescanPots, resumePots, startPotTracking } from '../lib/pot-tracker';
+import { cleanSessionName, MAX_PARTY_SIZE, MIN_PARTY_SIZE } from '../lib/session-input';
+import { saveSessionToken } from '../lib/session-tokens';
 import { applyIdentity, carryForward, snapshotFrom, type PlayerIdentity, type PlayerSnapshot } from '../lib/snapshot';
 import { useDetector } from './useDetector';
 import { useMissReporter } from './useMissReporter';
@@ -54,7 +56,12 @@ export function useTracker() {
    * The session's name: what the player typed, else the map read from the minimap. Empty while
    * unknown, in which case the first readable map names the session (even after it was created).
    */
-  let sessionLabel = '';
+  const sessionLabel = ref('');
+  /** The name the server has for this session, so a rename is sent once and retried if it fails. */
+  let sentLabel = '';
+  /** How many players were in the party, as the player typed it (1 = solo). */
+  const partySize = ref(MIN_PARTY_SIZE);
+  let sentPartySize = MIN_PARTY_SIZE;
   /** Latest known state of the player, carried forward across ticks; becomes the session's end snapshot. */
   let latestSnapshot: PlayerSnapshot | null = null;
   /** The name and spec the player entered; overrides whatever the detector reads. */
@@ -84,17 +91,23 @@ export function useTracker() {
   async function ensureSession(detection: Detection | null): Promise<boolean> {
     if (session.id) return true;
     try {
-      sessionLabel ||= (detection && mapLabel(detection.map)) || '';
+      sessionLabel.value ||= (detection && mapLabel(detection.map)) || '';
+      const label = sessionLabel.value;
+      const size = partySize.value;
       const fingerprint = detection?.character.fingerprint ?? null;
       const known = identity && identity.fingerprint === fingerprint ? identity : null;
       const created = await createSession({
-        label: sessionLabel,
+        label,
         character: options.character ?? known?.name ?? detection?.character.name ?? '',
         fingerprint,
         start: detection ? applyIdentity(snapshotFrom(detection, Date.now()), identity) : null,
+        partySize: size,
       });
       session.id = created.id;
       session.token = created.ownerToken;
+      sentLabel = label;
+      sentPartySize = size;
+      saveSessionToken(created.id, created.ownerToken); // lets the player rename or edit it later from their session list
       return true;
     } catch (cause) {
       message.value = `Could not start a session, will retry: ${(cause as Error).message}`;
@@ -102,17 +115,37 @@ export function useTracker() {
     }
   }
 
-  /** Names an already-created, still-unnamed session once the map becomes readable. */
-  async function nameFromMap(detection: Detection): Promise<void> {
-    if (sessionLabel || !session.id) return;
-    const label = mapLabel(detection.map);
-    if (!label) return;
-    sessionLabel = label; // claimed before the request so overlapping ticks don't send it twice
+  /** A still-unnamed session takes the map's name once the map becomes readable. A name the player typed is never replaced. */
+  function nameFromMap(detection: Detection): void {
+    if (sessionLabel.value) return;
+    sessionLabel.value = mapLabel(detection.map) ?? '';
+  }
+
+  /** Sends the session's name (typed or from the map) when the server doesn't have it yet; retried on later ticks if it fails. */
+  async function syncLabel(): Promise<void> {
+    const label = sessionLabel.value;
+    if (!session.id || !label || label === sentLabel) return;
+    const previous = sentLabel;
+    sentLabel = label; // claimed before the request so overlapping ticks don't send it twice
     try {
       await labelSession(session.id, session.token, label);
     } catch (cause) {
-      sessionLabel = ''; // try again on the next tick
+      sentLabel = previous; // try again on the next tick
       message.value = `Could not name the session, will retry: ${(cause as Error).message}`;
+    }
+  }
+
+  /** Same for the party size the player typed. */
+  async function syncPartySize(): Promise<void> {
+    const size = partySize.value;
+    if (!session.id || size === sentPartySize) return;
+    const previous = sentPartySize;
+    sentPartySize = size;
+    try {
+      await setSessionPartySize(session.id, session.token, size);
+    } catch (cause) {
+      sentPartySize = previous;
+      message.value = `Could not save the party size, will retry: ${(cause as Error).message}`;
     }
   }
 
@@ -155,7 +188,9 @@ export function useTracker() {
     readings.value = [...readings.value, reading];
     pending = [...pending, reading];
     if (!(await ensureSession(detection))) return;
-    await nameFromMap(detection);
+    nameFromMap(detection);
+    await syncLabel();
+    await syncPartySize();
     await syncIdentity();
     if (pending.length >= UPLOAD_EVERY) await flush();
   }
@@ -188,7 +223,10 @@ export function useTracker() {
   async function start(startOptions: TrackerStart = {}): Promise<void> {
     if (status.value !== 'idle') return;
     options = startOptions;
-    sessionLabel = startOptions.label ?? '';
+    sessionLabel.value = startOptions.label ?? '';
+    sentLabel = '';
+    partySize.value = MIN_PARTY_SIZE;
+    sentPartySize = MIN_PARTY_SIZE;
     message.value = null;
     status.value = 'loading';
     try {
@@ -272,6 +310,23 @@ export function useTracker() {
         latestSnapshot = applyIdentity(latestSnapshot, identity);
         current.value = latestSnapshot;
       }
+    },
+    /** The session's name: what the player typed, else the map's name once it has been read ('' until either). */
+    sessionName: sessionLabel,
+    /**
+     * The player typed a name for this session. A blank one goes back to naming it after the map (the
+     * server keeps the old name until the map is next read, since a session can't be saved nameless).
+     */
+    renameSession: (text: string) => {
+      sessionLabel.value = cleanSessionName(text) ?? '';
+      void syncLabel();
+    },
+    partySize,
+    /** The player typed how many people are in their party; anything outside 1-6 is ignored. */
+    setPartySize: (size: number) => {
+      if (!Number.isInteger(size) || size < MIN_PARTY_SIZE || size > MAX_PARTY_SIZE) return;
+      partySize.value = size;
+      void syncPartySize();
     },
     missFramesSent: misses.sent,
     missFrameError: misses.error,

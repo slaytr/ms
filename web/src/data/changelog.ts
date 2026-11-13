@@ -11,6 +11,7 @@ export interface ChangeLogEntry {
 }
 
 export const CHANGELOG: readonly ChangeLogEntry[] = [
+  { date: '2026-11-13', text: 'Name or rename your sessions and set your party size (1 to 6) while tracking. Sessions you started in this browser can be edited later from Your sessions.' },
   { date: '2026-11-10', text: 'Loot: drag items and crates between inventory slots (drop on a filled slot to swap); they stay where you put them.' },
   { date: '2026-11-10', text: 'New Loot tab: a loot box simulator, starting with the Mystery Fashion Crate, in a MapleStory inventory look. It needs a tracked character. Everyone starts with 7,000 NX and earns 35,000 more per 200,000 EXP gained; your crates and items are saved.' },
   { date: '2026-11-10', text: 'Welcome back now has a Your sessions list: browse your past sessions and open one to see its EXP chart and rates.' },

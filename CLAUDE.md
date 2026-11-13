@@ -186,6 +186,17 @@ The Classic UI uses exact pixel fonts, so we match pixels instead of OCR:
   and stop updating video frames. If readings stall while the pop-out is open, the fix is to pull frames
   with MediaStreamTrackProcessor and drive the tick from a Worker timer.
 
+## Session name and party size
+- A session's name (`ms_capture_sessions.label`) is what the player typed, else the map's name once it is read; a typed name is never
+  replaced by the map. A blank box asks for the map's name again (the server keeps the old name until the map is next read, because
+  `POST /api/sessions/:id/label` refuses blank). Party size is `party_size` (migration 014, 1-6, default 1): typed by the player, only
+  stored and shown (it does not change any rate). `POST /api/sessions/:id/party-size`, both owner-token routes; validation is
+  `api/lib/session-input.mjs` (and `web/src/lib/session-input.ts` on the client).
+- `useTracker` sends changes with a claim-then-retry sync (`syncLabel`, `syncPartySize`), so a failed save is retried on later ticks.
+  The owner token of every session started in this browser is kept in localStorage (`lib/session-tokens.ts`, newest 100): that is what
+  lets *Your sessions* (`MySessions.vue`) rename or set the party size of a past session. Sessions from other browsers show read-only.
+  The form is `components/home/SessionDetailsForm.vue`.
+
 ## What gets persisted
 - `ms_readings`: one row per ~3s capture (batched ~30s). Measured at **187 bytes/row** with indexes
   (89 MB heap + 89 MB index per million rows). Fine for in-session graphs, but it dominates storage.

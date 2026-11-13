@@ -10,17 +10,18 @@ import LeaderStrip from '../components/home/LeaderStrip.vue';
 import LevelBadge from '../components/home/LevelBadge.vue';
 import ExpChart from '../components/home/ExpChart.vue';
 import PotChart from '../components/home/PotChart.vue';
+import SessionDetailsForm from '../components/home/SessionDetailsForm.vue';
 import MySessions from '../components/home/MySessions.vue';
 import OverviewBox from '../components/home/OverviewBox.vue';
 import SkyScene from '../components/home/SkyScene.vue';
 import TrackingChecklist from '../components/home/TrackingChecklist.vue';
-import PipCompact from '../components/PipCompact.vue';
 import LiveGrinders from '../components/home/LiveGrinders.vue';
+import PipCompact from '../components/PipCompact.vue';
 import PipTracker from '../components/PipTracker.vue';
 import { CHANGELOG } from '../data/changelog';
 import { usePopOut } from '../composables/usePopOut';
-import { useTracker } from '../composables/useTracker';
 import { useLiveGrinders } from '../composables/useLiveGrinders';
+import { useTracker } from '../composables/useTracker';
 import { formatClock } from '../lib/format';
 import { assessDetection } from '../lib/health';
 import { getSavedIdentity, listCharacters, getWeeklySessions } from '../lib/api';
@@ -99,8 +100,8 @@ const askIdentity = computed(() => status.value === 'tracking' && needsIdentity(
 const hadSession = computed(() => status.value === 'idle' && readings.value.length > 1);
 
 // The small always-on-top overlay. It shares this page's state, so it updates on every tick.
-const popOut = usePopOut('Level tracker');
 const { grinders } = useLiveGrinders();
+const popOut = usePopOut('Level tracker');
 // The compact overlay: a single green bar (EXP gained + EXP/hour). Its own window, so both can be open.
 const compactPopOut = usePopOut('EXP bar');
 const COMPACT_SIZE = { width: 240, height: 28 };
@@ -300,6 +301,15 @@ onBeforeUnmount(() => {
           >
             <IdentityForm v-if="askIdentity" id-suffix="docked" @save="saveIdentity" />
 
+            <SessionDetailsForm
+              id-suffix="live"
+              :name="tracker.sessionName.value"
+              placeholder="Named after your map"
+              :party-size="tracker.partySize.value"
+              @rename="tracker.renameSession"
+              @party-size="tracker.setPartySize"
+            />
+
             <div class="popout">
               <button class="popout-btn" type="button" :disabled="popOut.isOpen.value" @click="popOut.open()">
                 {{ popOut.isOpen.value ? 'Tracker is popped out' : 'Pop out tracker' }}
@@ -497,6 +507,8 @@ onBeforeUnmount(() => {
 
 /* Docked view: overview box on the left, EXP chart taking the middle. */
 .content.wide { max-width: 1280px; }
+/* The grinding carousel is small, so it sits close under the nav instead of where the big logo would. */
+.content.has-live { padding-top: 64px; }
 .dashboard { display: grid; grid-template-columns: minmax(260px, 320px) minmax(0, 1fr); gap: 20px; align-items: start; text-align: left; }
 .charts { display: grid; gap: 20px; min-width: 0; }
 .pot-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
@@ -507,8 +519,6 @@ onBeforeUnmount(() => {
 /* Overview buttons: all full width, one even gap between each. */
 .overview-box .popout { margin-top: 12px; display: grid; gap: 12px; }
 .overview-box .popout-btn, .overview-box .stop { width: 100%; margin: 0; display: block; }
-/* The grinding carousel is small, so it sits close under the nav instead of where the big logo would. */
-.content.has-live { padding-top: 64px; }
 .overview-box .alert-inline { margin: 0; }
 .overview-box .stop { margin-top: 12px; }
 .checking { max-width: 620px; }
