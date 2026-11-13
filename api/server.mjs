@@ -16,7 +16,7 @@ import avatarRoutes from './routes/avatar.mjs';
 import characterRoutes from './routes/characters.mjs';
 import devDbRoutes from './routes/dev-db.mjs';
 import devFixtureRoutes from './routes/dev-fixtures.mjs';
-import liveRoutes from './routes/live.mjs';
+import liveRoutes, { liveHub } from './routes/live.mjs';
 import lootRoutes from './routes/loot.mjs';
 import mapRoutes from './routes/maps.mjs';
 import missFrameRoutes from './routes/miss-frames.mjs';
@@ -48,6 +48,11 @@ export async function buildServer() {
   } else {
     fastify.log.warn('web/dist is missing. Run `npm run build`, or use `npm run web:dev` for the UI.');
   }
+
+  // A session starting, getting readings, being renamed or ending changes who is "grinding now".
+  fastify.addHook('onResponse', async (request, reply) => {
+    if (request.method === 'POST' && reply.statusCode < 400 && request.url.startsWith('/api/sessions')) liveHub.poke();
+  });
 
   await fastify.register(adminRoutes);
   await fastify.register(avatarRoutes);
