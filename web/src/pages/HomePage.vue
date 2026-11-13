@@ -202,7 +202,7 @@ onBeforeUnmount(() => {
     <SkyScene />
 
     <main class="content" :class="{ wide: status === 'tracking' && docked, 'has-live': grinders.length > 0 }">
-      <!-- Whoever is grinding right now replaces the logo; with nobody online the logo stays. -->
+      <!-- Whoever is grinding sits on top. The logo goes below it until a window is shared, then it is gone. -->
       <LiveGrinders v-if="grinders.length > 0" :grinders="grinders" />
       <header v-else class="logo">
         <p class="ribbon">Bill's Personal</p>

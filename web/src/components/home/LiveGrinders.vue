@@ -69,7 +69,7 @@ onBeforeUnmount(stop);
 
     <div class="row">
       <button v-if="pages > 1" class="nav" type="button" aria-label="Previous players" @click="go(page - 1)">‹</button>
-      <ul class="cards" aria-live="polite">
+      <ul class="cards" :style="{ '--n': Math.min(count, PER_PAGE) }" aria-live="polite">
         <li v-for="g in visible" :key="g.id" class="card">
           <CharacterAvatar :name="g.player" small />
           <p class="who" :title="g.player">{{ g.player }}</p>
@@ -98,7 +98,9 @@ onBeforeUnmount(stop);
 <style scoped>
 .live {
   --ink: #4a2a0e;
-  max-width: 36rem;
+  /* As wide as its cards need (one to five of them), never wider than the page. */
+  width: fit-content;
+  max-width: 100%;
   margin: 0 auto 0.9rem;
   padding: 8px 10px 10px;
   background: #fff6dc;
@@ -112,14 +114,15 @@ onBeforeUnmount(stop);
 .dot { width: 9px; height: 9px; border-radius: 50%; background: #3fa02a; box-shadow: 0 0 0 0 rgba(63, 160, 42, 0.6); animation: ping 1.8s infinite; }
 @keyframes ping { 70% { box-shadow: 0 0 0 8px rgba(63, 160, 42, 0); } 100% { box-shadow: 0 0 0 0 rgba(63, 160, 42, 0); } }
 
-.row { display: flex; align-items: center; gap: 6px; }
-.cards { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
-.card { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; background: #fffdf3; border: 2px solid #d9c48a; border-radius: 10px; text-align: center; }
+.row { display: flex; align-items: center; justify-content: center; gap: 6px; }
+/* Width follows the number of players (--n, at most one page), so a last page with fewer cards doesn't resize the box. */
+.cards { --card: 6.5rem; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; width: calc(var(--n) * var(--card) + (var(--n) - 1) * 6px); max-width: 100%; min-width: 0; margin: 0; padding: 0; list-style: none; }
+.card { flex: none; width: var(--card); min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; background: #fffdf3; border: 2px solid #d9c48a; border-radius: 10px; text-align: center; }
 .who { max-width: 100%; margin: 2px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 1rem/1.2 'Lilita One', sans-serif; }
 .pct { margin: 0; font-size: 12px; font-variant-numeric: tabular-nums; color: #6b4a22; }
 .gain { margin: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; font: 400 0.95rem/1.2 'Lilita One', sans-serif; color: #2e9a1f; font-variant-numeric: tabular-nums; }
 .card :deep(.badge) { transform: scale(0.75); transform-origin: center; margin: -3px 0; }
-@media (max-width: 520px) { .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .cards { --card: 5.4rem; } }
 
 .nav { flex: none; width: 26px; height: 40px; font: 400 1.4rem/1 'Lilita One', sans-serif; color: var(--ink); background: #ecdcae; border: 2px solid var(--ink); border-radius: 8px; cursor: pointer; }
 .nav:focus-visible, .pip:focus-visible { outline: 3px solid #2f8fe0; outline-offset: 2px; }
