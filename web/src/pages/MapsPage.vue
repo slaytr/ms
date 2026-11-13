@@ -14,6 +14,7 @@ import {
   MIN_SESSION_SECONDS,
   qualifyingSessions,
   rankMaps,
+  rankPlayers,
   sessionRates,
   sortRanks,
   type MapSession,
@@ -38,6 +39,11 @@ const columns: ReadonlyArray<{ key: RankKey; label: string; hint: string }> = [
 
 const ranks = computed(() => sortRanks(rankMaps(sessions.value), sortKey.value));
 const bestExpPerHour = computed(() => Math.max(1, ...ranks.value.map((r) => r.expPerHour)));
+/** The open map's fastest players, 3 per row. Empty when no map is open. */
+const mapPlayers = computed(() =>
+  selectedMap.value ? rankPlayers(sessions.value.filter((s) => s.map === selectedMap.value)) : [],
+);
+const MEDALS = ['gold', 'silver', 'bronze'] as const;
 const history = computed(() => (selectedMap.value ? sessions.value.filter((s) => s.map === selectedMap.value) : sessions.value));
 
 /** Why some tracked sessions are missing from the tables. */
@@ -90,6 +96,7 @@ onMounted(async () => {
               <colgroup>
                 <col class="c-rank" />
                 <col />
+                <col class="c-top" />
                 <col class="c-exp" />
                 <col class="c-rate" />
                 <col class="c-rate" />
@@ -99,6 +106,7 @@ onMounted(async () => {
                 <tr>
                   <th class="num">#</th>
                   <th class="left">Map</th>
+                  <th class="left" title="Highest EXP/h on this map">Top player</th>
                   <th v-for="col in columns" :key="col.key" :class="col.key === 'expPerHour' ? 'left' : 'num'" :aria-sort="sortKey === col.key ? 'descending' : undefined">
                     <button type="button" :class="{ on: sortKey === col.key }" :title="col.hint" @click="sortKey = col.key">
                       {{ col.label }}<span v-if="sortKey === col.key" aria-hidden="true"> ▼</span>
@@ -107,12 +115,17 @@ onMounted(async () => {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(rank, index) in ranks" :key="rank.map" :class="{ picked: selectedMap === rank.map }">
-                  <td class="num rank">{{ index + 1 }}</td>
+                <template v-for="(rank, index) in ranks" :key="rank.map">
+                <tr :class="{ picked: selectedMap === rank.map, alt: index % 2 === 1 }">
+                  <td class="num rank" :class="{ top: index < 3 }">{{ index + 1 }}</td>
                   <td class="left">
-                    <button type="button" class="map-btn" :aria-pressed="selectedMap === rank.map" @click="toggleMap(rank.map)">
-                      {{ rank.map }}
+                    <button type="button" class="map-btn" :aria-expanded="selectedMap === rank.map" title="Show the fastest players on this map" @click="toggleMap(rank.map)">
+                      <span class="caret" aria-hidden="true">{{ selectedMap === rank.map ? '▼' : '▶' }}</span>{{ rank.map }}
                     </button>
+                  </td>
+                  <td class="left leader" :title="rank.leader ? `${rank.leader.player} has the highest EXP/h on this map` : undefined">
+                    <template v-if="rank.leader"><strong>{{ rank.leader.player }}</strong> <span class="dim">{{ formatPerHour(rank.leader.expPerHour) }}/h</span></template>
+                    <template v-else>—</template>
                   </td>
                   <td class="left exp">
                     <span class="bar" :style="{ width: barWidth(rank.expPerHour) }" aria-hidden="true" />
@@ -122,6 +135,19 @@ onMounted(async () => {
                   <td class="num meso">{{ formatPerHour(rank.mesoPerHour) }}</td>
                   <td class="num">{{ formatStay(rank.seconds) }}</td>
                 </tr>
+                <tr v-if="selectedMap === rank.map" class="players-row">
+                  <td colspan="7">
+                    <p class="players-title">Fastest players on {{ rank.map }} <span class="dim">average EXP/h per player</span></p>
+                    <ol class="players">
+                      <li v-for="(p, i) in mapPlayers" :key="p.playerKey" class="player" :title="[p.player, p.level !== null ? `Lv ${p.level}` : null, p.job].filter(Boolean).join(' · ')">
+                        <span class="place" :class="MEDALS[i]">{{ i + 1 }}</span>
+                        <span class="pname">{{ p.player }}</span>
+                        <span class="prate">{{ formatPerHour(p.expPerHour) }}<span class="unit">/h</span></span>
+                      </li>
+                    </ol>
+                  </td>
+                </tr>
+                </template>
               </tbody>
             </table>
           </div>
@@ -239,28 +265,48 @@ onMounted(async () => {
 table { width: 100%; min-width: 640px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 th, td { padding: 9px 12px; white-space: nowrap; border-bottom: 2px solid #ecdcae; }
 th { position: sticky; top: 0; font-size: 0.8rem; font-weight: 800; color: #6b4a22; background: #ffeec0; border-bottom: 3px solid var(--ink); }
-tbody tr:nth-child(even) { background: rgba(255, 253, 243, 0.7); }
+tbody tr.alt { background: rgba(255, 253, 243, 0.7); }
 tbody tr:last-child td { border-bottom: 0; }
 .left { text-align: left; }
 .num { text-align: right; }
 .dim { color: #6b4a22; }
 .strong { font-weight: 800; }
 .rank { width: 2.5rem; font: 400 1.1rem 'Lilita One', sans-serif; color: #8f7a55; }
-tbody tr:nth-child(-n + 3) .rank { color: #c98a00; }
+.rank.top { color: #c98a00; }
 
 th button, .map-btn, .clear { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
 th button { font-weight: 800; }
 th button:hover, th button.on { color: #1f6fc4; }
 .map-btn { text-align: left; font-weight: 800; }
 .map-btn:hover { text-decoration: underline; }
+.map-btn .caret { display: inline-block; width: 1em; margin-right: 0.45em; font-size: 0.7em; color: #6b4a22; }
+.ranking td.leader { white-space: nowrap; font-size: 0.85rem; }
+.leader strong { color: #2e9a1f; font-weight: 800; }
+.leader .dim { font-size: 0.75rem; }
+
+/* The open map: its fastest players, 3 per row. */
+.ranking tr.players-row { background: #fffdf3 !important; }
+.ranking tr.players-row td { padding: 10px 14px 14px; white-space: normal; overflow: visible; text-align: left; }
+.players-title { margin: 0 0 8px; font-size: 0.85rem; font-weight: 800; }
+.players-title .dim { margin-left: 6px; font-size: 0.72rem; font-weight: 700; }
+.players { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 8px; margin: 0; padding: 0; list-style: none; }
+.player { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 4px 10px; background: #fff; border: 2px solid #d9c48a; border-radius: 8px; }
+.pname { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 800; }
+.prate { flex: none; font: 400 0.95rem 'Lilita One', sans-serif; font-variant-numeric: tabular-nums; color: #2e9a1f; }
+.prate .unit { font-size: 0.7em; color: #6b4a22; }
+.player .place { flex: none; display: grid; place-items: center; width: 20px; height: 20px; font: 400 0.8rem 'Lilita One', sans-serif; color: #fff; background: #c8793a; border: 2px solid #4a2a0e; border-radius: 50%; }
+.player .place.gold { background: #f2b705; }
+.player .place.silver { background: #9aa7b4; }
+.player .place.bronze { background: #c8793a; }
 tr.picked { background: #dff1ff !important; }
 tr.picked .map-btn { color: #1f6fc4; }
 button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; border-radius: 4px; }
 
 /* Ranking: fixed-width number columns so only the map name flexes, and a long name is cut off instead of pushing them. */
-.ranking { table-layout: fixed; min-width: 720px; }
+.ranking { table-layout: fixed; min-width: 900px; }
 .c-rank { width: 3.25rem; }
 .c-exp { width: 8.5rem; }
+.c-top { width: 13rem; }
 .c-rate { width: 6.5rem; }
 .c-small { width: 5.5rem; }
 .ranking td.left { overflow: hidden; text-overflow: ellipsis; }

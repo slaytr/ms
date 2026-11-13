@@ -18,8 +18,24 @@ export interface MapSession {
   readonly mesoGained: number;
 }
 
+/** One player's pace on one map: their sessions there added together (total EXP over total time). */
+export interface MapPlayer {
+  readonly playerKey: string;
+  readonly player: string;
+  readonly job: string | null;
+  /** Level at the end of their newest session on the map, when it was read. */
+  readonly level: number | null;
+  readonly expPerHour: number;
+  readonly sessions: number;
+}
+
+/** How many players the map's expanded view lists (3 rows of 3). */
+export const MAP_TOP_PLAYERS = 9;
+
 export interface MapRank {
   readonly map: string;
+  /** Whoever has the highest EXP/h here (one entry per player), or null if nobody has. */
+  readonly leader: MapPlayer | null;
   readonly sessions: number;
   readonly players: number;
   readonly seconds: number;
@@ -38,6 +54,43 @@ export const MIN_SESSION_SECONDS = 30 * 60;
 export const MIN_EXP_PER_HOUR = 50_000;
 
 const perHour = (amount: number, seconds: number) => (seconds > 0 ? (amount / seconds) * HOUR_SECONDS : 0);
+
+/**
+ * The `limit` fastest players among `sessions` (all from one map), best EXP/h first, one entry per player:
+ * a player's sessions are added together before dividing, so a long stay counts for more than a short one.
+ * Ties go to the name so the order is stable. Input is not modified.
+ */
+export function rankPlayers(sessions: readonly MapSession[], limit: number = MAP_TOP_PLAYERS): readonly MapPlayer[] {
+  const byPlayer = new Map<string, MapSession[]>();
+  for (const session of sessions) {
+    byPlayer.set(session.playerKey, [...(byPlayer.get(session.playerKey) ?? []), session]);
+  }
+  return [...byPlayer.entries()]
+    .map(([playerKey, group]): MapPlayer => {
+      const newest = group.reduce((a, b) => (b.startedAt > a.startedAt ? b : a));
+      const withJob = [...group].sort((a, b) => b.startedAt - a.startedAt).find((s) => s.job);
+      const seconds = group.reduce((total, s) => total + s.seconds, 0);
+      const exp = group.reduce((total, s) => total + s.expGained, 0);
+      return {
+        playerKey,
+        player: newest.player,
+        job: withJob?.job ?? null,
+        level: newest.levelTo ?? newest.levelFrom,
+        expPerHour: perHour(exp, seconds),
+        sessions: group.length,
+      };
+    })
+    .sort((a, b) => b.expPerHour - a.expPerHour || a.player.localeCompare(b.player))
+    .slice(0, limit);
+}
+
+/** The players ranked on one map: `rankPlayers` over just that map's sessions. */
+export function topPlayersForMap(sessions: readonly MapSession[], map: string, limit: number = MAP_TOP_PLAYERS): readonly MapPlayer[] {
+  return rankPlayers(
+    sessions.filter((s) => s.map === map),
+    limit,
+  );
+}
 
 /** Lasted at least 30 minutes and earned more than 50K EXP/h. */
 export function isQualifyingSession(session: MapSession): boolean {
@@ -64,6 +117,7 @@ export function rankMaps(sessions: readonly MapSession[]): readonly MapRank[] {
     const expGained = sum((s) => s.expGained);
     return {
       map,
+      leader: rankPlayers(group, 1)[0] ?? null,
       sessions: group.length,
       players: new Set(group.map((s) => s.playerKey)).size,
       seconds,

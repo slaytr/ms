@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatLevels, formatStay, qualifyingSessions, rankMaps, sessionRates, sortRanks, type MapSession } from './maps';
+import { formatLevels, formatStay, qualifyingSessions, rankMaps, rankPlayers, sessionRates, sortRanks, topPlayersForMap, type MapSession } from './maps';
 
 const session = (over: Partial<MapSession> = {}): MapSession => ({
   id: 'a',
@@ -108,5 +108,68 @@ describe('formatting', () => {
     expect(formatLevels(49, 50)).toBe('Lv 49 → 50');
     expect(formatLevels(null, 50)).toBe('Lv 50');
     expect(formatLevels(null, null)).toBe('—');
+  });
+});
+
+describe('rankPlayers', () => {
+  const by = (playerKey: string, over: Partial<MapSession> = {}) => session({ id: playerKey + (over.startedAt ?? 0), playerKey, player: playerKey, ...over });
+
+  it('ranks players by EXP/h, one entry per player', () => {
+    const ranked = rankPlayers([
+      by('slow', { expGained: 100_000 }),
+      by('fast', { expGained: 300_000 }),
+      by('fast', { expGained: 100_000, startedAt: 9 }),
+    ]);
+    expect(ranked.map((p) => [p.player, p.expPerHour, p.sessions])).toEqual([['fast', 200_000, 2], ['slow', 100_000, 1]]);
+  });
+
+  it('adds a player\'s time before dividing, so a long stay outweighs a short burst', () => {
+    const [p] = rankPlayers([
+      by('a', { seconds: 1800, expGained: 100_000 }), // 200K/h for 30 min
+      by('a', { seconds: 5400, expGained: 100_000, startedAt: 5 }), // 66.7K/h for 90 min
+    ]);
+    expect(p.expPerHour).toBe(100_000); // 200K EXP over 2h of tracked time
+  });
+
+  it('keeps only the top 9 by default and breaks ties on the name', () => {
+    const ten = Array.from({ length: 10 }, (_, i) => by(`p${i}`, { expGained: 100_000 }));
+    const ranked = rankPlayers(ten);
+    expect(ranked).toHaveLength(9);
+    expect(ranked.map((p) => p.player)).toEqual(['p0', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']);
+  });
+
+  it('takes level and job from the newest session', () => {
+    const [p] = rankPlayers([
+      by('a', { startedAt: 1, levelTo: 40, job: 'Old Job' }),
+      by('a', { startedAt: 9, levelTo: 41, job: null }),
+    ]);
+    expect(p.level).toBe(41);
+    expect(p.job).toBe('Old Job');
+  });
+
+  it('does not modify its input', () => {
+    const input = [by('a'), by('b')];
+    const copy = [...input];
+    rankPlayers(input);
+    expect(input).toEqual(copy);
+  });
+});
+
+describe('topPlayersForMap and the map leader', () => {
+  it('looks only at the sessions on that map', () => {
+    const sessions = [
+      session({ id: '1', map: 'A', playerKey: 'x', player: 'X', expGained: 400_000 }),
+      session({ id: '2', map: 'B', playerKey: 'y', player: 'Y', expGained: 900_000 }),
+    ];
+    expect(topPlayersForMap(sessions, 'A').map((p) => p.player)).toEqual(['X']);
+  });
+
+  it('names the fastest player as the leader of each map', () => {
+    const ranks = rankMaps([
+      session({ id: '1', map: 'A', playerKey: 'x', player: 'X', expGained: 100_000 }),
+      session({ id: '2', map: 'A', playerKey: 'y', player: 'Y', expGained: 300_000 }),
+    ]);
+    expect(ranks[0].leader?.player).toBe('Y');
+    expect(ranks[0].leader?.expPerHour).toBe(300_000);
   });
 });
