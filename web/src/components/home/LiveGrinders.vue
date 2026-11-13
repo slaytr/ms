@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 
 import type { LiveGrinder } from '../../lib/api';
+import { formatCompact } from '../../lib/format';
 import CharacterAvatar from './CharacterAvatar.vue';
 import LevelBadge from './LevelBadge.vue';
 
@@ -75,7 +76,8 @@ onBeforeUnmount(stop);
           <p class="who" :title="g.player">{{ g.player }}</p>
           <LevelBadge :level="g.level" />
           <p class="pct">{{ pct(g.pct) }}</p>
-          <p class="gain">+{{ fmt(g.expGained) }}</p>
+          <p class="gain" :title="g.estimated ? 'Estimated from the EXP bar percent' : undefined">{{ g.estimated ? '~' : '' }}+{{ fmt(g.expGained) }}</p>
+          <p class="rate" title="Average EXP per hour this session">{{ g.expPerHour === null ? '—' : `${g.estimated ? '~' : ''}${formatCompact(g.expPerHour)}/h` }}</p>
         </li>
       </ul>
       <button v-if="pages > 1" class="nav" type="button" aria-label="Next players" @click="go(page + 1)">›</button>
@@ -120,6 +122,7 @@ onBeforeUnmount(stop);
 .card { flex: none; width: var(--card); min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; background: #fffdf3; border: 2px solid #d9c48a; border-radius: 10px; text-align: center; }
 .who { max-width: 100%; margin: 2px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 1rem/1.2 'Lilita One', sans-serif; }
 .pct { margin: 0; font-size: 12px; font-variant-numeric: tabular-nums; color: #6b4a22; }
+.rate { margin: 0; font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; color: #6b4a22; }
 .gain { margin: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; font: 400 0.95rem/1.2 'Lilita One', sans-serif; color: #2e9a1f; font-variant-numeric: tabular-nums; }
 .card :deep(.badge) { transform: scale(0.75); transform-origin: center; margin: -3px 0; }
 @media (max-width: 520px) { .cards { --card: 5.4rem; } }

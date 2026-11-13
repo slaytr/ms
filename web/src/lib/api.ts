@@ -184,6 +184,10 @@ export interface LiveGrinder {
   level: number | null;
   pct: number | null;
   expGained: number;
+  /** Average EXP per hour so far this session; null until a couple of minutes have been tracked. */
+  expPerHour: number | null;
+  /** EXP is estimated from the bar's percent (the game shows no raw EXP at this level). */
+  estimated: boolean;
 }
 
 export function listLiveGrinders(): Promise<LiveGrinder[]> {
