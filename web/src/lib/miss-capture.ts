@@ -13,7 +13,7 @@ export function findMisses(detection: Detection): readonly MissField[] {
   const misses: MissField[] = [];
   if (!found.character || character.name === null) misses.push('character');
   if (!found.level || detection.level === null || detection.levelInferred === true) misses.push('level');
-  if (!found.exp || detection.exp === null) misses.push('exp');
+  if (!found.exp || (detection.exp === null && detection.expPct === null)) misses.push('exp');
   if (found.mesos && detection.meso === null) misses.push('meso');
   if (!found.minimap) misses.push('minimap');
   else if (map.street === null || map.name === null) misses.push('map');

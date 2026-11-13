@@ -29,12 +29,21 @@ export function assessDetection(detection: Detection | null, knownName: string |
     window: 'ok',
     character: rate(found.character, character.name ?? knownName),
     level: rate(found.level, detection.level),
-    exp: rate(found.exp, detection.exp),
+    exp: rate(found.exp, detection.exp ?? detection.expPct),
     meso: rate(found.mesos, detection.meso),
   };
 }
 
-/** The core data we need before calling a session "tracked": who, what level, and EXP. Meso is a bonus. */
+/**
+ * The core data we need before calling a session "tracked": who, what level, and EXP. Meso is a bonus.
+ * The game stops showing raw EXP once a level needs over a million, leaving only the percent, so the
+ * percent alone is enough.
+ */
 export function coreReady(detection: Detection | null): boolean {
-  return detection !== null && detection.found.character && detection.level !== null && detection.exp !== null;
+  return (
+    detection !== null &&
+    detection.found.character &&
+    detection.level !== null &&
+    (detection.exp !== null || detection.expPct !== null)
+  );
 }

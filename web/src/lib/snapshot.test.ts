@@ -82,3 +82,20 @@ describe('carryForward', () => {
     expect(frozen.level).toBe(49);
   });
 });
+
+describe('carryForward with a percent-only EXP bar', () => {
+  it('keeps the percent when the game shows no raw EXP', () => {
+    const snap = carryForward(null, detection({ exp: null, expPct: 76.04, level: 62 }), 1000);
+    expect(snap.expPct).toBe(76.04);
+    expect(snap.exp).toBeNull();
+  });
+});
+
+describe('carryForward when raw EXP stops appearing', () => {
+  it('moves to the percent alone once the level changes and no raw EXP is shown any more', () => {
+    const raw = carryForward(null, detection({ exp: 900_000, expPct: 50, level: 61 }), 1000);
+    const next = carryForward(raw, detection({ exp: null, expPct: 3, level: 62 }), 2000);
+    expect(next.exp).toBeNull();
+    expect(next.expPct).toBe(3);
+  });
+});

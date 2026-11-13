@@ -24,7 +24,7 @@ describe('assessDetection', () => {
   });
 
   it('separates "on screen but not readable" from "not on screen"', () => {
-    const h = assessDetection({ ...base, exp: null, level: null, found: { ...base.found, mesos: true } });
+    const h = assessDetection({ ...base, exp: null, expPct: null, level: null, found: { ...base.found, mesos: true } });
     expect([h.level, h.exp, h.meso]).toEqual(['unreadable', 'unreadable', 'unreadable']);
   });
 
@@ -40,7 +40,8 @@ describe('coreReady', () => {
     expect(coreReady(base)).toBe(true);
     expect(coreReady({ ...base, character: { ...base.character, name: null } })).toBe(true);
     expect(coreReady({ ...base, level: null })).toBe(false);
-    expect(coreReady({ ...base, exp: null })).toBe(false);
+    expect(coreReady({ ...base, exp: null, expPct: null })).toBe(false);
+    expect(coreReady({ ...base, exp: null })).toBe(true); // percent-only: the game hides raw EXP at high levels
     expect(coreReady({ ...base, found: { ...base.found, character: false } })).toBe(false);
     expect(coreReady(null)).toBe(false);
   });

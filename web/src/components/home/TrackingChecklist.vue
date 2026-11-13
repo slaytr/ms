@@ -64,6 +64,9 @@ const meso = computed(() => props.detection?.meso ?? null);
         <template v-if="health.exp === 'ok' && exp !== null">
           <strong>{{ fmt(exp) }}</strong><span v-if="expPct !== null" class="job">{{ expPct.toFixed(2) }}%</span>
         </template>
+        <template v-else-if="health.exp === 'ok' && expPct !== null">
+          <strong>{{ expPct.toFixed(2) }}%</strong><span class="job">percent only</span>
+        </template>
         <template v-else-if="health.exp === 'unreadable'">Found, but some digits aren't recognised yet</template>
         <template v-else>Looking for your EXP bar</template>
       </span>

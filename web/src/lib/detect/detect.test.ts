@@ -365,6 +365,12 @@ describe('parsers', () => {
     expect(parseMeso('72?,592')).toBeNull();
   });
 
+  it('parseExp reads a percent-only bar (no raw EXP shown above 1M) as a percent with no raw EXP', () => {
+    expect(parseExp('[76.04%]')).toEqual({ pct: 76.04, exp: null });
+    expect(parseExp('17,691[2.70%]')).toEqual({ pct: 2.7, exp: 17_691 });
+    expect(parseExp('[7?.04%]')).toEqual({ pct: null, exp: null });
+  });
+
   it('parseExpPoints treats every separator as thousands, never a decimal', () => {
     expect(parseExpPoints('17,691')).toBe(17_691);
     expect(parseExpPoints('17.691')).toBe(17_691);

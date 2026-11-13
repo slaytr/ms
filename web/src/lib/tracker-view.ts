@@ -34,6 +34,8 @@ export interface TrackerView {
   readonly expPctPerHour: string | null;
   /** Total EXP gained this session, across level-ups. */
   readonly expGained: number;
+  /** The EXP figures are estimated from the bar's percent, because the game shows no raw EXP at this level. */
+  readonly expEstimated: boolean;
   /** The per-hour figures are an early projection from a short stretch of play, so they will still swing. */
   readonly ratesEstimated: boolean;
   /** Null until meso has been read at least once. */
@@ -102,7 +104,7 @@ function lastHourRates(readings: readonly Reading[], rates: Rates, pauses: reado
 
 export function buildTrackerView({ name, map = null, snapshot, readings, rates, potSpend = null, pauses = [] }: TrackerViewInput): TrackerView {
   const level = snapshot?.level ?? null;
-  const progress = levelProgress(level, snapshot?.exp ?? null);
+  const progress = levelProgress(level, snapshot?.exp ?? null, snapshot?.expPct ?? null);
   const eta = estimateEta(progress, rates.expPerHour, rates.elapsedMs);
 
   const mesoReadings = readings.filter((r) => r.meso !== null);
@@ -128,6 +130,7 @@ export function buildTrackerView({ name, map = null, snapshot, readings, rates, 
     expPerHourAvg: perHour(rates.expPerHour),
     expPctPerHour: hasRate ? `${recent.expPctPerHour.toFixed(2)}%` : null,
     expGained: rates.expGained,
+    expEstimated: rates.expEstimated,
     ratesEstimated: hasRate && rates.elapsedMs < MIN_ELAPSED_FOR_ETA_MS,
     mesoPerHour: hasMeso ? perHour(rates.mesoPerHour) : null,
     mesoGained: hasMeso ? rates.mesoGained : null,

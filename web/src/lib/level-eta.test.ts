@@ -78,3 +78,23 @@ describe('formatEta', () => {
     expect(formatEta(250 * HOUR)).toBe('100h+');
   });
 });
+
+describe('levelProgress from the percent alone', () => {
+  it('sizes the level from the percent when raw EXP is hidden, and says it is an estimate', () => {
+    const p = levelProgress(62, null, 50)!;
+    expect(p.estimated).toBe(true);
+    expect(p.fraction).toBe(0.5);
+    expect(p.exp + p.remaining).toBe(p.need);
+  });
+
+  it('prefers raw EXP when it is there', () => {
+    const p = levelProgress(49, 17_691, 2.7)!;
+    expect(p.estimated).toBe(false);
+    expect(p.exp).toBe(17_691);
+  });
+
+  it('has no progress without raw EXP or a percent', () => {
+    expect(levelProgress(62, null, null)).toBeNull();
+    expect(levelProgress(null, null, 50)).toBeNull();
+  });
+});

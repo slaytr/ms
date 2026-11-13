@@ -57,7 +57,12 @@ export function carryForward(previous: PlayerSnapshot | null, detection: Detecti
   const base = previous ?? { takenAt, ...BLANK };
   const { character } = detection;
   const hasIdentity = character.fingerprint !== null;
-  const hasExp = detection.exp !== null;
+  // The game hides raw EXP once a level needs over a million, leaving only the percent. That is told apart from a
+  // single failed read (keep the last exact pair, never mixing two ticks) by raw EXP never having been seen at
+  // this level: none known yet, or the level just changed.
+  const levelChanged = detection.level !== null && base.level !== null && detection.level !== base.level;
+  const percentOnly = detection.exp === null && detection.expPct !== null && (base.exp === null || levelChanged);
+  const hasExp = detection.exp !== null || percentOnly;
 
   return {
     takenAt,

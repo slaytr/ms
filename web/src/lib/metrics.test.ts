@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { expToNext } from '../data/expTable';
 import { computeRates, expGainSeries, type Reading } from './metrics';
 
 const HOUR = 3_600_000;
@@ -264,5 +265,61 @@ describe('computeRates: paused tracking', () => {
   it('draws the chart with paused time removed and no jump', () => {
     const series = expGainSeries(readings, pauses);
     expect(series.map((p) => [p.elapsedMs / MIN, p.gained])).toEqual([[0, 0], [10, 1_000], [10, 1_000], [20, 2_000]]);
+  });
+});
+
+describe('computeRates: percent-only EXP (the game hides raw EXP above 1M)', () => {
+  const need62 = expToNext(62)!;
+  const need63 = expToNext(63)!;
+  const pctOnly = (minutes: number, expPct: number, level = 62): Reading => reading(minutes, { expPct, level });
+
+  it('works out EXP from the percent gained and the level\'s size', () => {
+    const r = computeRates([pctOnly(0, 76), pctOnly(30, 77)]);
+    expect(r.expGained).toBeCloseTo(need62 * 0.01, 0);
+    expect(r.expEstimated).toBe(true);
+    expect(r.expPerHour).toBeCloseTo(need62 * 0.01 * 2, 0);
+  });
+
+  it('carries a level-up: the rest of the old level plus the start of the new one', () => {
+    const r = computeRates([pctOnly(0, 99, 62), pctOnly(10, 1, 63)]);
+    expect(r.expGained).toBeCloseTo(need62 * 0.01 + need63 * 0.01, 0);
+  });
+
+  it('counts nothing without a level to scale by, rather than guessing', () => {
+    const r = computeRates([reading(0, { expPct: 10 }), reading(30, { expPct: 20 })]);
+    expect(r.expGained).toBe(0);
+  });
+
+  it('keeps raw EXP exact and is not marked estimated when raw EXP is there', () => {
+    const r = computeRates([reading(0, { exp: 1_000, expPct: 10, level: 50 }), reading(30, { exp: 3_000, expPct: 12, level: 50 })]);
+    expect(r.expGained).toBe(2_000);
+    expect(r.expEstimated).toBe(false);
+  });
+
+  it('does not add a percent estimate on top of exact EXP when one raw read failed in the middle', () => {
+    const r = computeRates([
+      reading(0, { exp: 1_000, expPct: 10, level: 50 }),
+      reading(10, { exp: null, expPct: 11, level: 50 }), // the raw digits failed to read this tick
+      reading(20, { exp: 3_000, expPct: 12, level: 50 }),
+    ]);
+    expect(r.expGained).toBe(2_000);
+    expect(r.expEstimated).toBe(false);
+  });
+
+  it('estimates from the percent once raw EXP stops appearing, carrying on from the exact total', () => {
+    const r = computeRates([
+      reading(0, { exp: 900_000, expPct: 50, level: 62 }),
+      reading(10, { exp: 950_000, expPct: 52, level: 62 }), // last raw reading: exact +50,000
+      pctOnly(20, 53), // raw EXP hidden from here: +1% of the level
+    ]);
+    expect(r.expGained).toBeCloseTo(50_000 + need62 * 0.01, 0);
+    expect(r.expEstimated).toBe(true);
+  });
+
+  it('charts the estimated gain and ends where the total ends', () => {
+    const rs = [pctOnly(0, 76), pctOnly(10, 77), pctOnly(20, 78)];
+    const series = expGainSeries(rs);
+    expect(series.at(-1)!.gained).toBeCloseTo(computeRates(rs).expGained, 0);
+    expect(series.map((p) => p.elapsedMs / 60_000)).toEqual([0, 10, 20]);
   });
 });

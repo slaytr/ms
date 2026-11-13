@@ -15,15 +15,25 @@ export interface LevelProgress {
   readonly remaining: number;
   /** 0 to 1. */
   readonly fraction: number;
+  /** `exp` and `remaining` are worked out from the percent (the game hides raw EXP at high levels). */
+  readonly estimated: boolean;
 }
 
 /** Where the player is within their current level. Null if the level or EXP is unknown, or off the table. */
-export function levelProgress(level: number | null, exp: number | null): LevelProgress | null {
-  if (level === null || exp === null || exp < 0) return null;
+export function levelProgress(level: number | null, exp: number | null, expPct: number | null = null): LevelProgress | null {
+  if (level === null) return null;
   const need = expToNext(level);
   if (need === null) return null;
+  if (exp === null) {
+    // No raw EXP on screen: size it from the percent instead.
+    if (expPct === null || expPct < 0) return null;
+    const fraction = Math.min(expPct, 100) / 100;
+    const estimate = Math.round(fraction * need);
+    return { level, exp: estimate, need, remaining: need - estimate, fraction, estimated: true };
+  }
+  if (exp < 0) return null;
   const clamped = Math.min(exp, need); // EXP past the bar means a level-up we haven't seen yet
-  return { level, exp, need, remaining: need - clamped, fraction: clamped / need };
+  return { level, exp, need, remaining: need - clamped, fraction: clamped / need, estimated: false };
 }
 
 export type Eta =

@@ -15,6 +15,8 @@ export interface Rates {
   readonly mesoGained: number;
   readonly mesoPerHour: number;
   readonly expGained: number;
+  /** Some of `expGained` is estimated from the EXP bar's percent (the game hides raw EXP at high levels). */
+  readonly expEstimated: boolean;
   readonly expPerHour: number;
   readonly expPctGained: number;
   readonly expPctPerHour: number;
@@ -44,7 +46,7 @@ const RELABEL_WINDOW_MS = 30_000;
 /** Below this percent, raw/percent is too coarse (two decimals) to estimate a level's size. */
 const MIN_PCT_FOR_LEVEL_SIZE = 1;
 
-const ZERO: Rates = { elapsedMs: 0, mesoGained: 0, mesoPerHour: 0, expGained: 0, expPerHour: 0, expPctGained: 0, expPctPerHour: 0 };
+const ZERO: Rates = { elapsedMs: 0, mesoGained: 0, mesoPerHour: 0, expGained: 0, expEstimated: false, expPerHour: 0, expPctGained: 0, expPctPerHour: 0 };
 
 function perHour(amount: number, elapsedMs: number): number {
   return elapsedMs > 0 ? (amount / elapsedMs) * HOUR_MS : 0;
@@ -126,8 +128,46 @@ function levelSizeAt(reading: Reading): number | null {
   return reading.exp! / (pct / 100);
 }
 
-function sumExpGain(readings: readonly Reading[], pauses: readonly Pause[]): number {
-  return consecutive(readings, (r) => r.exp, pauses).reduce((total, [a, b]) => total + expDelta(a, b), 0);
+/**
+ * EXP gained between two readings worked out from the EXP bar's percent alone, for when the game shows
+ * no raw EXP (it hides it once a level needs more than a million). The share of the level gained times
+ * the EXP that level needs, from the table. Across a level-up it is the rest of the old level plus the
+ * start of the new one. Without a known level there is nothing to scale by, so it counts for nothing.
+ */
+function pctExpDelta(prev: Reading, current: Reading): number {
+  const sizeOf = (level: number | null) => (level === null ? null : expToNext(level));
+  const before = sizeOf(prev.level ?? current.level);
+  if (leveledUp(prev, current)) {
+    const after = sizeOf(current.level ?? prev.level);
+    if (before === null || after === null) return 0;
+    return ((100 - prev.expPct!) / 100) * before + (current.expPct! / 100) * after;
+  }
+  if (before === null) return 0;
+  return (Math.max(0, current.expPct! - prev.expPct!) / 100) * before;
+}
+
+/** One stretch of EXP gain, ending at reading `to`. */
+interface GainStep {
+  readonly to: Reading;
+  readonly gain: number;
+  readonly estimated: boolean;
+}
+
+/**
+ * Every EXP gain in the session, in time order. Where raw EXP was read it is exact. Before the first raw
+ * reading and after the last one (all of it, when the game never shows raw EXP) the gain is estimated from
+ * the percent. Inside the raw span the exact figures already cover everything, so nothing is added twice.
+ */
+function expGainSteps(sorted: readonly Reading[], pauses: readonly Pause[]): readonly GainStep[] {
+  const steps: GainStep[] = consecutive(sorted, (r) => r.exp, pauses).map(([a, b]) => ({ to: b, gain: expDelta(a, b), estimated: false }));
+  const raw = sorted.filter((r) => r.exp !== null);
+  const firstRaw = raw[0]?.takenAt ?? null;
+  const lastRaw = raw[raw.length - 1]?.takenAt ?? null;
+  for (const [a, b] of consecutive(sorted, (r) => r.expPct, pauses)) {
+    const outsideRaw = firstRaw === null || lastRaw === null || b.takenAt <= firstRaw || a.takenAt >= lastRaw;
+    if (outsideRaw) steps.push({ to: b, gain: pctExpDelta(a, b), estimated: true });
+  }
+  return steps.sort((x, y) => x.to.takenAt - y.to.takenAt);
 }
 
 function sumExpPctGain(readings: readonly Reading[], pauses: readonly Pause[]): number {
@@ -149,16 +189,23 @@ export interface ExpGainPoint {
  * Uses the same level-up handling as `computeRates`, so the last point equals `expGained`.
  */
 export function expGainSeries(readings: readonly Reading[], pauses: readonly Pause[] = []): readonly ExpGainPoint[] {
-  const withExp = [...readings].filter((r) => r.exp !== null).sort((a, b) => a.takenAt - b.takenAt);
-  if (withExp.length === 0) return [];
+  const sorted = [...readings].sort((a, b) => a.takenAt - b.takenAt);
+  const first = sorted.find((r) => r.exp !== null || r.expPct !== null);
+  if (!first) return [];
 
-  const start = withExp[0].takenAt;
+  const steps = expGainSteps(sorted, pauses);
+  const gainTo = new Map<Reading, number>();
+  for (const step of steps) gainTo.set(step.to, (gainTo.get(step.to) ?? 0) + step.gain);
+
+  const start = first.takenAt;
   const points: ExpGainPoint[] = [{ elapsedMs: 0, gained: 0 }];
   let total = 0;
-  for (let i = 1; i < withExp.length; i += 1) {
-    const [a, b] = [withExp[i - 1], withExp[i]];
-    if (!pausedBetween(pauses, a.takenAt, b.takenAt)) total += expDelta(a, b);
-    points.push({ elapsedMs: b.takenAt - start - pausedWithin(pauses, start, b.takenAt), gained: total });
+  for (const r of sorted) {
+    if (r === first || r.takenAt < start) continue;
+    // One point per raw EXP reading, plus one wherever an estimated gain ended.
+    if (r.exp === null && !gainTo.has(r)) continue;
+    total += gainTo.get(r) ?? 0;
+    points.push({ elapsedMs: r.takenAt - start - pausedWithin(pauses, start, r.takenAt), gained: total });
   }
   return points;
 }
@@ -176,13 +223,15 @@ export function computeRates(readings: readonly Reading[], nowMs?: number, pause
   const endMs = Math.max(sorted[sorted.length - 1].takenAt, nowMs ?? 0);
   const elapsedMs = Math.max(0, endMs - sorted[0].takenAt - pausedWithin(pauses, sorted[0].takenAt, endMs));
   const mesoGained = sumMesoGain(sorted, pauses);
-  const expGained = sumExpGain(sorted, pauses);
+  const steps = expGainSteps(sorted, pauses);
+  const expGained = steps.reduce((total, s) => total + s.gain, 0);
   const expPctGained = sumExpPctGain(sorted, pauses);
   return {
     elapsedMs,
     mesoGained,
     mesoPerHour: perHour(mesoGained, elapsedMs),
     expGained,
+    expEstimated: steps.some((s) => s.estimated && s.gain > 0),
     expPerHour: perHour(expGained, elapsedMs),
     expPctGained,
     expPctPerHour: perHour(expPctGained, elapsedMs),

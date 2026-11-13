@@ -30,8 +30,12 @@ describe('findMisses', () => {
   });
 
   it('flags an EXP bar that was found but not read, and one that was not found', () => {
-    expect(findMisses(detection({ exp: null }))).toEqual(['exp']);
-    expect(findMisses(detection({ exp: null, found: { ...everythingRead.found, exp: false } }))).toEqual(['exp']);
+    expect(findMisses(detection({ exp: null, expPct: null }))).toEqual(['exp']);
+    expect(findMisses(detection({ exp: null, expPct: null, found: { ...everythingRead.found, exp: false } }))).toEqual(['exp']);
+  });
+
+  it('does not flag an EXP bar that shows only a percent (the game hides raw EXP at high levels)', () => {
+    expect(findMisses(detection({ exp: null }))).toEqual([]);
   });
 
   it('flags meso only when its label was found but the digits were not recognised', () => {

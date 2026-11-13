@@ -37,7 +37,7 @@ const percent = computed(() => (props.view.progress ? (props.view.progress.fract
     <p v-if="view.mapName" class="map" :title="view.mapFull ?? undefined">{{ view.mapName }}</p>
     <p class="label">EXP / hour (last hour)</p>
     <p class="rate" :class="{ muted: view.expPerHour === '—' }" :title="view.ratesEstimated ? 'Early estimate. It steadies as you play.' : undefined">
-      {{ view.expPerHour }}<span v-if="view.ratesEstimated" class="approx">~</span>
+      {{ view.expPerHour }}<span v-if="view.ratesEstimated || view.expEstimated" class="approx" :title="view.expEstimated ? 'Estimated from the EXP bar percent' : undefined">~</span>
     </p>
 
     <div v-if="view.progress" class="progress">
@@ -56,15 +56,15 @@ const percent = computed(() => (props.view.progress ? (props.view.progress.fract
         <div class="fill" :style="{ width: `${view.progress.fraction * 100}%` }" />
       </div>
       <p class="to-go">
-        <strong>{{ fmt(view.progress.exp) }} EXP</strong>
-        <span>{{ fmt(view.progress.remaining) }} EXP to go</span>
+        <strong>{{ view.progress.estimated ? '~' : '' }}{{ fmt(view.progress.exp) }} EXP</strong>
+        <span>{{ view.progress.estimated ? '~' : '' }}{{ fmt(view.progress.remaining) }} EXP to go</span>
       </p>
     </div>
 
     <dl class="stats">
       <div>
         <dt>EXP gained</dt>
-        <dd class="green">+{{ fmt(view.expGained) }}</dd>
+        <dd class="green">{{ view.expEstimated ? '~' : '' }}+{{ fmt(view.expGained) }}</dd>
       </div>
       <div>
         <dt>Avg EXP / hour</dt>
@@ -97,6 +97,7 @@ const percent = computed(() => (props.view.progress ? (props.view.progress.fract
       </div>
     </dl>
 
+    <p v-if="view.expEstimated" class="note">Your game shows EXP as a percent only, so EXP is estimated from the bar.</p>
     <p v-if="view.paused" class="note paused-note">Paused. Nothing is counted until you resume.</p>
     <p v-if="view.mesoGained === null" class="note">Open your inventory to track meso.</p>
     <p v-else-if="view.mesoStale" class="note">Meso paused while your inventory is closed.</p>
