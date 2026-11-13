@@ -20,6 +20,22 @@ export interface Rates {
   readonly expPctPerHour: number;
 }
 
+/** A stretch the player paused tracking: from when they paused until they resumed (null while still paused). */
+export interface Pause {
+  readonly from: number;
+  readonly to: number | null;
+}
+
+/** Milliseconds of [a, b] that fall inside a pause. A pause with no end yet runs to the end of the span. */
+export function pausedWithin(pauses: readonly Pause[], a: number, b: number): number {
+  return pauses.reduce((total, p) => total + Math.max(0, Math.min(b, p.to ?? b) - Math.max(a, p.from)), 0);
+}
+
+/** Did a pause fall between two readings? No reading is taken while paused, so the gap holds nothing earned. */
+function pausedBetween(pauses: readonly Pause[], a: number, b: number): boolean {
+  return pauses.some((p) => p.from < b && (p.to ?? Number.POSITIVE_INFINITY) > a);
+}
+
 const HOUR_MS = 3_600_000;
 /** A percent drop bigger than this with no level reading is assumed to be a level-up wrap. */
 const LEVEL_UP_DROP_THRESHOLD = 50;
@@ -35,20 +51,25 @@ function perHour(amount: number, elapsedMs: number): number {
 }
 
 /** Pairs each reading having `pick` with the previous one that also had it, skipping failed reads. */
-function consecutive<T extends Reading>(readings: readonly T[], pick: (r: T) => number | null): Array<[T, T]> {
+function consecutive<T extends Reading>(
+  readings: readonly T[],
+  pick: (r: T) => number | null,
+  pauses: readonly Pause[] = [],
+): Array<[T, T]> {
   const pairs: Array<[T, T]> = [];
   let prev: T | null = null;
   for (const current of readings) {
     if (pick(current) === null) continue;
-    if (prev) pairs.push([prev, current]);
+    // A pair that straddles a pause is skipped: whatever changed meanwhile was not earned while tracking.
+    if (prev && !pausedBetween(pauses, prev.takenAt, current.takenAt)) pairs.push([prev, current]);
     prev = current;
   }
   return pairs;
 }
 
 /** Sum of positive meso deltas between consecutive successful reads (spending is ignored). */
-function sumMesoGain(readings: readonly Reading[]): number {
-  return consecutive(readings, (r) => r.meso).reduce((total, [a, b]) => total + Math.max(0, b.meso! - a.meso!), 0);
+function sumMesoGain(readings: readonly Reading[], pauses: readonly Pause[]): number {
+  return consecutive(readings, (r) => r.meso, pauses).reduce((total, [a, b]) => total + Math.max(0, b.meso! - a.meso!), 0);
 }
 
 /** Did the EXP bar wrap (a drop of more than half a level)? That only happens on a level-up, whatever the level label says. */
@@ -105,12 +126,12 @@ function levelSizeAt(reading: Reading): number | null {
   return reading.exp! / (pct / 100);
 }
 
-function sumExpGain(readings: readonly Reading[]): number {
-  return consecutive(readings, (r) => r.exp).reduce((total, [a, b]) => total + expDelta(a, b), 0);
+function sumExpGain(readings: readonly Reading[], pauses: readonly Pause[]): number {
+  return consecutive(readings, (r) => r.exp, pauses).reduce((total, [a, b]) => total + expDelta(a, b), 0);
 }
 
-function sumExpPctGain(readings: readonly Reading[]): number {
-  return consecutive(readings, (r) => r.expPct).reduce((total, [a, b]) => {
+function sumExpPctGain(readings: readonly Reading[], pauses: readonly Pause[]): number {
+  return consecutive(readings, (r) => r.expPct, pauses).reduce((total, [a, b]) => {
     if (leveledUp(a, b)) return total + (100 - a.expPct! + b.expPct!);
     return total + Math.max(0, b.expPct! - a.expPct!);
   }, 0);
@@ -127,7 +148,7 @@ export interface ExpGainPoint {
  * The running total of EXP gained over the session, one point per EXP reading, for charting.
  * Uses the same level-up handling as `computeRates`, so the last point equals `expGained`.
  */
-export function expGainSeries(readings: readonly Reading[]): readonly ExpGainPoint[] {
+export function expGainSeries(readings: readonly Reading[], pauses: readonly Pause[] = []): readonly ExpGainPoint[] {
   const withExp = [...readings].filter((r) => r.exp !== null).sort((a, b) => a.takenAt - b.takenAt);
   if (withExp.length === 0) return [];
 
@@ -135,8 +156,9 @@ export function expGainSeries(readings: readonly Reading[]): readonly ExpGainPoi
   const points: ExpGainPoint[] = [{ elapsedMs: 0, gained: 0 }];
   let total = 0;
   for (let i = 1; i < withExp.length; i += 1) {
-    total += expDelta(withExp[i - 1], withExp[i]);
-    points.push({ elapsedMs: withExp[i].takenAt - start, gained: total });
+    const [a, b] = [withExp[i - 1], withExp[i]];
+    if (!pausedBetween(pauses, a.takenAt, b.takenAt)) total += expDelta(a, b);
+    points.push({ elapsedMs: b.takenAt - start - pausedWithin(pauses, start, b.takenAt), gained: total });
   }
   return points;
 }
@@ -145,15 +167,17 @@ export function expGainSeries(readings: readonly Reading[]): readonly ExpGainPoi
  * Totals and per-hour rates for a session. Pass `nowMs` (the wall clock) to measure elapsed time up to
  * now instead of up to the last reading: the clock keeps running and the rates keep projecting
  * (gained so far / time so far) even when a stretch of frames couldn't be read.
+ * Time the player paused tracking counts for nothing: it is left out of the elapsed time, and nothing
+ * gained across it is added.
  */
-export function computeRates(readings: readonly Reading[], nowMs?: number): Rates {
+export function computeRates(readings: readonly Reading[], nowMs?: number, pauses: readonly Pause[] = []): Rates {
   if (readings.length === 0 || (readings.length < 2 && nowMs === undefined)) return ZERO;
   const sorted = [...readings].sort((a, b) => a.takenAt - b.takenAt);
   const endMs = Math.max(sorted[sorted.length - 1].takenAt, nowMs ?? 0);
-  const elapsedMs = endMs - sorted[0].takenAt;
-  const mesoGained = sumMesoGain(sorted);
-  const expGained = sumExpGain(sorted);
-  const expPctGained = sumExpPctGain(sorted);
+  const elapsedMs = Math.max(0, endMs - sorted[0].takenAt - pausedWithin(pauses, sorted[0].takenAt, endMs));
+  const mesoGained = sumMesoGain(sorted, pauses);
+  const expGained = sumExpGain(sorted, pauses);
+  const expPctGained = sumExpPctGain(sorted, pauses);
   return {
     elapsedMs,
     mesoGained,

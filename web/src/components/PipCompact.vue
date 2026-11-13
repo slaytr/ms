@@ -32,7 +32,8 @@ onMounted(() => {
   <section ref="root" class="compact" aria-label="EXP gained and EXP per hour">
     <div class="fill" :style="{ width: `${fill * 100}%` }" />
     <span class="gained" title="EXP gained">+{{ fmt(view.expGained) }}</span>
-    <span class="rate" :class="{ muted: view.expPerHour === '—' }" title="EXP per hour (last hour)">
+    <span v-if="view.paused" class="rate paused" title="Tracking is paused">Paused</span>
+    <span v-else class="rate" :class="{ muted: view.expPerHour === '—' }" title="EXP per hour (last hour)">
       {{ view.expPerHour }}<span class="unit">/hr</span>
     </span>
   </section>
@@ -68,6 +69,7 @@ onMounted(() => {
 .gained { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .rate { flex: none; }
 .rate.muted { opacity: 0.7; }
+.rate.paused { opacity: 0.85; font-size: 0.85em; letter-spacing: 0.05em; text-transform: uppercase; }
 .unit { margin-left: 2px; font-size: 0.7em; opacity: 0.85; }
 
 @media (prefers-reduced-motion: reduce) { .fill { transition: none; } }

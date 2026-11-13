@@ -184,3 +184,27 @@ describe('buildTrackerView', () => {
     expect(v.expPerHour).toBe('90K');
   });
 });
+
+describe('buildTrackerView: paused tracking', () => {
+  const MIN = 60_000;
+  const rs: Reading[] = [
+    { takenAt: 0, meso: null, exp: 1_000, expPct: 10, level: 50 },
+    { takenAt: 10 * MIN, meso: null, exp: 2_000, expPct: 11, level: 50 },
+  ];
+
+  it('is marked paused only while a pause has no end', () => {
+    const base = { name: null, snapshot: snapshot(), readings: rs };
+    const open = [{ from: 10 * MIN, to: null }];
+    const closed = [{ from: 10 * MIN, to: 20 * MIN }];
+    expect(buildTrackerView({ ...base, rates: computeRates(rs, 30 * MIN, open), pauses: open }).paused).toBe(true);
+    expect(buildTrackerView({ ...base, rates: computeRates(rs, 30 * MIN, closed), pauses: closed }).paused).toBe(false);
+    expect(buildTrackerView({ ...base, rates: computeRates(rs) }).paused).toBe(false);
+  });
+
+  it('keeps the clock and EXP gained still while paused', () => {
+    const open = [{ from: 10 * MIN, to: null }];
+    const at = (nowMs: number) => buildTrackerView({ name: null, snapshot: snapshot(), readings: rs, rates: computeRates(rs, nowMs, open), pauses: open });
+    expect(at(30 * MIN).elapsed).toBe(at(120 * MIN).elapsed);
+    expect(at(120 * MIN).expGained).toBe(1_000);
+  });
+});

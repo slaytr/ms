@@ -4,7 +4,7 @@ import { createSession, endSession, labelSession, postReadings, saveSessionIdent
 import type { Detection, MapPlate } from '../lib/detect/detect.ts';
 import { coreReady } from '../lib/health';
 import { mapLabel } from '../lib/map-label';
-import { computeRates, type Reading } from '../lib/metrics';
+import { computeRates, type Pause, type Reading } from '../lib/metrics';
 import { emptyPotHistory, recordPotHistory, type PotHistory } from '../lib/pot-history';
 import { buildPotView,observePots, observeQuick, pausePots, rescanPots, resumePots, startPotTracking } from '../lib/pot-tracker';
 import { cleanSessionName, MAX_PARTY_SIZE, MIN_PARTY_SIZE } from '../lib/session-input';
@@ -83,7 +83,13 @@ export function useTracker() {
     clock = null;
   };
 
-  const rates = computed(() => computeRates(readings.value, now.value));
+  /** Stretches the player paused tracking. The last one has no end while the tracker is paused. */
+  const pauses = ref<readonly Pause[]>([]);
+  const paused = computed(() => pauses.value.some((p) => p.to === null));
+  /** True when pausing is what froze pot counting, so resuming only thaws it then (a Repot the player started stays theirs). */
+  let potsPausedByPause = false;
+
+  const rates = computed(() => computeRates(readings.value, now.value, pauses.value));
   const latest = computed(() => readings.value[readings.value.length - 1] ?? null);
   /** The core data (who, level, EXP) has read cleanly on several ticks in a row. */
   const confirmed = computed(() => status.value === 'tracking' && streak.value >= CONFIRM_STREAK);
@@ -198,6 +204,11 @@ export function useTracker() {
   async function tick(): Promise<void> {
     const el = capture.video.value;
     if (status.value !== 'tracking' || !el) return;
+    if (paused.value) {
+      // Paused: read nothing and record nothing, but keep the loop alive so resuming picks up within a tick.
+      timer = setTimeout(tick, SAMPLE_INTERVAL_MS);
+      return;
+    }
     try {
       const detection = detector.read(el);
       if (detection) {
@@ -235,6 +246,8 @@ export function useTracker() {
         return;
       }
       readings.value = [];
+      pauses.value = [];
+      potsPausedByPause = false;
       lastDetection.value = null;
       ticks.value = 0;
       streak.value = 0;
@@ -266,6 +279,29 @@ export function useTracker() {
     }
   }
 
+  /** Stops counting (EXP, meso, time, pots) until `resume`. Readings already taken are sent now. */
+  function pause(): void {
+    if (status.value !== 'tracking' || paused.value) return;
+    pauses.value = [...pauses.value, { from: Date.now(), to: null }];
+    if (!pots.value.paused) {
+      pots.value = pausePots(pots.value);
+      potsPausedByPause = true;
+    }
+    void flush();
+  }
+
+  /** Carries on counting. Whatever happened while paused is not added: the next reading is a fresh start. */
+  function resume(): void {
+    if (!paused.value) return;
+    const resumedAt = Date.now();
+    pauses.value = pauses.value.map((p) => (p.to === null ? { ...p, to: resumedAt } : p));
+    if (potsPausedByPause) {
+      pots.value = resumePots(pots.value);
+      potsPausedByPause = false;
+    }
+    streak.value = 0;
+  }
+
   async function stop(): Promise<void> {
     if (status.value === 'idle') return;
     status.value = 'idle';
@@ -289,6 +325,10 @@ export function useTracker() {
     savedCount,
     historyKey,
     rates,
+    pauses,
+    paused,
+    pause,
+    resume,
     latest,
     current,
     map,

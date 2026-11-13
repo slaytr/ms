@@ -112,6 +112,7 @@ const trackerView = computed(() =>
     snapshot: tracker.current.value,
     readings: readings.value,
     rates: rates.value,
+    pauses: tracker.pauses.value,
     potSpend: tracker.potView.value
       ? { mesos: tracker.potView.value.totals.mesos, unknownFor: tracker.potView.value.totals.mesosUnknownFor }
       : null,
@@ -176,7 +177,7 @@ onMounted(async () => {
     leaderError.value = true;
   }
 });
-const expSeries = computed(() => expGainSeries(readings.value));
+const expSeries = computed(() => expGainSeries(readings.value, tracker.pauses.value));
 const potCharts = computed(() =>
   (tracker.potView.value?.rows ?? []).map((row) => ({
     id: row.id,
@@ -313,6 +314,9 @@ onBeforeUnmount(() => {
             />
 
             <div class="popout">
+              <button class="popout-btn pause-btn" :class="{ paused: tracker.paused.value }" type="button" :aria-pressed="tracker.paused.value" @click="tracker.paused.value ? tracker.resume() : tracker.pause()">
+                {{ tracker.paused.value ? 'Resume tracking' : 'Pause tracking' }}
+              </button>
               <button class="popout-btn" type="button" :disabled="popOut.isOpen.value" @click="popOut.open()">
                 {{ popOut.isOpen.value ? 'Tracker is popped out' : 'Pop out tracker' }}
               </button>
@@ -504,6 +508,8 @@ onBeforeUnmount(() => {
 
 .popout { margin-top: 14px; }
 .popout-btn { padding: 8px 16px; font: 400 1.1rem 'Lilita One', sans-serif; color: #fff; background: #2f8fe0; border: 3px solid var(--ink); border-radius: 12px; box-shadow: 0 4px 0 #1e5f9e; cursor: pointer; }
+.pause-btn { background: #f0a020; box-shadow: 0 4px 0 #b06a00; }
+.pause-btn.paused { background: #3fa02a; box-shadow: 0 4px 0 #2a6f1a; }
 .compact-btn { margin-left: 8px; background: #3fa02a; box-shadow: 0 4px 0 #2a6f1a; }
 .popout-btn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 #1e5f9e; }
 .popout-btn:disabled { opacity: 0.6; cursor: default; box-shadow: none; }

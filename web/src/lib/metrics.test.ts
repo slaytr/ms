@@ -216,3 +216,53 @@ describe('computeRates: a level label that lags the EXP reset', () => {
     expect(r.expGained).toBe(6_400);
   });
 });
+
+describe('computeRates: paused tracking', () => {
+  const MIN = 60_000;
+  // 0 to 10 min tracking, paused 10 to 40 min, tracking again 40 to 50 min. EXP rises 1000 per tracked 10 min,
+  // and jumps by 5000 while paused.
+  const readings = [
+    reading(0, { exp: 1_000 }),
+    reading(10, { exp: 2_000 }),
+    reading(40, { exp: 7_000 }),
+    reading(50, { exp: 8_000 }),
+  ];
+  const pauses = [{ from: 10 * MIN, to: 40 * MIN }];
+
+  it('leaves the paused time out of elapsed time', () => {
+    expect(computeRates(readings, undefined, pauses).elapsedMs).toBe(20 * MIN);
+  });
+
+  it('adds nothing for what changed across the pause', () => {
+    expect(computeRates(readings, undefined, pauses).expGained).toBe(2_000);
+    expect(computeRates(readings).expGained).toBe(7_000); // without the pause, the jump would count
+  });
+
+  it('projects the rate from counted time only', () => {
+    expect(computeRates(readings, undefined, pauses).expPerHour).toBe(6_000); // 2000 EXP in 20 counted minutes
+  });
+
+  it('freezes the clock while a pause is still going', () => {
+    const open = [{ from: 10 * MIN, to: null }];
+    const early = computeRates([reading(0, { exp: 1 }), reading(10, { exp: 2 })], 20 * MIN, open);
+    const later = computeRates([reading(0, { exp: 1 }), reading(10, { exp: 2 })], 90 * MIN, open);
+    expect(early.elapsedMs).toBe(10 * MIN);
+    expect(later.elapsedMs).toBe(10 * MIN);
+  });
+
+  it('skips the meso and percent gain across a pause too', () => {
+    const rs = [
+      reading(0, { meso: 100, expPct: 10 }),
+      reading(10, { meso: 200, expPct: 20 }),
+      reading(40, { meso: 9_000, expPct: 80 }),
+    ];
+    const r = computeRates(rs, undefined, [{ from: 10 * MIN, to: 40 * MIN }]);
+    expect(r.mesoGained).toBe(100);
+    expect(r.expPctGained).toBe(10);
+  });
+
+  it('draws the chart with paused time removed and no jump', () => {
+    const series = expGainSeries(readings, pauses);
+    expect(series.map((p) => [p.elapsedMs / MIN, p.gained])).toEqual([[0, 0], [10, 1_000], [10, 1_000], [20, 2_000]]);
+  });
+});

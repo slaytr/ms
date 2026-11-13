@@ -97,6 +97,7 @@ const percent = computed(() => (props.view.progress ? (props.view.progress.fract
       </div>
     </dl>
 
+    <p v-if="view.paused" class="note paused-note">Paused. Nothing is counted until you resume.</p>
     <p v-if="view.mesoGained === null" class="note">Open your inventory to track meso.</p>
     <p v-else-if="view.mesoStale" class="note">Meso paused while your inventory is closed.</p>
 
@@ -146,6 +147,7 @@ const percent = computed(() => (props.view.progress ? (props.view.progress.fract
 .stats dd.muted { color: #8f7a55; font-size: 1.05rem; }
 
 .note { margin: 6px 0 0; font-size: 12px; color: #8a5a00; }
+.paused-note { font-weight: 800; color: #b06a00; }
 .elapsed { margin: auto 0 0; padding-top: 8px; font-size: 11px; color: #8f7a55; text-align: right; }
 
 @media (prefers-reduced-motion: reduce) { .fill { transition: none; } }

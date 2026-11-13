@@ -1,7 +1,7 @@
 import type { MapPlate } from './detect/detect.ts';
 import { formatClock, formatPerHour } from './format';
 import { estimateEta, formatEta, levelProgress, MIN_ELAPSED_FOR_ETA_MS, type Eta, type LevelProgress } from './level-eta';
-import { computeRates, type Rates, type Reading } from './metrics';
+import { computeRates, pausedWithin, type Pause, type Rates, type Reading } from './metrics';
 import { mapLabel } from './map-label';
 import type { PlayerSnapshot } from './snapshot';
 
@@ -49,6 +49,8 @@ export interface TrackerView {
   /** Meso hasn't been seen for a while (inventory closed), so its numbers are paused, not wrong. */
   readonly mesoStale: boolean;
   readonly elapsed: string;
+  /** Tracking is paused: nothing is being counted and the clock is stopped. */
+  readonly paused: boolean;
 }
 
 export interface TrackerViewInput {
@@ -61,22 +63,44 @@ export interface TrackerViewInput {
   readonly rates: Rates;
   /** What the potion tracker says was spent on pots used; omitted or null when no pots are being counted. */
   readonly potSpend?: { readonly mesos: number; readonly unknownFor: number } | null;
+  /** Stretches the player paused tracking, left out of every rate. */
+  readonly pauses?: readonly Pause[];
 }
 
-/** Rates over only the readings from the last hour, ending where the session rates end (now). */
-function lastHourRates(readings: readonly Reading[], rates: Rates): Rates {
-  if (readings.length === 0) return rates;
+/**
+ * The wall-clock moment the session rates end at: the start plus the time counted, plus every pause that
+ * happened before it (a pause that is still going ends the count where it began).
+ */
+function wallEnd(startMs: number, elapsedMs: number, pauses: readonly Pause[]): number {
+  let end = startMs + elapsedMs;
+  for (const pause of [...pauses].sort((a, b) => a.from - b.from)) {
+    if (pause.from >= end || pause.to === null) break;
+    end += pause.to - pause.from;
+  }
+  return end;
+}
+
+/** Rates over only the last hour of counted time, ending where the session rates end (now). */
+function lastHourRates(readings: readonly Reading[], rates: Rates, pauses: readonly Pause[]): Rates {
+  if (readings.length === 0 || rates.elapsedMs <= RECENT_WINDOW_MS) return rates;
   const startMs = Math.min(...readings.map((r) => r.takenAt));
-  const endMs = startMs + rates.elapsedMs;
-  const cutoff = endMs - RECENT_WINDOW_MS;
+  const endMs = wallEnd(startMs, rates.elapsedMs, pauses);
+  // Walk back from the end until an hour of counted (unpaused) time is covered.
+  let cutoff = endMs - RECENT_WINDOW_MS;
+  for (let i = 0; i < 8; i += 1) {
+    const counted = endMs - cutoff - pausedWithin(pauses, cutoff, endMs);
+    if (Math.abs(counted - RECENT_WINDOW_MS) < 1000) break;
+    cutoff -= RECENT_WINDOW_MS - counted;
+  }
   if (cutoff <= startMs) return rates;
   return computeRates(
     readings.filter((r) => r.takenAt >= cutoff),
     endMs,
+    pauses,
   );
 }
 
-export function buildTrackerView({ name, map = null, snapshot, readings, rates, potSpend = null }: TrackerViewInput): TrackerView {
+export function buildTrackerView({ name, map = null, snapshot, readings, rates, potSpend = null, pauses = [] }: TrackerViewInput): TrackerView {
   const level = snapshot?.level ?? null;
   const progress = levelProgress(level, snapshot?.exp ?? null);
   const eta = estimateEta(progress, rates.expPerHour, rates.elapsedMs);
@@ -89,7 +113,7 @@ export function buildTrackerView({ name, map = null, snapshot, readings, rates, 
   // few seconds of play and is flagged as an estimate until the time-to-level estimate also trusts it.
   const hasRate = rates.elapsedMs >= MIN_ELAPSED_FOR_RATE_MS;
   const perHour = (value: number) => (hasRate ? formatPerHour(value) : '—');
-  const recent = lastHourRates(readings, rates);
+  const recent = lastHourRates(readings, rates, pauses);
 
   return {
     name,
@@ -111,5 +135,6 @@ export function buildTrackerView({ name, map = null, snapshot, readings, rates, 
     netMesosCeiling: hasMeso && (potSpend?.unknownFor ?? 0) > 0,
     mesoStale: hasMeso && latest !== undefined && latest.takenAt - lastMeso.takenAt > MESO_STALE_AFTER_MS,
     elapsed: formatClock(rates.elapsedMs),
+    paused: pauses.some((p) => p.to === null),
   };
 }
