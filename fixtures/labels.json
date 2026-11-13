@@ -1247,5 +1247,21 @@
     "job": "Wizard (Ice,Lightning)",
     "street": "Kerning City Su~b~way",
     "map": "Line 1 <Area 4>"
+  },
+  "inventory-closed_1368x800_1794534124874.png": {
+    "exp": "220,687[25.12%]",
+    "level": "54",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "Hidden Street",
+    "map": "T~h~e Forest of E{vi}l I"
+  },
+  "inventory-closed_1368x800_1794534131961.png": {
+    "exp": "220,687[25.12%]",
+    "level": "54",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "Hidden Street",
+    "map": "T~h~e Forest of E{vi}l II"
   }
 }
