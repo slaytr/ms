@@ -1,4 +1,5 @@
 import { query } from '../db.mjs';
+import { pickIdentity } from '../lib/identity.mjs';
 
 /**
  * Records the name and spec a player entered against the fingerprint of the session they entered it
@@ -15,9 +16,18 @@ export async function saveIdentityForSession(sessionId, { name, job }) {
   return rowCount > 0;
 }
 
-/** The saved name and spec for a character, or null when we have neither. */
+/**
+ * The name and spec we hold for a character, or null when we have neither. A typed identity wins; failing that,
+ * the character is known from earlier sessions where the detector read its name and spec from the same fingerprint,
+ * so a returning player isn't asked again just because this session's frames didn't read the name.
+ */
 export async function getIdentity(fingerprint) {
-  const { rows } = await query('select name, job from ms_character_identities where fingerprint = $1', [fingerprint]);
-  const row = rows[0];
-  return row && row.name && row.job ? { name: row.name, job: row.job } : null;
+  const typed = await query('select name, job from ms_character_identities where fingerprint = $1', [fingerprint]);
+  const detected = await query(
+    `select name, job from ms_session_snapshots
+      where fingerprint = $1 and coalesce(name, '') <> '' and coalesce(job, '') <> ''
+      order by taken_at desc limit 1`,
+    [fingerprint],
+  );
+  return pickIdentity(typed.rows[0], detected.rows[0]);
 }

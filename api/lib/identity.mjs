@@ -15,3 +15,15 @@ export function cleanIdentity(name, job) {
   const cleanJob = job.trim().replace(/\s+/g, ' ').slice(0, MAX_JOB_LENGTH);
   return cleanName && cleanJob ? { name: cleanName, job: cleanJob } : null;
 }
+
+const hasText = (value) => typeof value === 'string' && value.trim() !== '';
+const complete = (row) => (row && hasText(row.name) && hasText(row.job) ? { name: row.name, job: row.job } : null);
+
+/**
+ * Who a fingerprint belongs to, from what we hold: what a player typed for it wins; otherwise the name and
+ * spec the detector read from the character's most recent session that read both. Null when neither source
+ * has both (a name without its spec isn't enough, since the player would still be asked for the spec).
+ */
+export function pickIdentity(typed, detected) {
+  return complete(typed) ?? complete(detected);
+}
