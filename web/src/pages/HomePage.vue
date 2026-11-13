@@ -160,8 +160,8 @@ const compactFill = computed(() => {
 });
 // Leaderboard teaser for the welcome screen. A nicety: if it can't load, say so quietly and carry on.
 const podium = ref<readonly WeeklyRank[]>([]);
-const jobLeaders = ref<readonly SpecSlot[]>([]);
 const efficient = ref<readonly WeeklyRank[]>([]);
+const jobLeaders = ref<readonly SpecSlot[]>([]);
 const richList = ref<readonly CharacterEntry[]>([]);
 /** Meso amounts on the rich list stay hidden until the viewer reveals them. */
 const showMesos = ref(false);
@@ -170,8 +170,8 @@ onMounted(async () => {
   try {
     const [characters, week] = await Promise.all([listCharacters(), getWeeklySessions()]);
     podium.value = topByExp(week.sessions);
-    jobLeaders.value = specLeaders(characters).filter((slot) => slot.leader !== null);
     efficient.value = topByEfficiency(week.sessions);
+    jobLeaders.value = specLeaders(characters).filter((slot) => slot.leader !== null);
     richList.value = richest(characters);
   } catch {
     leaderError.value = true;
@@ -363,13 +363,13 @@ onBeforeUnmount(() => {
       <GameWindow v-if="podium.length > 0" title="Weekly top 3">
         <LeaderStrip :podium="podium" :jobs="[]" only="podium" stack />
       </GameWindow>
+      <GameWindow v-if="efficient.length > 0" title="Most efficient top 3">
+        <LeaderStrip :podium="[]" :efficient="efficient" :jobs="[]" only="efficient" stack />
+      </GameWindow>
       <GameWindow title="Change log">
         <ChangeLog :entries="CHANGELOG" />
       </GameWindow>
     </aside>
-      <GameWindow v-if="efficient.length > 0" title="Most efficient top 3">
-        <LeaderStrip :podium="[]" :efficient="efficient" :jobs="[]" only="efficient" stack />
-      </GameWindow>
     <aside v-if="status !== 'tracking' && (jobLeaders.length > 0 || richList.length > 0)" class="side right" aria-label="Top by job and rich list">
       <GameWindow v-if="jobLeaders.length > 0" title="Top by job">
         <LeaderStrip :podium="[]" :jobs="jobLeaders" only="jobs" />
