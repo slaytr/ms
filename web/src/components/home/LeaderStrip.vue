@@ -83,7 +83,8 @@ const MEDALS = ['gold', 'silver', 'bronze'] as const;
 h3 { margin: 0 0 6px; font: 400 0.95rem / 1.2 'Lilita One', sans-serif; text-align: center; }
 .with-toggle { display: flex; align-items: center; justify-content: center; gap: 6px; }
 .stat.hidden { color: #6b4a22; letter-spacing: 0.1em; }
-.sub { font: 700 0.7rem 'Nunito', sans-serif; color: #6b4a22; }
+/* The description goes on its own line under the category name (the heading is centred, so it centres too). */
+.sub { display: block; margin-top: 1px; font: 700 0.7rem 'Nunito', sans-serif; color: #6b4a22; }
 .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .chip { position: relative; display: grid; justify-items: center; align-content: start; gap: 1px; box-sizing: border-box; width: 96px; padding: 6px 4px; text-align: center; background: #fffdf3; border: 2px solid #d9c48a; border-radius: 10px; }
 .chip :deep(.avatar) { margin: 0; }
