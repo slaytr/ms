@@ -15,10 +15,12 @@ import OverviewBox from '../components/home/OverviewBox.vue';
 import SkyScene from '../components/home/SkyScene.vue';
 import TrackingChecklist from '../components/home/TrackingChecklist.vue';
 import PipCompact from '../components/PipCompact.vue';
+import LiveGrinders from '../components/home/LiveGrinders.vue';
 import PipTracker from '../components/PipTracker.vue';
 import { CHANGELOG } from '../data/changelog';
 import { usePopOut } from '../composables/usePopOut';
 import { useTracker } from '../composables/useTracker';
+import { useLiveGrinders } from '../composables/useLiveGrinders';
 import { formatClock } from '../lib/format';
 import { assessDetection } from '../lib/health';
 import { getSavedIdentity, listCharacters, getWeeklySessions } from '../lib/api';
@@ -98,6 +100,7 @@ const hadSession = computed(() => status.value === 'idle' && readings.value.leng
 
 // The small always-on-top overlay. It shares this page's state, so it updates on every tick.
 const popOut = usePopOut('Level tracker');
+const { grinders } = useLiveGrinders();
 // The compact overlay: a single green bar (EXP gained + EXP/hour). Its own window, so both can be open.
 const compactPopOut = usePopOut('EXP bar');
 const COMPACT_SIZE = { width: 240, height: 28 };
@@ -197,8 +200,10 @@ onBeforeUnmount(() => {
   <div class="home">
     <SkyScene />
 
-    <main class="content" :class="{ wide: status === 'tracking' && docked }">
-      <header class="logo">
+    <main class="content" :class="{ wide: status === 'tracking' && docked, 'has-live': grinders.length > 0 }">
+      <!-- Whoever is grinding right now replaces the logo; with nobody online the logo stays. -->
+      <LiveGrinders v-if="grinders.length > 0" :grinders="grinders" />
+      <header v-else class="logo">
         <p class="ribbon">Bill's Personal</p>
         <h1 class="title" aria-label="Bill's Personal Super Duper Maplestory Classic Tracker">
           <span class="line l1" data-text="Super Duper" aria-hidden="true"><span>Super Duper</span></span>
@@ -502,6 +507,8 @@ onBeforeUnmount(() => {
 /* Overview buttons: all full width, one even gap between each. */
 .overview-box .popout { margin-top: 12px; display: grid; gap: 12px; }
 .overview-box .popout-btn, .overview-box .stop { width: 100%; margin: 0; display: block; }
+/* The grinding carousel is small, so it sits close under the nav instead of where the big logo would. */
+.content.has-live { padding-top: 64px; }
 .overview-box .alert-inline { margin: 0; }
 .overview-box .stop { margin-top: 12px; }
 .checking { max-width: 620px; }

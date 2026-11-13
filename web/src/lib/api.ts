@@ -176,6 +176,20 @@ export interface MissFrameUpload {
   readonly sessionId?: string;
   readonly png: Blob;
 }
+/** Someone grinding right now: latest level and EXP%, and EXP gained so far this session. */
+export interface LiveGrinder {
+  id: string;
+  player: string;
+  job: string | null;
+  level: number | null;
+  pct: number | null;
+  expGained: number;
+}
+
+export function listLiveGrinders(): Promise<LiveGrinder[]> {
+  return request('/api/live');
+}
+
 
 /** A PNG as base64 text, in chunks so a multi-megabyte frame doesn't overflow the call stack. */
 async function toBase64(blob: Blob): Promise<string> {

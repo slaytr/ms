@@ -16,6 +16,7 @@ import avatarRoutes from './routes/avatar.mjs';
 import characterRoutes from './routes/characters.mjs';
 import devDbRoutes from './routes/dev-db.mjs';
 import devFixtureRoutes from './routes/dev-fixtures.mjs';
+import liveRoutes from './routes/live.mjs';
 import lootRoutes from './routes/loot.mjs';
 import mapRoutes from './routes/maps.mjs';
 import missFrameRoutes from './routes/miss-frames.mjs';
@@ -54,6 +55,7 @@ export async function buildServer() {
   await fastify.register(mapRoutes);
   await fastify.register(characterRoutes);
   await fastify.register(rankingRoutes);
+  await fastify.register(liveRoutes);
   await fastify.register(lootRoutes);
   await fastify.register(missFrameRoutes);
   await fastify.register(devFixtureRoutes);

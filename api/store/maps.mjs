@@ -24,6 +24,7 @@ with e as (
          lag(taken_at) over w as p_at
     from ms_readings
    where exp is not null
+  and ($5::uuid[] is null or session_id = any($5::uuid[]))
   window w as (partition by session_id order by taken_at)
 ), exp_gain as (
   select session_id,
@@ -41,6 +42,7 @@ with e as (
          lag(taken_at) over w as p_at
     from ms_readings
    where exp_pct is not null
+  and ($5::uuid[] is null or session_id = any($5::uuid[]))
   window w as (partition by session_id order by taken_at)
 ), pct_gain as (
   select session_id,
@@ -58,6 +60,7 @@ with e as (
   select session_id, meso, lag(meso) over (partition by session_id order by taken_at) as p_meso
     from ms_readings
    where meso is not null
+  and ($5::uuid[] is null or session_id = any($5::uuid[]))
 ), meso_gain as (
   select session_id, sum(case when p_meso is null then 0 else greatest(0, meso - p_meso) end)::bigint as gained
     from m group by session_id
@@ -65,7 +68,9 @@ with e as (
   select session_id,
          min(taken_at) as first_at, max(taken_at) as last_at, count(*)::int as readings,
          min(level) as level_from, max(level) as level_to
-    from ms_readings group by session_id
+    from ms_readings
+   where ($5::uuid[] is null or session_id = any($5::uuid[]))
+   group by session_id
 )
 select s.id,
        s.label as map,
@@ -102,8 +107,17 @@ export function listMapSessions() {
  * The same per-session stats with a choice of filters: `requireLabel` drops sessions that never got
  * a map name, and `sinceMs` keeps only sessions whose first reading is at or after that epoch-ms time.
  */
-export async function listSessionStats({ requireLabel, sinceMs }) {
-  const { rows } = await query(SESSION_STATS_SQL, [MIN_SESSION_SECONDS, MAX_SESSIONS, requireLabel, sinceMs]);
+export function listSessionStats({ requireLabel, sinceMs }) {
+  return runSessionStats({ minSeconds: MIN_SESSION_SECONDS, requireLabel, sinceMs, ids: null });
+}
+
+/** Stats for just these sessions (no length minimum), without scanning every reading in the table. */
+export function listStatsForSessions(ids) {
+  return runSessionStats({ minSeconds: 0, requireLabel: false, sinceMs: 0, ids });
+}
+
+async function runSessionStats({ minSeconds, requireLabel, sinceMs, ids }) {
+  const { rows } = await query(SESSION_STATS_SQL, [minSeconds, MAX_SESSIONS, requireLabel, sinceMs, ids]);
   return rows.map((row) => ({
     id: row.id,
     map: row.map,
