@@ -6,25 +6,27 @@ import CharacterAvatar from './CharacterAvatar.vue';
 import LevelBadge from './LevelBadge.vue';
 
 /**
- * A small carousel of whoever is grinding right now: avatar, name, level, EXP% and EXP gained this
- * session. It turns by itself every few seconds and pauses while hovered or focused. Presentation only.
+ * Whoever is grinding right now, up to five side by side: avatar, name, level, EXP% and EXP gained this
+ * session. With more than five it becomes a carousel of pages of five, turning by itself every few
+ * seconds and pausing while hovered or focused. Presentation only.
  */
 const props = defineProps<{ grinders: readonly LiveGrinder[] }>();
 
+const PER_PAGE = 5;
 const SLIDE_MS = 5000;
-const index = ref(0);
+const page = ref(0);
 const paused = ref(false);
 let timer: ReturnType<typeof setInterval> | null = null;
 
 const count = computed(() => props.grinders.length);
-const current = computed(() => props.grinders[Math.min(index.value, count.value - 1)] ?? null);
+const pages = computed(() => Math.max(1, Math.ceil(count.value / PER_PAGE)));
+const visible = computed(() => props.grinders.slice(page.value * PER_PAGE, (page.value + 1) * PER_PAGE));
 
 const fmt = (n: number) => Math.round(n).toLocaleString();
 const pct = (value: number | null) => (value === null ? '—' : `${value.toFixed(2)}%`);
 
 function go(next: number): void {
-  if (count.value === 0) return;
-  index.value = (next + count.value) % count.value;
+  page.value = (next + pages.value) % pages.value;
 }
 
 function stop(): void {
@@ -34,17 +36,17 @@ function stop(): void {
 
 function start(): void {
   stop();
-  if (count.value < 2) return;
+  if (pages.value < 2) return;
   timer = setInterval(() => {
-    if (!paused.value) go(index.value + 1);
+    if (!paused.value) go(page.value + 1);
   }, SLIDE_MS);
 }
 
-// The list shrinks and grows as people start and stop: keep the position valid and the timer right.
+// The list shrinks and grows as people start and stop: keep the page valid and the timer right.
 watch(
-  count,
+  pages,
   (now) => {
-    if (index.value >= now) index.value = 0;
+    if (page.value >= now) page.value = 0;
     start();
   },
   { immediate: true },
@@ -54,7 +56,7 @@ onBeforeUnmount(stop);
 
 <template>
   <section
-    v-if="current"
+    v-if="count > 0"
     class="live"
     aria-label="Grinding right now"
     aria-roledescription="carousel"
@@ -66,30 +68,28 @@ onBeforeUnmount(stop);
     <p class="head"><span class="dot" aria-hidden="true" />Grinding now · {{ count }}</p>
 
     <div class="row">
-      <button v-if="count > 1" class="nav" type="button" aria-label="Previous player" @click="go(index - 1)">‹</button>
-      <div class="card" aria-live="polite">
-        <CharacterAvatar :name="current.player" small />
-        <div class="info">
-          <p class="who">{{ current.player }}</p>
-          <p class="meta">
-            <LevelBadge :level="current.level" />
-            <span class="pct">{{ pct(current.pct) }}</span>
-          </p>
-          <p class="gain">+{{ fmt(current.expGained) }} EXP</p>
-        </div>
-      </div>
-      <button v-if="count > 1" class="nav" type="button" aria-label="Next player" @click="go(index + 1)">›</button>
+      <button v-if="pages > 1" class="nav" type="button" aria-label="Previous players" @click="go(page - 1)">‹</button>
+      <ul class="cards" aria-live="polite">
+        <li v-for="g in visible" :key="g.id" class="card">
+          <CharacterAvatar :name="g.player" small />
+          <p class="who" :title="g.player">{{ g.player }}</p>
+          <LevelBadge :level="g.level" />
+          <p class="pct">{{ pct(g.pct) }}</p>
+          <p class="gain">+{{ fmt(g.expGained) }}</p>
+        </li>
+      </ul>
+      <button v-if="pages > 1" class="nav" type="button" aria-label="Next players" @click="go(page + 1)">›</button>
     </div>
 
-    <div v-if="count > 1" class="dots">
+    <div v-if="pages > 1" class="dots">
       <button
-        v-for="(g, i) in grinders"
-        :key="g.id"
+        v-for="i in pages"
+        :key="i"
         type="button"
         class="pip"
-        :class="{ on: i === index }"
-        :aria-label="`Show ${g.player}`"
-        @click="go(i)"
+        :class="{ on: i - 1 === page }"
+        :aria-label="`Show page ${i}`"
+        @click="go(i - 1)"
       />
     </div>
   </section>
@@ -98,7 +98,7 @@ onBeforeUnmount(stop);
 <style scoped>
 .live {
   --ink: #4a2a0e;
-  max-width: 20rem;
+  max-width: 36rem;
   margin: 0 auto 0.9rem;
   padding: 8px 10px 10px;
   background: #fff6dc;
@@ -113,12 +113,13 @@ onBeforeUnmount(stop);
 @keyframes ping { 70% { box-shadow: 0 0 0 8px rgba(63, 160, 42, 0); } 100% { box-shadow: 0 0 0 0 rgba(63, 160, 42, 0); } }
 
 .row { display: flex; align-items: center; gap: 6px; }
-.card { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 6px 8px; background: #fffdf3; border: 2px solid #d9c48a; border-radius: 10px; }
-.info { min-width: 0; }
-.who { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 1.15rem/1.2 'Lilita One', sans-serif; }
-.meta { display: flex; align-items: center; gap: 8px; margin: 0; }
-.pct { font-variant-numeric: tabular-nums; color: #6b4a22; }
-.gain { margin: 0; font: 400 1.05rem/1.2 'Lilita One', sans-serif; color: #2e9a1f; font-variant-numeric: tabular-nums; }
+.cards { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
+.card { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; background: #fffdf3; border: 2px solid #d9c48a; border-radius: 10px; text-align: center; }
+.who { max-width: 100%; margin: 2px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 1rem/1.2 'Lilita One', sans-serif; }
+.pct { margin: 0; font-size: 12px; font-variant-numeric: tabular-nums; color: #6b4a22; }
+.gain { margin: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; font: 400 0.95rem/1.2 'Lilita One', sans-serif; color: #2e9a1f; font-variant-numeric: tabular-nums; }
+.card :deep(.badge) { transform: scale(0.75); transform-origin: center; margin: -3px 0; }
+@media (max-width: 520px) { .cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
 .nav { flex: none; width: 26px; height: 40px; font: 400 1.4rem/1 'Lilita One', sans-serif; color: var(--ink); background: #ecdcae; border: 2px solid var(--ink); border-radius: 8px; cursor: pointer; }
 .nav:focus-visible, .pip:focus-visible { outline: 3px solid #2f8fe0; outline-offset: 2px; }
