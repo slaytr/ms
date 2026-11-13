@@ -285,6 +285,16 @@ describe('computeRates: percent-only EXP (the game hides raw EXP above 1M)', () 
     expect(r.expGained).toBeCloseTo(need62 * 0.01 + need63 * 0.01, 0);
   });
 
+  it('sizes a tick by the last known level when its own digits did not read', () => {
+    const r = computeRates([pctOnly(0, 76), reading(10, { expPct: 77 }), reading(20, { expPct: 78 })]);
+    expect(r.expGained).toBeCloseTo(need62 * 0.02, 0);
+  });
+
+  it('sizes the first ticks by the first level that did read', () => {
+    const r = computeRates([reading(0, { expPct: 76 }), pctOnly(10, 77)]);
+    expect(r.expGained).toBeCloseTo(need62 * 0.01, 0);
+  });
+
   it('counts nothing without a level to scale by, rather than guessing', () => {
     const r = computeRates([reading(0, { expPct: 10 }), reading(30, { expPct: 20 })]);
     expect(r.expGained).toBe(0);

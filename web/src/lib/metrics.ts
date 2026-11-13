@@ -132,18 +132,35 @@ function levelSizeAt(reading: Reading): number | null {
  * EXP gained between two readings worked out from the EXP bar's percent alone, for when the game shows
  * no raw EXP (it hides it once a level needs more than a million). The share of the level gained times
  * the EXP that level needs, from the table. Across a level-up it is the rest of the old level plus the
- * start of the new one. Without a known level there is nothing to scale by, so it counts for nothing.
+ * start of the new one. `levelAt` is the level each reading is sized by: its own when it was read, else the
+ * nearest known one. With no level known anywhere there is nothing to scale by, so it counts for nothing.
  */
-function pctExpDelta(prev: Reading, current: Reading): number {
-  const sizeOf = (level: number | null) => (level === null ? null : expToNext(level));
-  const before = sizeOf(prev.level ?? current.level);
+function pctExpDelta(prev: Reading, current: Reading, levelAt: ReadonlyMap<Reading, number | null>): number {
+  const sizeOf = (level: number | null | undefined) => (level == null ? null : expToNext(level));
+  const before = sizeOf(levelAt.get(prev) ?? levelAt.get(current));
   if (leveledUp(prev, current)) {
-    const after = sizeOf(current.level ?? prev.level);
+    const after = sizeOf(levelAt.get(current) ?? levelAt.get(prev));
     if (before === null || after === null) return 0;
     return ((100 - prev.expPct!) / 100) * before + (current.expPct! / 100) * after;
   }
   if (before === null) return 0;
   return (Math.max(0, current.expPct! - prev.expPct!) / 100) * before;
+}
+
+/**
+ * The level to size each reading by. A tick whose level digits didn't read takes the last level that did
+ * (a character stays at its level until it levels up, and a level-up is spotted from the bar wrapping), and
+ * a reading before the first known level takes the first one.
+ */
+function levelsByReading(sorted: readonly Reading[]): ReadonlyMap<Reading, number | null> {
+  const known = sorted.find((r) => r.level !== null)?.level ?? null;
+  let last: number | null = known;
+  const levels = new Map<Reading, number | null>();
+  for (const r of sorted) {
+    last = r.level ?? last;
+    levels.set(r, last);
+  }
+  return levels;
 }
 
 /** One stretch of EXP gain, ending at reading `to`. */
@@ -163,9 +180,10 @@ function expGainSteps(sorted: readonly Reading[], pauses: readonly Pause[]): rea
   const raw = sorted.filter((r) => r.exp !== null);
   const firstRaw = raw[0]?.takenAt ?? null;
   const lastRaw = raw[raw.length - 1]?.takenAt ?? null;
+  const levelAt = levelsByReading(sorted);
   for (const [a, b] of consecutive(sorted, (r) => r.expPct, pauses)) {
     const outsideRaw = firstRaw === null || lastRaw === null || b.takenAt <= firstRaw || a.takenAt >= lastRaw;
-    if (outsideRaw) steps.push({ to: b, gain: pctExpDelta(a, b), estimated: true });
+    if (outsideRaw) steps.push({ to: b, gain: pctExpDelta(a, b, levelAt), estimated: true });
   }
   return steps.sort((x, y) => x.to.takenAt - y.to.takenAt);
 }
