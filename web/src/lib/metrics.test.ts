@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { expToNext } from '../data/expTable';
-import { computeRates, expGainSeries, type Reading } from './metrics';
+import { computeRates, expGainSeries, expRateSeries, type Reading } from './metrics';
 
 const HOUR = 3_600_000;
 const reading = (minutes: number, over: Partial<Reading> = {}): Reading => ({
@@ -331,5 +331,49 @@ describe('computeRates: percent-only EXP (the game hides raw EXP above 1M)', () 
     const series = expGainSeries(rs);
     expect(series.at(-1)!.gained).toBeCloseTo(computeRates(rs).expGained, 0);
     expect(series.map((p) => p.elapsedMs / 60_000)).toEqual([0, 10, 20]);
+  });
+});
+
+describe('expRateSeries', () => {
+  const MIN = 60_000;
+  const steady = (minutes: number, perMinute: number) =>
+    Array.from({ length: minutes + 1 }, (_, i) => ({ elapsedMs: i * MIN, gained: i * perMinute }));
+
+  it('is the steady pace, projected to an hour, once a window has passed', () => {
+    const rates = expRateSeries(steady(5, 1_000));
+    expect(rates.at(-1)!.expPerHour).toBeCloseTo(60_000);
+    expect(rates.every((p) => Math.abs(p.expPerHour - 60_000) < 1)).toBe(true);
+  });
+
+  it('follows a change of pace within about a minute', () => {
+    const series = [...steady(3, 1_000), ...Array.from({ length: 3 }, (_, i) => ({ elapsedMs: (4 + i) * MIN, gained: 3_000 + (i + 1) * 3_000 }))];
+    const rates = expRateSeries(series);
+    expect(rates.find((p) => p.elapsedMs === 3 * MIN)!.expPerHour).toBeCloseTo(60_000);
+    expect(rates.find((p) => p.elapsedMs === 5 * MIN)!.expPerHour).toBeCloseTo(180_000);
+  });
+
+  it('averages over the session so far before a full window has passed', () => {
+    const rates = expRateSeries([{ elapsedMs: 0, gained: 0 }, { elapsedMs: 30_000, gained: 500 }]);
+    expect(rates).toEqual([{ elapsedMs: 30_000, expPerHour: 60_000 }]);
+  });
+
+  it('draws nothing for the first few seconds', () => {
+    expect(expRateSeries([{ elapsedMs: 0, gained: 0 }, { elapsedMs: 5_000, gained: 900 }])).toEqual([]);
+  });
+
+  it('reads a flat stretch as zero, not as a gap', () => {
+    const series = [...steady(2, 1_000), { elapsedMs: 4 * MIN, gained: 2_000 }, { elapsedMs: 5 * MIN, gained: 2_000 }];
+    expect(expRateSeries(series).at(-1)!.expPerHour).toBe(0);
+  });
+
+  it('handles an empty or single-point series', () => {
+    expect(expRateSeries([])).toEqual([]);
+    expect(expRateSeries([{ elapsedMs: 0, gained: 0 }])).toEqual([]);
+  });
+
+  it('agrees with the average rate when played at one pace from the start', () => {
+    const rs = [reading(0, { exp: 0 }), reading(2, { exp: 4_000 }), reading(4, { exp: 8_000 })];
+    const rates = expRateSeries(expGainSeries(rs));
+    expect(rates.at(-1)!.expPerHour).toBeCloseTo(computeRates(rs).expPerHour);
   });
 });

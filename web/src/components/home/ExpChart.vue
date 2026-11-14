@@ -1,12 +1,20 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue';
+import { computed, ref, useId } from 'vue';
 
 import { formatCompact } from '../../lib/format';
-import type { ExpGainPoint } from '../../lib/metrics';
+import { expRateSeries, type ExpGainPoint } from '../../lib/metrics';
 
 const props = defineProps<{ series: readonly ExpGainPoint[] }>();
 /** Unique per chart: the Tracker page keeps its own copy mounted (hidden) while the Maps page shows another. */
 const areaId = `exp-area-${useId()}`;
+
+/** 'rate' is EXP per hour over a 1 minute moving window (the default); 'total' is the running EXP gained. */
+type Mode = 'rate' | 'total';
+const MODES: ReadonlyArray<{ value: Mode; label: string; hint: string }> = [
+  { value: 'rate', label: 'EXP / hr', hint: 'EXP per hour, averaged over a moving 1 minute window' },
+  { value: 'total', label: 'Total EXP', hint: 'EXP gained so far, adding up over the session' },
+];
+const mode = ref<Mode>('rate');
 
 const W = 640;
 const H = 300;
@@ -25,20 +33,32 @@ function niceMax(value: number): number {
   return step * power;
 }
 
-const lastPoint = computed(() => props.series[props.series.length - 1] ?? null);
-const xMax = computed(() => Math.max(lastPoint.value?.elapsedMs ?? 0, MIN_SPAN_MS));
-const yMax = computed(() => niceMax(Math.max(lastPoint.value?.gained ?? 0, 100)));
+/** What is plotted: one value per point, whichever mode is showing. */
+interface Sample {
+  readonly elapsedMs: number;
+  readonly value: number;
+}
+const samples = computed<readonly Sample[]>(() =>
+  mode.value === 'total'
+    ? props.series.map((p) => ({ elapsedMs: p.elapsedMs, value: p.gained }))
+    : expRateSeries(props.series).map((p) => ({ elapsedMs: p.elapsedMs, value: p.expPerHour })),
+);
+
+const lastSample = computed(() => samples.value[samples.value.length - 1] ?? null);
+/** The time axis follows the whole session in both modes, so switching doesn't move the x axis. */
+const xMax = computed(() => Math.max(props.series[props.series.length - 1]?.elapsedMs ?? 0, MIN_SPAN_MS));
+const yMax = computed(() => niceMax(Math.max(...samples.value.map((s) => s.value), mode.value === 'total' ? 100 : 1000)));
 
 const x = (ms: number) => PAD.left + (ms / xMax.value) * plotW;
-const y = (gained: number) => PAD.top + plotH - (gained / yMax.value) * plotH;
+const y = (value: number) => PAD.top + plotH - (value / yMax.value) * plotH;
 
-const points = computed(() => props.series.map((p) => `${x(p.elapsedMs).toFixed(1)},${y(p.gained).toFixed(1)}`));
+const points = computed(() => samples.value.map((p) => `${x(p.elapsedMs).toFixed(1)},${y(p.value).toFixed(1)}`));
 const linePath = computed(() => points.value.join(' '));
 const areaPath = computed(() => {
   if (points.value.length < 2) return '';
   const base = (PAD.top + plotH).toFixed(1);
-  const first = x(props.series[0].elapsedMs).toFixed(1);
-  const last = x(props.series[props.series.length - 1].elapsedMs).toFixed(1);
+  const first = x(samples.value[0].elapsedMs).toFixed(1);
+  const last = x(samples.value[samples.value.length - 1].elapsedMs).toFixed(1);
   return `M${first},${base} L${points.value.join(' L')} L${last},${base} Z`;
 });
 
@@ -63,16 +83,39 @@ const xTicks = computed(() => {
   return ticks;
 });
 
-const ready = computed(() => props.series.length >= 2);
-const summary = computed(() =>
-  ready.value
-    ? `EXP gained over time: ${Math.round(lastPoint.value?.gained ?? 0).toLocaleString()} EXP in ${clockLabel(Math.round(xMax.value / 60_000))}.`
-    : 'EXP chart: waiting for more readings.',
+const ready = computed(() => samples.value.length >= 2);
+const summary = computed(() => {
+  if (!ready.value) return 'EXP chart: waiting for more readings.';
+  const span = clockLabel(Math.round(xMax.value / 60_000));
+  const latest = Math.round(lastSample.value?.value ?? 0).toLocaleString();
+  return mode.value === 'total'
+    ? `EXP gained over time: ${latest} EXP in ${span}.`
+    : `EXP per hour over time, 1 minute moving average: ${latest} EXP/h now, over ${span}.`;
+});
+const waiting = computed(() =>
+  mode.value === 'total'
+    ? "Collecting readings… the line appears once you've gained some EXP."
+    : "Collecting readings… the rate line starts after the first few seconds of EXP.",
 );
 </script>
 
 <template>
   <figure class="chart">
+    <div class="modes" role="group" aria-label="Chart type">
+      <button
+        v-for="m in MODES"
+        :key="m.value"
+        type="button"
+        :class="{ on: mode === m.value }"
+        :aria-pressed="mode === m.value"
+        :title="m.hint"
+        @click="mode = m.value"
+      >
+        {{ m.label }}
+      </button>
+      <span v-if="mode === 'rate'" class="note">1 min average</span>
+    </div>
+
     <svg :viewBox="`0 0 ${W} ${H}`" role="img" :aria-label="summary" preserveAspectRatio="xMidYMid meet">
       <defs>
         <linearGradient :id="areaId" x1="0" y1="0" x2="0" y2="1">
@@ -91,18 +134,23 @@ const summary = computed(() =>
 
       <path v-if="ready" :d="areaPath" :fill="`url(#${areaId})`" />
       <polyline v-if="ready" :points="linePath" class="line" />
-      <circle v-if="lastPoint" :cx="x(lastPoint.elapsedMs)" :cy="y(lastPoint.gained)" r="5.5" class="dot" />
+      <circle v-if="lastSample" :cx="x(lastSample.elapsedMs)" :cy="y(lastSample.value)" r="5.5" class="dot" />
     </svg>
-    <p v-if="!ready" class="waiting">Collecting readings… the line appears once you've gained some EXP.</p>
+    <p v-if="!ready" class="waiting">{{ waiting }}</p>
   </figure>
 </template>
 
 <style scoped>
 .chart { margin: 0; position: relative; }
+.modes { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; }
+.modes button { padding: 3px 12px; font: 400 0.9rem 'Lilita One', sans-serif; color: #4a2a0e; background: #ecdcae; border: 2px solid #4a2a0e; border-radius: 999px; cursor: pointer; }
+.modes button.on { color: #fff; background: #3fa02a; }
+.modes button:focus-visible { outline: 3px solid #2f8fe0; outline-offset: 2px; }
+.modes .note { margin-left: 4px; font-size: 0.75rem; color: #6b4a22; }
 svg { display: block; width: 100%; height: auto; }
 .grid line { stroke: #e3d3a2; stroke-width: 1; }
 .grid text { fill: #6b4a22; font: 700 12px 'Nunito', sans-serif; }
 .line { fill: none; stroke: #2e9a1f; stroke-width: 3.5; stroke-linejoin: round; stroke-linecap: round; }
 .dot { fill: #ffd12e; stroke: #4a2a0e; stroke-width: 3; }
-.waiting { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 0 3rem 2rem; text-align: center; color: #6b4a22; }
+.waiting { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 2rem 3rem 2rem; text-align: center; color: #6b4a22; }
 </style>

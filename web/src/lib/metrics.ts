@@ -255,3 +255,45 @@ export function computeRates(readings: readonly Reading[], nowMs?: number, pause
     expPctPerHour: perHour(expPctGained, elapsedMs),
   };
 }
+
+export interface ExpRatePoint {
+  /** Milliseconds since the first EXP reading of the session (paused time left out, like the gain series). */
+  readonly elapsedMs: number;
+  /** EXP per hour over the window ending here. */
+  readonly expPerHour: number;
+}
+
+/** The moving average covers this much play, ending at each point. */
+export const RATE_WINDOW_MS = 60_000;
+/** Too little time in the window and one kill swings the figure wildly, so the line starts once this much has passed. */
+const MIN_RATE_SPAN_MS = 15_000;
+
+/** The EXP gained by `at` ms, read off the running total between its two nearest points. */
+function gainedAt(series: readonly ExpGainPoint[], at: number): number {
+  let before = series[0];
+  for (const point of series) {
+    if (point.elapsedMs > at) {
+      const span = point.elapsedMs - before.elapsedMs;
+      return span <= 0 ? point.gained : before.gained + ((point.gained - before.gained) * (at - before.elapsedMs)) / span;
+    }
+    before = point;
+  }
+  return before.gained;
+}
+
+/**
+ * EXP per hour over time from the running total: at each point, what was gained in the last `windowMs` of
+ * play divided by that time, projected to an hour. Before a full window has passed it averages over the
+ * session so far, and nothing is drawn for the first few seconds. Uses the same gains as `expGainSeries`,
+ * so it carries over level-ups and ignores paused time.
+ */
+export function expRateSeries(series: readonly ExpGainPoint[], windowMs: number = RATE_WINDOW_MS): readonly ExpRatePoint[] {
+  const points: ExpRatePoint[] = [];
+  for (const point of series) {
+    const start = Math.max(0, point.elapsedMs - windowMs);
+    const span = point.elapsedMs - start;
+    if (span < MIN_RATE_SPAN_MS) continue;
+    points.push({ elapsedMs: point.elapsedMs, expPerHour: ((point.gained - gainedAt(series, start)) / span) * HOUR_MS });
+  }
+  return points;
+}
