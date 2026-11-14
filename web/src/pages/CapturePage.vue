@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router';
 
 import DbBrowser from '../components/DbBrowser.vue';
 import FixtureCapture from '../components/FixtureCapture.vue';
+import DetectionCoverage from '../components/DetectionCoverage.vue';
 import PipTracker from '../components/PipTracker.vue';
 import SessionHistory from '../components/SessionHistory.vue';
 import { usePopOut } from '../composables/usePopOut';
@@ -130,6 +131,8 @@ onBeforeUnmount(() => void tracker.stop());
       @share="capture.start()"
       @unshare="capture.stop()"
     />
+
+    <DetectionCoverage />
 
     <SessionHistory :refresh-key="historyKey" />
 
