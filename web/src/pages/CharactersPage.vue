@@ -43,9 +43,11 @@ onMounted(async () => {
         <GameWindow v-if="slots.length > 0" title="Top by job">
           <ul class="specs">
             <li v-for="slot in slots" :key="slot.spec" class="slot" :title="slot.leader ? `${slot.leader.name}, Lv ${slot.leader.level}` : `No ${slot.spec} yet`">
-              <span class="portrait"><CharacterAvatar v-if="slot.leader" :name="slot.leader.name" /></span>
+              <span v-if="slot.leader" class="star" role="img" :aria-label="`Top ${slot.spec}`">★</span>
               <span class="spec">{{ slot.spec }}</span>
-              <span class="who">{{ slot.leader ? `${slot.leader.name} · Lv ${slot.leader.level}` : '' }}</span>
+              <span class="portrait"><CharacterAvatar v-if="slot.leader" :name="slot.leader.name" /></span>
+              <span class="lvl">{{ slot.leader ? `Lv ${slot.leader.level}` : '' }}</span>
+              <span class="who">{{ slot.leader?.name ?? '' }}</span>
             </li>
           </ul>
         </GameWindow>
@@ -87,10 +89,14 @@ onMounted(async () => {
 }
 .status, .alert { margin: 0 auto; max-width: 34rem; padding: 0.8rem 1.2rem; text-align: center; background: #fff6dc; border: 3px solid var(--ink); border-radius: 12px; }
 .alert { background: #fff0ee; border-color: #c4361d; color: #8a1d0c; }
-.specs { display: flex; flex-wrap: nowrap; justify-content: safe center; gap: 12px; margin: 0; padding: 0 0 4px; list-style: none; overflow-x: auto; }
-.slot { display: grid; justify-items: center; align-content: start; gap: 2px; box-sizing: border-box; flex: none; width: 128px; min-width: 0; padding: 10px 6px; text-align: center; background: #fffdf3; border: 2px solid #d9c48a; border-radius: 10px; }
+.specs { display: flex; flex-wrap: nowrap; justify-content: safe center; gap: 12px; margin: 0; padding: 12px 14px 4px; list-style: none; overflow-x: auto; }
+.slot { position: relative; display: grid; justify-items: center; align-content: start; gap: 2px; box-sizing: border-box; flex: none; width: 128px; min-width: 0; padding: 10px 6px; text-align: center; background: #fffdf3; border: 2px solid #d9c48a; border-radius: 10px; }
+/* A gold star pinned to the card's top right corner, half over the border. */
+.star { position: absolute; top: -10px; right: -10px; display: grid; place-items: center; width: 24px; height: 24px; font-size: 0.95rem; line-height: 1; color: #fff; background: #f2b705; border: 2px solid #4a2a0e; border-radius: 50%; text-shadow: 0 1px 0 #a36d00; box-shadow: 0 2px 0 rgba(74, 42, 14, 0.3); }
 .portrait { display: grid; place-items: center; width: 96px; height: 96px; }
 .portrait :deep(.avatar) { margin: 0; }
-.spec { max-width: 100%; font-size: 0.75rem; font-weight: 800; line-height: 1.2; }
+/* The job sits above the head; two lines tall so a long job ("Wizard (Ice,Lightning)") doesn't push its card's portrait out of line. */
+.spec { display: grid; place-items: center; max-width: 100%; min-height: 2.4em; font-size: 0.75rem; font-weight: 800; line-height: 1.2; }
+.lvl { min-height: 1.2em; font-size: 0.7rem; font-weight: 800; color: #6b4a22; }
 .who { max-width: 100%; min-height: 1.2em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.7rem; color: #6b4a22; }
 </style>
