@@ -1278,5 +1278,13 @@
     "job": "Assassin",
     "street": "{Wa}rning Street",
     "map": "T~h~e Swamp of Despair II"
+  },
+  "inventory-closed_1368x800_1794614312246.png": {
+    "exp": "117,499[12.68%]",
+    "level": "55",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "Kerning City Su~b~way",
+    "map": "Line 2 <Area 3>"
   }
 }
