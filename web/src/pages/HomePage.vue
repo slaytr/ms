@@ -380,22 +380,22 @@ onBeforeUnmount(() => {
       </Teleport>
     </main>
 
-    <aside v-if="status !== 'tracking'" class="side left" aria-label="Weekly top 3 and change log">
-      <GameWindow v-if="podium.length > 0" title="Weekly top 3">
+    <aside v-if="status !== 'tracking'" class="side left" aria-label="Biggest grinders, most efficient and change log">
+      <GameWindow v-if="podium.length > 0" title="Biggest Grinders">
         <LeaderStrip :podium="podium" :jobs="[]" only="podium" stack />
       </GameWindow>
-      <GameWindow v-if="efficient.length > 0" title="Most efficient top 3">
+      <GameWindow v-if="efficient.length > 0" title="Most Efficient">
         <LeaderStrip :podium="[]" :efficient="efficient" :jobs="[]" only="efficient" stack />
       </GameWindow>
       <GameWindow title="Change log">
         <ChangeLog :entries="CHANGELOG" />
       </GameWindow>
     </aside>
-    <aside v-if="status !== 'tracking' && (jobLeaders.length > 0 || richList.length > 0)" class="side right" aria-label="Top by job and rich list">
-      <GameWindow v-if="jobLeaders.length > 0" title="Top by job">
+    <aside v-if="status !== 'tracking' && (jobLeaders.length > 0 || richList.length > 0)" class="side right" aria-label="Best in category and biggest wallet">
+      <GameWindow v-if="jobLeaders.length > 0" title="Best in Category">
         <LeaderStrip :podium="[]" :jobs="jobLeaders" only="jobs" />
       </GameWindow>
-      <GameWindow v-if="richList.length > 0" title="Rich list">
+      <GameWindow v-if="richList.length > 0" title="Biggest Wallet">
         <template #aside><EyeToggle v-model:shown="showMesos" label="mesos" /></template>
         <LeaderStrip :podium="[]" :jobs="[]" :rich="richList" :show-mesos="showMesos" only="rich" stack />
       </GameWindow>

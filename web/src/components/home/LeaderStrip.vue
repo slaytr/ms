@@ -25,8 +25,8 @@ const MEDALS = ['gold', 'silver', 'bronze'] as const;
 
 <template>
   <div class="strip">
-    <section v-if="podium.length > 0 && (!only || only === 'podium')" aria-label="Weekly top 3">
-      <h3 v-if="!only">Weekly top 3 <span class="sub">EXP gained, last 7 days</span></h3>
+    <section v-if="podium.length > 0 && (!only || only === 'podium')" aria-label="Biggest Grinders">
+      <h3 v-if="!only">Biggest Grinders <span class="sub">EXP gained, last 7 days</span></h3>
       <ol class="chips" :class="{ stack }">
         <li v-for="(rank, index) in podium" :key="rank.playerKey" class="chip" :title="`${rank.player}: +${Math.round(rank.expGained).toLocaleString()} EXP`">
           <span class="place" :class="MEDALS[index]">{{ index + 1 }}</span>
@@ -37,8 +37,8 @@ const MEDALS = ['gold', 'silver', 'bronze'] as const;
       </ol>
     </section>
 
-    <section v-if="efficient && efficient.length > 0 && (!only || only === 'efficient')" aria-label="Most efficient top 3">
-      <h3 v-if="!only">Most efficient <span class="sub">average EXP/h, last 7 days</span></h3>
+    <section v-if="efficient && efficient.length > 0 && (!only || only === 'efficient')" aria-label="Most Efficient">
+      <h3 v-if="!only">Most Efficient <span class="sub">average EXP/h, last 7 days</span></h3>
       <ol class="chips" :class="{ stack }">
         <li v-for="(rank, index) in efficient" :key="rank.playerKey" class="chip" :title="`${rank.player}: +${Math.round(rank.expPerHour).toLocaleString()} EXP per hour`">
           <span class="place" :class="MEDALS[index]">{{ index + 1 }}</span>
@@ -49,8 +49,8 @@ const MEDALS = ['gold', 'silver', 'bronze'] as const;
       </ol>
     </section>
 
-    <section v-if="jobs.length > 0 && (!only || only === 'jobs')" aria-label="Top by job">
-      <h3 v-if="!only">Top by job</h3>
+    <section v-if="jobs.length > 0 && (!only || only === 'jobs')" aria-label="Best in Category">
+      <h3 v-if="!only">Best in Category</h3>
       <ul class="chips">
         <li v-for="slot in jobs" :key="slot.spec" class="chip" :title="slot.leader ? `${slot.leader.name}, Lv ${slot.leader.level}` : undefined">
           <CharacterAvatar v-if="slot.leader" :name="slot.leader.name" small />
@@ -61,9 +61,9 @@ const MEDALS = ['gold', 'silver', 'bronze'] as const;
       </ul>
     </section>
 
-    <section v-if="rich && rich.length > 0 && (!only || only === 'rich')" aria-label="Rich list">
+    <section v-if="rich && rich.length > 0 && (!only || only === 'rich')" aria-label="Biggest Wallet">
       <h3 v-if="!only" class="with-toggle">
-        <span>Rich list <span class="sub">latest meso count</span></span>
+        <span>Biggest Wallet <span class="sub">latest meso count</span></span>
         <slot name="rich-toggle" />
       </h3>
       <ol class="chips" :class="{ stack }">
