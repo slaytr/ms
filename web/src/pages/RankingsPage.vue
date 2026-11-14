@@ -34,7 +34,6 @@ const mesoRows = computed<readonly RankRow[]>(() =>
 );
 
 const fmt = (n: number) => Math.round(n).toLocaleString();
-const pct = (n: number) => `${n.toFixed(1)}%`;
 const sinceLabel = computed(() =>
   since.value === null ? '' : new Date(since.value).toLocaleDateString([], { month: 'short', day: 'numeric' }),
 );
@@ -76,7 +75,7 @@ onMounted(async () => {
           </p>
           <p class="exp">+{{ fmt(rank.expGained) }}<span class="unit"> EXP</span></p>
           <p class="meta">
-            {{ pct(rank.expPctGained) }} of a level · {{ formatStay(rank.seconds) }} over
+            {{ formatStay(rank.seconds) }} over
             {{ rank.sessions }} {{ rank.sessions === 1 ? 'session' : 'sessions' }}
           </p>
         </li>
