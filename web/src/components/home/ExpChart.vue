@@ -16,6 +16,16 @@ const MODES: ReadonlyArray<{ value: Mode; label: string; hint: string }> = [
 ];
 const mode = ref<Mode>('rate');
 
+/** How much of the session the chart shows, ending now. Defaults to the last 30 minutes. */
+const WINDOWS: ReadonlyArray<{ value: number | null; label: string }> = [
+  { value: 30, label: '30m' },
+  { value: 60, label: '1h' },
+  { value: 180, label: '3h' },
+  { value: null, label: 'All' },
+];
+const windowMin = ref<number | null>(30);
+const clipId = `exp-clip-${useId()}`;
+
 const W = 640;
 const H = 300;
 const PAD = { top: 16, right: 20, bottom: 34, left: 58 };
@@ -45,11 +55,15 @@ const samples = computed<readonly Sample[]>(() =>
 );
 
 const lastSample = computed(() => samples.value[samples.value.length - 1] ?? null);
-/** The time axis follows the whole session in both modes, so switching doesn't move the x axis. */
+/** End of the time axis: the whole session so far, the same in both modes so switching doesn't move it. */
 const xMax = computed(() => Math.max(props.series[props.series.length - 1]?.elapsedMs ?? 0, MIN_SPAN_MS));
-const yMax = computed(() => niceMax(Math.max(...samples.value.map((s) => s.value), mode.value === 'total' ? 100 : 1000)));
+/** Start of the time axis: the last `windowMin` minutes, or the session start when it is shorter (or "All"). */
+const xMin = computed(() => (windowMin.value === null ? 0 : Math.max(0, xMax.value - windowMin.value * 60_000)));
+const xSpan = computed(() => xMax.value - xMin.value);
+const visible = computed(() => samples.value.filter((s) => s.elapsedMs >= xMin.value));
+const yMax = computed(() => niceMax(Math.max(...visible.value.map((s) => s.value), mode.value === 'total' ? 100 : 1000)));
 
-const x = (ms: number) => PAD.left + (ms / xMax.value) * plotW;
+const x = (ms: number) => PAD.left + ((ms - xMin.value) / xSpan.value) * plotW;
 const y = (value: number) => PAD.top + plotH - (value / yMax.value) * plotH;
 
 const points = computed(() => samples.value.map((p) => `${x(p.elapsedMs).toFixed(1)},${y(p.value).toFixed(1)}`));
@@ -76,11 +90,26 @@ function clockLabel(minutes: number): string {
 }
 
 const xTicks = computed(() => {
-  const spanMin = xMax.value / 60_000;
-  const step = X_STEPS_MIN.find((s) => spanMin / s <= 6) ?? 1440;
+  const fromMin = xMin.value / 60_000;
+  const toMin = xMax.value / 60_000;
+  const step = X_STEPS_MIN.find((s) => (toMin - fromMin) / s <= 6) ?? 1440;
   const ticks: { x: number; label: string }[] = [];
-  for (let m = 0; m <= spanMin + 1e-9; m += step) ticks.push({ x: x(m * 60_000), label: clockLabel(m) });
+  for (let m = Math.ceil(fromMin / step - 1e-9) * step; m <= toMin + 1e-9; m += step) ticks.push({ x: x(m * 60_000), label: clockLabel(m) });
   return ticks;
+});
+
+/** The present value, written above the current point (below it when the point sits at the very top). */
+const nowLabel = computed(() => {
+  const s = lastSample.value;
+  if (!s) return null;
+  const cx = x(s.elapsedMs);
+  const cy = y(s.value);
+  return {
+    text: `${formatCompact(s.value)}${mode.value === 'rate' ? '/h' : ''}`,
+    x: cx,
+    y: cy - 12 < PAD.top + 10 ? cy + 24 : cy - 12,
+    anchor: cx > W - 70 ? 'end' : 'middle',
+  };
 });
 
 const ready = computed(() => samples.value.length >= 2);
@@ -114,6 +143,20 @@ const waiting = computed(() =>
         {{ m.label }}
       </button>
       <span v-if="mode === 'rate'" class="note">1 min average</span>
+      <span class="spacer" />
+      <div class="windows" role="group" aria-label="Time range">
+        <button
+          v-for="w in WINDOWS"
+          :key="w.label"
+          type="button"
+          :class="{ on: windowMin === w.value }"
+          :aria-pressed="windowMin === w.value"
+          :title="w.value === null ? 'Show the whole session' : `Show the last ${w.label}`"
+          @click="windowMin = w.value"
+        >
+          {{ w.label }}
+        </button>
+      </div>
     </div>
 
     <svg :viewBox="`0 0 ${W} ${H}`" role="img" :aria-label="summary" preserveAspectRatio="xMidYMid meet">
@@ -122,6 +165,7 @@ const waiting = computed(() =>
           <stop offset="0%" stop-color="#6cc24a" stop-opacity="0.55" />
           <stop offset="100%" stop-color="#6cc24a" stop-opacity="0.04" />
         </linearGradient>
+        <clipPath :id="clipId"><rect :x="PAD.left" :y="PAD.top" :width="plotW" :height="plotH + 2" /></clipPath>
       </defs>
 
       <g class="grid">
@@ -132,9 +176,12 @@ const waiting = computed(() =>
         <text v-for="tick in xTicks" :key="`x${tick.label}`" :x="tick.x" :y="H - 10" text-anchor="middle">{{ tick.label }}</text>
       </g>
 
-      <path v-if="ready" :d="areaPath" :fill="`url(#${areaId})`" />
-      <polyline v-if="ready" :points="linePath" class="line" />
+      <g :clip-path="`url(#${clipId})`">
+        <path v-if="ready" :d="areaPath" :fill="`url(#${areaId})`" />
+        <polyline v-if="ready" :points="linePath" class="line" />
+      </g>
       <circle v-if="lastSample" :cx="x(lastSample.elapsedMs)" :cy="y(lastSample.value)" r="5.5" class="dot" />
+      <text v-if="nowLabel" :x="nowLabel.x" :y="nowLabel.y" :text-anchor="nowLabel.anchor" class="now">{{ nowLabel.text }}</text>
     </svg>
     <p v-if="!ready" class="waiting">{{ waiting }}</p>
   </figure>
@@ -146,11 +193,15 @@ const waiting = computed(() =>
 .modes button { padding: 3px 12px; font: 400 0.9rem 'Lilita One', sans-serif; color: #4a2a0e; background: #ecdcae; border: 2px solid #4a2a0e; border-radius: 999px; cursor: pointer; }
 .modes button.on { color: #fff; background: #3fa02a; }
 .modes button:focus-visible { outline: 3px solid #2f8fe0; outline-offset: 2px; }
+.modes .spacer { flex: 1; }
+.windows { display: flex; gap: 4px; }
+.windows button { padding: 2px 9px; font-size: 0.8rem; }
 .modes .note { margin-left: 4px; font-size: 0.75rem; color: #6b4a22; }
 svg { display: block; width: 100%; height: auto; }
 .grid line { stroke: #e3d3a2; stroke-width: 1; }
 .grid text { fill: #6b4a22; font: 700 12px 'Nunito', sans-serif; }
 .line { fill: none; stroke: #2e9a1f; stroke-width: 3.5; stroke-linejoin: round; stroke-linecap: round; }
 .dot { fill: #ffd12e; stroke: #4a2a0e; stroke-width: 3; }
+.now { fill: #4a2a0e; font: 400 15px 'Lilita One', sans-serif; paint-order: stroke; stroke: #fff6dc; stroke-width: 4px; stroke-linejoin: round; }
 .waiting { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 2rem 3rem 2rem; text-align: center; color: #6b4a22; }
 </style>

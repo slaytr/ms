@@ -101,7 +101,7 @@ const hadSession = computed(() => status.value === 'idle' && readings.value.leng
 
 // The small always-on-top overlay. It shares this page's state, so it updates on every tick.
 const { grinders } = useLiveGrinders();
-const popOut = usePopOut('Level tracker');
+const popOut = usePopOut('Level tracker', { fitHeight: true });
 // Reset ends this session and starts a new one, so it asks for a second click before doing it.
 const RESET_CONFIRM_MS = 4000;
 const confirmingReset = ref(false);

@@ -45,7 +45,7 @@ const fmtDuration = (ms: number) => {
 const startSession = () => tracker.start({ label: label.value.trim(), character: character.value.trim() });
 
 // The same overlay the home page pops out, shown inline here so it can be tested without a game window.
-const popOut = usePopOut('Level tracker');
+const popOut = usePopOut('Level tracker', { fitHeight: true });
 const trackerView = computed(() =>
   buildTrackerView({
     name: tracker.lastDetection.value?.character.name ?? null,

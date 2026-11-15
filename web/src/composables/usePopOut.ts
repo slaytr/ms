@@ -12,11 +12,12 @@ declare global {
 }
 
 /**
- * Initial size of the pop-out. The overlay needs about 416px of height at this width in its tallest
- * state (map name showing, still calculating, with the "open your inventory" note), so 450 leaves
- * headroom for font differences and avoids a scrollbar. The player can still resize it.
+ * Initial size of the pop-out. With no header bar and the stats in two rows of three, the overlay
+ * needs roughly 320px of height at this width in its tallest state (map name showing, still
+ * calculating, with the "open your inventory" note), so 350 leaves headroom for font differences and
+ * avoids a scrollbar. The player can still resize it.
  */
-const DEFAULT_SIZE = { width: 300, height: 450 };
+const DEFAULT_SIZE = { width: 300, height: 350 };
 
 /** Copies the page's styles into the pop-out, which starts as an empty document. */
 function copyStyles(target: Window): void {
@@ -40,11 +41,39 @@ function copyStyles(target: Window): void {
 }
 
 /**
+ * Keeps the pop-out exactly as tall as its contents: the overlay stops stretching to the window
+ * (`--pip-min-height`), and the window follows the content whenever it grows or shrinks (a note
+ * appearing, the map name showing, a narrower window wrapping text). Returns a function that stops it.
+ * Browsers may refuse a resize (minimum window size, or no user gesture), in which case the window
+ * just stays as it is.
+ */
+function fitHeightToContent(win: Window, mount: HTMLElement): () => void {
+  win.document.documentElement.style.setProperty('--pip-min-height', '0px');
+  win.document.body.style.background = '#fff6dc';
+  let lastHeight = 0;
+  const fit = (): void => {
+    const height = Math.ceil(mount.getBoundingClientRect().height);
+    if (height <= 0 || height === lastHeight) return;
+    lastHeight = height;
+    try {
+      win.resizeTo(win.outerWidth, height + (win.outerHeight - win.innerHeight));
+    } catch {
+      // Resizing is a nicety; the pop-out works at whatever size the browser allowed.
+    }
+  };
+  const Observer = (win as Window & { ResizeObserver?: typeof ResizeObserver }).ResizeObserver;
+  if (!Observer) return () => undefined;
+  const observer = new Observer(fit);
+  observer.observe(mount);
+  return () => observer.disconnect();
+}
+
+/**
  * Opens a pop-out window and exposes an element inside it to `<Teleport>` into, so one Vue app
  * (and one set of reactive state) drives both the page and the overlay. Prefers the always-on-top
  * Picture-in-Picture window; falls back to a plain popup where that isn't available.
  */
-export function usePopOut(title: string) {
+export function usePopOut(title: string, options: { fitHeight?: boolean } = {}) {
   const target = shallowRef<HTMLElement | null>(null);
   const popWindow = shallowRef<Window | null>(null);
   const error = ref<string | null>(null);
@@ -84,7 +113,11 @@ export function usePopOut(title: string) {
       } catch {
         // Resizing is a nicety; the pop-out works at whatever size the browser allowed.
       }
-      win.addEventListener('pagehide', release);
+      const stopFitting = options.fitHeight ? fitHeightToContent(win, mount) : () => undefined;
+      win.addEventListener('pagehide', () => {
+        stopFitting();
+        release();
+      });
       popWindow.value = win;
       target.value = mount;
     } catch (cause) {

@@ -8,7 +8,7 @@ import type { TrackerView } from '../lib/tracker-view';
  * EXP/hour, level progress, gained/avg/meso cards, time to next level. Presentation only. Each
  * surface adds its own chrome around it (avatar and buttons on the overview, name bar in the pop-out).
  */
-const props = withDefaults(defineProps<{ view: TrackerView; showElapsed?: boolean }>(), { showElapsed: true });
+const props = withDefaults(defineProps<{ view: TrackerView; showElapsed?: boolean; showMap?: boolean }>(), { showElapsed: true, showMap: true });
 
 const fmt = (n: number) => Math.round(n).toLocaleString();
 
@@ -29,21 +29,31 @@ const net = computed(() => {
   return rounded > 0 ? { text: `+${fmt(rounded)}`, tone: 'up' } : { text: `-${fmt(-rounded)}`, tone: 'down' };
 });
 
+/** Where the bar would reach after an hour at the last-hour pace, as a width percent (capped at a full bar). */
+const projectedWidth = computed(() => {
+  const { progress, expPctPerHourValue } = props.view;
+  if (!progress || expPctPerHourValue === null || !(expPctPerHourValue > 0)) return 0;
+  return Math.min(100, progress.fraction * 100 + expPctPerHourValue);
+});
+
 const percent = computed(() => (props.view.progress ? (props.view.progress.fraction * 100).toFixed(2) : null));
 </script>
 
 <template>
   <div class="tracker-stats">
-    <p v-if="view.mapName" class="map" :title="view.mapFull ?? undefined">{{ view.mapName }}</p>
+    <p v-if="showMap && view.mapName" class="map" :title="view.mapFull ?? undefined">{{ view.mapName }}</p>
     <p class="label">EXP / hour (last hour)</p>
-    <p class="rate" :class="{ muted: view.expPerHour === '—' }" :title="view.ratesEstimated ? 'Early estimate. It steadies as you play.' : undefined">
-      {{ view.expPerHour }}<span v-if="view.ratesEstimated || view.expEstimated" class="approx" :title="view.expEstimated ? 'Estimated from the EXP bar percent' : undefined">~</span>
-    </p>
+    <div class="rate-row">
+      <p class="rate" :class="{ muted: view.expPerHour === '—' }" :title="view.ratesEstimated ? 'Early estimate. It steadies as you play.' : undefined">
+        {{ view.expPerHour }}<span v-if="view.ratesEstimated || view.expEstimated" class="approx" :title="view.expEstimated ? 'Estimated from the EXP bar percent' : undefined">~</span>
+      </p>
+      <div v-if="$slots.aside" class="aside"><slot name="aside" /></div>
+    </div>
 
     <div v-if="view.progress" class="progress">
       <p class="pct-row">
-        <span v-if="view.expPctPerHour" class="pct-rate" title="Projected level progress per hour, from the last hour">{{ view.expPctPerHour }}</span>
         <strong>{{ percent }}%</strong>
+        <span v-if="view.expPctPerHour" class="pct-rate" title="Projected level progress per hour, from the last hour">{{ view.expPctPerHour }}</span>
       </p>
       <div
         class="track"
@@ -53,6 +63,7 @@ const percent = computed(() => (props.view.progress ? (props.view.progress.fract
         aria-valuemin="0"
         aria-valuemax="100"
       >
+        <div v-if="projectedWidth > 0" class="fill projected" :style="{ width: `${projectedWidth}%` }" title="Projected progress after an hour at this pace" />
         <div class="fill" :style="{ width: `${view.progress.fraction * 100}%` }" />
       </div>
       <p class="to-go">
@@ -67,8 +78,12 @@ const percent = computed(() => (props.view.progress ? (props.view.progress.fract
         <dd class="green">{{ view.expEstimated ? '~' : '' }}+{{ fmt(view.expGained) }}</dd>
       </div>
       <div>
-        <dt>Avg EXP / hour</dt>
+        <dt>Avg EXP / hr</dt>
         <dd class="green">{{ view.expPerHourAvg }}</dd>
+      </div>
+      <div :title="hero.hint ?? undefined">
+        <dt>To next level</dt>
+        <dd class="level-time" :class="{ muted: view.eta.state !== 'ready' }">{{ hero.text }}</dd>
       </div>
       <div>
         <dt>Meso gained</dt>
@@ -78,15 +93,10 @@ const percent = computed(() => (props.view.progress ? (props.view.progress.fract
         </dd>
       </div>
       <div>
-        <dt>Meso / hour</dt>
+        <dt>Meso / hr</dt>
         <dd class="gold">{{ view.mesoPerHour ?? '—' }}</dd>
       </div>
-      <div class="wide" :title="hero.hint ?? undefined">
-        <dt>Time to next level</dt>
-        <dd class="level-time" :class="{ muted: view.eta.state !== 'ready' }">{{ hero.text }}</dd>
-      </div>
       <div
-        class="wide"
         :title="view.netMesosCeiling ? 'Meso gained minus pot cost. Some pots used have no NPC price, so the real figure can be lower.' : 'Meso gained minus the NPC cost of the pots you used'"
       >
         <dt>Net mesos</dt>
@@ -119,24 +129,26 @@ const percent = computed(() => (props.view.progress ? (props.view.progress.fract
 
 .map { margin: 0 0 4px; font-size: 12px; color: #6b4a22; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .label { margin: 0; color: #6b4a22; }
+.rate-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.aside { min-width: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; }
 .rate { margin: 0; font: 400 clamp(2rem, 15vw, 3rem) / 1.05 'Lilita One', sans-serif; color: #2e9a1f; font-variant-numeric: tabular-nums; }
 .rate.muted { color: #8f7a55; }
 .approx { margin-left: 0.1em; font-size: 0.55em; vertical-align: top; color: #6b4a22; }
 
-.progress { margin-top: -6px; }
-.track { height: 14px; background: #ecdcae; border: 2px solid var(--ink); border-radius: 8px; overflow: hidden; }
-.fill { height: 100%; background: linear-gradient(#8fe35f, #3fa02a); transition: width 0.6s ease-out; }
+.progress { margin-top: 2px; }
+.track { position: relative; height: 14px; background: #ecdcae; border: 2px solid var(--ink); border-radius: 8px; overflow: hidden; }
+.fill { position: absolute; inset: 0 auto 0 0; background: linear-gradient(#8fe35f, #3fa02a); transition: width 0.6s ease-out; }
+.fill.projected { background: linear-gradient(#d4f5bf, #a9dc8e); }
 .to-go { display: flex; justify-content: space-between; margin: 3px 0 0; font-size: 12px; font-variant-numeric: tabular-nums; }
 .to-go strong { font-weight: 800; }
-.pct-row { display: flex; justify-content: flex-end; align-items: baseline; gap: 6px; margin: 0 0 1px; line-height: 1.1; font-size: 12px; font-variant-numeric: tabular-nums; }
+.pct-row { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin: 0 0 1px; line-height: 1.1; font-size: 12px; font-variant-numeric: tabular-nums; }
 .pct-row strong { font-weight: 800; }
-.pct-rate { font-weight: 800; color: #2e9a1f; }
+.pct-rate { margin-left: auto; font-weight: 800; color: #2e9a1f; }
 
-.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 10px 0 0; }
-.stats div { padding: 4px 8px; background: #fffdf3; border: 2px solid #d9c48a; border-radius: 8px; }
-.stats .wide { grid-column: 1 / -1; }
-.stats dt { font-size: 11px; color: #6b4a22; }
-.stats dd { margin: 0; font: 400 1.25rem/1.2 'Lilita One', sans-serif; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; margin: 10px 0 0; }
+.stats div { min-width: 0; padding: 4px 6px; background: #fffdf3; border: 2px solid #d9c48a; border-radius: 8px; }
+.stats dt { font-size: 10px; color: #6b4a22; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stats dd { margin: 0; font: 400 1rem/1.25 'Lilita One', sans-serif; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 
 .stats dd.gold { color: #c98a00; }
 .stats dd.green { color: #2e9a1f; }
@@ -145,7 +157,7 @@ const percent = computed(() => (props.view.progress ? (props.view.progress.fract
 .stats dd.net.down { color: #c0392b; }
 .stats dd.net.zero { color: #6b4a22; }
 .stats dd.net .approx { font-size: 0.6em; }
-.stats dd.muted { color: #8f7a55; font-size: 1.05rem; }
+.stats dd.muted { color: #8f7a55; font-size: 0.8rem; }
 
 .note { margin: 6px 0 0; font-size: 12px; color: #8a5a00; }
 .paused-note { font-weight: 800; color: #b06a00; }

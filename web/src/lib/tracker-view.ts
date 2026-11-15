@@ -32,6 +32,8 @@ export interface TrackerView {
   readonly expPerHourAvg: string;
   /** Last-hour pace as a share of a level, e.g. "12.40%"; null until there's a rate. */
   readonly expPctPerHour: string | null;
+  /** The same figure as a number of percentage points of a level per hour; null until there's a rate. */
+  readonly expPctPerHourValue: number | null;
   /** Total EXP gained this session, across level-ups. */
   readonly expGained: number;
   /** The EXP figures are estimated from the bar's percent, because the game shows no raw EXP at this level. */
@@ -129,6 +131,7 @@ export function buildTrackerView({ name, map = null, snapshot, readings, rates, 
     expPerHourValue: hasRate ? recent.expPerHour : null,
     expPerHourAvg: perHour(rates.expPerHour),
     expPctPerHour: hasRate ? `${recent.expPctPerHour.toFixed(2)}%` : null,
+    expPctPerHourValue: hasRate ? recent.expPctPerHour : null,
     expGained: rates.expGained,
     expEstimated: rates.expEstimated,
     ratesEstimated: hasRate && rates.elapsedMs < MIN_ELAPSED_FOR_ETA_MS,
