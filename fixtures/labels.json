@@ -1286,5 +1286,37 @@
     "job": "Wizard (Ice,Lightning)",
     "street": "Kerning City Su~b~way",
     "map": "Line 2 <Area 3>"
+  },
+  "inventory-closed_1368x800_1794740755132.png": {
+    "exp": "565,921[57.90%]",
+    "level": "56",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Vi}ctoria Road",
+    "map": "Golem's Temple I"
+  },
+  "inventory-closed_1368x800_1794741671456.png": {
+    "level": "56",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "Dungeon",
+    "exp": "590,790[60.44%]",
+    "map": "Sleepy Dungeon III"
+  },
+  "inventory-closed_1368x800_1794741680002.png": {
+    "level": "56",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "Dungeon",
+    "exp": "590,939[60.46%]",
+    "map": "Sleepy Dungeon II"
+  },
+  "inventory-closed_1368x800_1794741739130.png": {
+    "level": "56",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "Dungeon",
+    "exp": "591,612[60.52%]",
+    "map": "Sleepy Dungeon IV"
   }
 }
