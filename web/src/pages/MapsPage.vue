@@ -10,6 +10,7 @@ import { formatPerHour } from '../lib/format';
 import {
   formatLevels,
   formatStay,
+  MAX_RANKED_MAPS,
   MIN_EXP_PER_HOUR,
   MIN_SESSION_SECONDS,
   qualifyingSessions,
@@ -36,7 +37,8 @@ const columns: ReadonlyArray<{ key: RankKey; label: string; hint: string }> = [
   { key: 'seconds', label: 'Time', hint: 'Total time tracked on this map' },
 ];
 
-const ranks = computed(() => sortRanks(rankMaps(sessions.value), sortKey.value));
+// The 20 best maps by EXP/h (rankMaps already orders by it); the column choice only reorders those.
+const ranks = computed(() => sortRanks(rankMaps(sessions.value).slice(0, MAX_RANKED_MAPS), sortKey.value));
 const bestExpPerHour = computed(() => Math.max(1, ...ranks.value.map((r) => r.expPerHour)));
 /** The open map's fastest players, 3 per row. Empty when no map is open. */
 const mapPlayers = computed(() =>

@@ -136,17 +136,41 @@ const xTicks = computed(() => {
   return ticks;
 });
 
-/** The present value, written above the current point (below it when the point sits at the very top). */
+/** Where the pointer is on the time axis (ms into the session), or null when it is off the chart. */
+const hoverMs = ref<number | null>(null);
+/** The plotted point nearest the pointer. Looked up from the time, so it follows a mode or window change. */
+const hovered = computed<Sample | null>(() => {
+  const at = hoverMs.value;
+  if (at === null || visible.value.length === 0) return null;
+  return visible.value.reduce((best, s) => (Math.abs(s.elapsedMs - at) < Math.abs(best.elapsedMs - at) ? s : best));
+});
+/** The point the dot sits on: under the pointer while hovering, else the latest reading. */
+const active = computed(() => hovered.value ?? lastSample.value);
+
+function onPointerMove(event: PointerEvent) {
+  const svg = event.currentTarget as SVGSVGElement;
+  const box = svg.getBoundingClientRect();
+  if (box.width === 0) return;
+  const vx = ((event.clientX - box.left) / box.width) * W;
+  const clamped = Math.min(Math.max(vx, PAD.left), W - PAD.right);
+  hoverMs.value = xMin.value + ((clamped - PAD.left) / plotW) * xSpan.value;
+}
+const onPointerLeave = () => {
+  hoverMs.value = null;
+};
+
+/** The active value, written above its point (below it when the point sits at the very top). While hovering it also gives the time. */
 const nowLabel = computed(() => {
-  const s = lastSample.value;
+  const s = active.value;
   if (!s) return null;
   const cx = x(s.elapsedMs);
   const cy = y(s.value);
+  const value = `${formatCompact(s.value)}${mode.value === 'rate' ? '/h' : ''}`;
   return {
-    text: `${formatCompact(s.value)}${mode.value === 'rate' ? '/h' : ''}`,
+    text: hovered.value ? `${value} · ${clockLabel(Math.round(s.elapsedMs / 60_000))}` : value,
     x: cx,
     y: cy - 12 < PAD.top + 10 ? cy + 24 : cy - 12,
-    anchor: cx > W - 70 ? 'end' : 'middle',
+    anchor: cx > W - 90 ? 'end' : cx < PAD.left + 70 ? 'start' : 'middle',
   };
 });
 
@@ -197,7 +221,15 @@ const waiting = computed(() =>
       </div>
     </div>
 
-    <svg :viewBox="`0 0 ${W} ${H}`" role="img" :aria-label="summary" preserveAspectRatio="xMidYMid meet">
+    <svg
+      :viewBox="`0 0 ${W} ${H}`"
+      role="img"
+      :aria-label="summary"
+      preserveAspectRatio="xMidYMid meet"
+      @pointermove="onPointerMove"
+      @pointerleave="onPointerLeave"
+      @pointercancel="onPointerLeave"
+    >
       <defs>
         <linearGradient :id="areaId" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stop-color="#6cc24a" stop-opacity="0.55" />
@@ -220,7 +252,8 @@ const waiting = computed(() =>
         <path v-if="ready" :d="areaPath" :fill="`url(#${areaId})`" />
         <polyline v-if="ready" :points="linePath" class="line" />
       </g>
-      <circle v-if="lastSample" :cx="x(lastSample.elapsedMs)" :cy="y(lastSample.value)" r="5.5" class="dot" />
+      <line v-if="hovered && ready" :x1="x(hovered.elapsedMs)" :x2="x(hovered.elapsedMs)" :y1="PAD.top" :y2="PAD.top + plotH" class="hover-line" />
+      <circle v-if="active" :cx="x(active.elapsedMs)" :cy="y(active.value)" r="5.5" class="dot" />
       <text v-if="nowLabel" :x="nowLabel.x" :y="nowLabel.y" :text-anchor="nowLabel.anchor" class="now">{{ nowLabel.text }}</text>
     </svg>
     <p v-if="!ready" class="waiting">{{ waiting }}</p>
@@ -242,7 +275,9 @@ svg { display: block; width: 100%; height: auto; }
 .grid text { fill: #6b4a22; font: 700 12px 'Nunito', sans-serif; }
 .axis-break { fill: none; stroke: #6b4a22; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .line { fill: none; stroke: #2e9a1f; stroke-width: 3.5; stroke-linejoin: round; stroke-linecap: round; }
-.dot { fill: #ffd12e; stroke: #4a2a0e; stroke-width: 3; }
-.now { fill: #4a2a0e; font: 400 15px 'Lilita One', sans-serif; paint-order: stroke; stroke: #fff6dc; stroke-width: 4px; stroke-linejoin: round; }
+.hover-line { stroke: #6b4a22; stroke-width: 1.5; stroke-dasharray: 4 3; opacity: 0.6; pointer-events: none; }
+svg { touch-action: pan-y; }
+.dot { pointer-events: none; fill: #ffd12e; stroke: #4a2a0e; stroke-width: 3; }
+.now { pointer-events: none; fill: #4a2a0e; font: 400 15px 'Lilita One', sans-serif; paint-order: stroke; stroke: #fff6dc; stroke-width: 4px; stroke-linejoin: round; }
 .waiting { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 2rem 3rem 2rem; text-align: center; color: #6b4a22; }
 </style>

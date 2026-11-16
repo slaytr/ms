@@ -53,6 +53,8 @@ const HOUR_SECONDS = 3600;
 /** Only real grinding sessions count toward the Maps page: long enough to trust, and fast enough to matter. */
 export const MIN_SESSION_SECONDS = 30 * 60;
 export const MIN_EXP_PER_HOUR = 50_000;
+/** The map rankings list only this many maps, the best by EXP/h. */
+export const MAX_RANKED_MAPS = 20;
 
 const perHour = (amount: number, seconds: number) => (seconds > 0 ? (amount / seconds) * HOUR_SECONDS : 0);
 
