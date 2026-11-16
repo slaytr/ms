@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import type { LiveGrinder } from '../../lib/api';
-import { formatCompact } from '../../lib/format';
+import { formatAgo, formatCompact } from '../../lib/format';
 import CharacterAvatar from './CharacterAvatar.vue';
 import LevelBadge from './LevelBadge.vue';
 
 /**
  * Whoever is grinding right now, up to five side by side: avatar, name, level, EXP% and EXP gained this
  * session. With more than five it becomes a carousel of pages of five, turning by itself every few
- * seconds and pausing while hovered or focused. Presentation only.
+ * seconds and pausing while hovered or focused. When fewer than three are grinding, the server fills the rest
+ * with whoever was last seen (`lastSeenAt` set): those cards say how long ago instead of showing EXP.
+ * Presentation only.
  */
 const props = defineProps<{ grinders: readonly LiveGrinder[] }>();
 
@@ -19,7 +21,22 @@ const page = ref(0);
 const paused = ref(false);
 let timer: ReturnType<typeof setInterval> | null = null;
 
+/** Re-read every minute so "1 hour ago" keeps up without waiting for new data. */
+const now = ref(Date.now());
+let clock: ReturnType<typeof setInterval> | null = null;
+onMounted(() => {
+  clock = setInterval(() => {
+    now.value = Date.now();
+  }, 60_000);
+});
+onBeforeUnmount(() => {
+  if (clock) clearInterval(clock);
+});
+
 const count = computed(() => props.grinders.length);
+/** How many are grinding for real (not just last seen). */
+const liveCount = computed(() => props.grinders.filter((g) => !g.lastSeenAt).length);
+const seenAgo = (g: LiveGrinder) => (g.lastSeenAt ? formatAgo(now.value - Date.parse(g.lastSeenAt)) : null);
 const pages = computed(() => Math.max(1, Math.ceil(count.value / PER_PAGE)));
 const visible = computed(() => props.grinders.slice(page.value * PER_PAGE, (page.value + 1) * PER_PAGE));
 
@@ -66,18 +83,20 @@ onBeforeUnmount(stop);
     @focusin="paused = true"
     @focusout="paused = false"
   >
-    <p class="head"><span class="dot" aria-hidden="true" />Grinding now · {{ count }}</p>
+    <p v-if="liveCount > 0" class="head"><span class="dot" aria-hidden="true" />Grinding now · {{ liveCount }}</p>
+    <p v-else class="head">Last seen</p>
 
     <div class="row">
       <button v-if="pages > 1" class="nav" type="button" aria-label="Previous players" @click="go(page - 1)">‹</button>
       <ul class="cards" :style="{ '--n': Math.min(count, PER_PAGE) }" aria-live="polite">
-        <li v-for="g in visible" :key="g.id" class="card">
+        <li v-for="g in visible" :key="g.id" class="card" :class="{ away: g.lastSeenAt }">
           <CharacterAvatar :name="g.player" small />
           <p class="who" :title="g.player">{{ g.player }}</p>
           <LevelBadge :level="g.level" />
           <p class="pct">{{ pct(g.pct) }}</p>
-          <p class="gain" :title="g.estimated ? 'Estimated from the EXP bar percent' : undefined">{{ g.estimated ? '~' : '' }}+{{ fmt(g.expGained) }}</p>
-          <p class="rate" title="Average EXP per hour this session">{{ g.expPerHour === null ? '—' : `${g.estimated ? '~' : ''}${formatCompact(g.expPerHour)}/h` }}</p>
+          <p v-if="g.lastSeenAt" class="seen" :title="`Last seen grinding ${new Date(g.lastSeenAt).toLocaleString()}`">seen {{ seenAgo(g) }}</p>
+          <p v-if="!g.lastSeenAt" class="gain" :title="g.estimated ? 'Estimated from the EXP bar percent' : undefined">{{ g.estimated ? '~' : '' }}+{{ fmt(g.expGained) }}</p>
+          <p v-if="!g.lastSeenAt" class="rate" title="Average EXP per hour this session">{{ g.expPerHour === null ? '—' : `${g.estimated ? '~' : ''}${formatCompact(g.expPerHour)}/h` }}</p>
         </li>
       </ul>
       <button v-if="pages > 1" class="nav" type="button" aria-label="Next players" @click="go(page + 1)">›</button>
@@ -124,6 +143,8 @@ onBeforeUnmount(stop);
 .pct { margin: 0; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--c-6b4a22-text); }
 .rate { margin: 0; font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--c-6b4a22-text); }
 .gain { margin: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; font: 400 0.95rem/1.2 'Lilita One', sans-serif; color: var(--c-2e9a1f-text); font-variant-numeric: tabular-nums; }
+.card.away { opacity: 0.85; }
+.seen { margin: 2px 0 0; font-size: 12px; font-weight: 800; color: var(--c-8f7a55-text); }
 .card :deep(.badge) { transform: scale(0.75); transform-origin: center; margin: -3px 0; }
 @media (max-width: 520px) { .cards { --card: 5.4rem; } }
 

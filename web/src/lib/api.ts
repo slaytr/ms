@@ -188,6 +188,8 @@ export interface LiveGrinder {
   expPerHour: number | null;
   /** EXP is estimated from the bar's percent (the game shows no raw EXP at this level). */
   estimated: boolean;
+  /** Set when this person is not grinding now but was last seen (ISO time of their latest reading). */
+  lastSeenAt?: string;
 }
 
 export function listLiveGrinders(): Promise<LiveGrinder[]> {

@@ -25,3 +25,14 @@ export function formatPerHour(value: number): string {
   const whole = Math.floor(value);
   return whole >= 1000 ? `${Math.floor(whole / 1000)}K` : String(whole);
 }
+
+/** How long ago something was, from the elapsed milliseconds: "just now", "12 min ago", "2 hours ago", "3 days ago". */
+export function formatAgo(elapsedMs: number): string {
+  const minutes = Math.floor(Math.max(0, elapsedMs) / 60_000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} ${days === 1 ? 'day' : 'days'} ago`;
+}

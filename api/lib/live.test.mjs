@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { expToNext } from '../../web/src/data/expTable.ts';
-import { MIN_RATE_SECONDS, shapeLive } from './live.mjs';
+import { MIN_RATE_SECONDS, MIN_SHOWN, shapeLive, shapeRecent } from './live.mjs';
 
 const row = (over) => ({
   id: 'a',
@@ -76,5 +76,60 @@ describe('shapeLive', () => {
       latest({}),
     );
     expect(out.map((e) => e.id)).toEqual(['b', 'a']);
+  });
+});
+
+describe('shapeRecent', () => {
+  const seen = (entries) => new Map(Object.entries(entries));
+  const HOUR = 3_600_000;
+
+  it('lists who was seen last first, with when they were last seen', () => {
+    const out = shapeRecent(
+      [row({ id: 'x', playerKey: 'x', player: 'X' }), row({ id: 'y', playerKey: 'y', player: 'Y' })],
+      latest({ x: { level: 40, pct: 1 } }),
+      seen({ x: 9 * HOUR, y: 8 * HOUR }),
+      new Set(),
+      3,
+    );
+    expect(out.map((e) => e.player)).toEqual(['X', 'Y']);
+    expect(out[0].lastSeenAt).toBe(new Date(9 * HOUR).toISOString());
+    expect(out[0].level).toBe(40);
+  });
+
+  it('skips players who are grinding now', () => {
+    const out = shapeRecent([row({ id: 'x', playerKey: 'live' })], latest({}), seen({ x: HOUR }), new Set(['live']), 3);
+    expect(out).toEqual([]);
+  });
+
+  it('keeps one entry per player, from the session seen most recently', () => {
+    const out = shapeRecent(
+      [row({ id: 'a', startedAt: 1 }), row({ id: 'b', startedAt: 2 })],
+      latest({}),
+      seen({ a: 9 * HOUR, b: 5 * HOUR }),
+      new Set(),
+      3,
+    );
+    expect(out.map((e) => e.id)).toEqual(['a']);
+  });
+
+  it('only returns as many as are needed', () => {
+    const stats = ['a', 'b', 'c', 'd'].map((k, i) => row({ id: k, playerKey: k, player: k }));
+    const out = shapeRecent(stats, latest({}), seen({ a: 4, b: 3, c: 2, d: 1 }), new Set(), 2);
+    expect(out.map((e) => e.id)).toEqual(['a', 'b']);
+  });
+
+  it('drops unnamed players and sessions never seen', () => {
+    const out = shapeRecent(
+      [row({ id: 'u', player: 'Unknown', playerKey: 'u' }), row({ id: 'n', playerKey: 'n' })],
+      latest({}),
+      seen({ u: 5 }),
+      new Set(),
+      3,
+    );
+    expect(out).toEqual([]);
+  });
+
+  it('shows at least three', () => {
+    expect(MIN_SHOWN).toBe(3);
   });
 });

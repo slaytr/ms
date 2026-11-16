@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatCompact, formatPerHour } from './format';
+import { formatAgo, formatCompact, formatPerHour } from './format';
 
 describe('formatPerHour', () => {
   it('shows whole numbers below 1000', () => {
@@ -48,5 +48,26 @@ describe('formatCompact', () => {
   it('falls back to 0 for empty, negative or broken input', () => {
     expect(formatCompact(-1)).toBe('0');
     expect(formatCompact(Number.NaN)).toBe('0');
+  });
+});
+
+describe('formatAgo', () => {
+  const MIN = 60_000;
+  const HOUR = 60 * MIN;
+  it('says just now under a minute', () => {
+    expect(formatAgo(30_000)).toBe('just now');
+    expect(formatAgo(-5000)).toBe('just now');
+  });
+  it('counts minutes under an hour', () => {
+    expect(formatAgo(MIN)).toBe('1 min ago');
+    expect(formatAgo(12 * MIN + 40_000)).toBe('12 min ago');
+  });
+  it('counts whole hours, singular for one', () => {
+    expect(formatAgo(HOUR)).toBe('1 hour ago');
+    expect(formatAgo(2 * HOUR + 50 * MIN)).toBe('2 hours ago');
+  });
+  it('counts days from 24 hours', () => {
+    expect(formatAgo(24 * HOUR)).toBe('1 day ago');
+    expect(formatAgo(3 * 24 * HOUR + HOUR)).toBe('3 days ago');
   });
 });
