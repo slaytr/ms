@@ -19,11 +19,11 @@ const session = (over: Partial<MapSession> = {}): MapSession => ({
 });
 
 describe('rankMaps', () => {
-  it('weights rates by time played, not by session count', () => {
-    // 1h at 100K/h plus 15min at 400K/h: total 200K in 1.25h = 160K/h (not the 250K/h plain average).
+  it('rates a map by its best session, not an average', () => {
+    // 1h at 100K/h plus 15min at 400K/h: the map shows the 400K/h session.
     const ranks = rankMaps([session({ id: '1' }), session({ id: '2', seconds: 900, expGained: 100_000 })]);
     expect(ranks).toHaveLength(1);
-    expect(ranks[0].expPerHour).toBe(160_000);
+    expect(ranks[0].expPerHour).toBe(400_000);
     expect(ranks[0].sessions).toBe(2);
   });
 
@@ -41,9 +41,12 @@ describe('rankMaps', () => {
     expect(ranks[0].players).toBe(2);
   });
 
-  it('works out %/h and meso/h from the totals', () => {
-    const [rank] = rankMaps([session({ seconds: 1800, expPctGained: 6, mesoGained: 30_000 })]);
-    expect(rank.expPctPerHour).toBeCloseTo(12, 6);
+  it('takes meso/h from the session with the highest meso/h, whichever session that is', () => {
+    const [rank] = rankMaps([
+      session({ id: '1', seconds: 1800, expGained: 300_000, mesoGained: 10_000 }), // best EXP, 20K meso/h
+      session({ id: '2', seconds: 1800, expGained: 100_000, mesoGained: 30_000 }), // 60K meso/h
+    ]);
+    expect(rank.expPerHour).toBeCloseTo(600_000, 6);
     expect(rank.mesoPerHour).toBeCloseTo(60_000, 6);
   });
 
@@ -120,15 +123,15 @@ describe('rankPlayers', () => {
       by('fast', { expGained: 300_000 }),
       by('fast', { expGained: 100_000, startedAt: 9 }),
     ]);
-    expect(ranked.map((p) => [p.player, p.expPerHour, p.sessions])).toEqual([['fast', 200_000, 2], ['slow', 100_000, 1]]);
+    expect(ranked.map((p) => [p.player, p.expPerHour, p.sessions])).toEqual([['fast', 300_000, 2], ['slow', 100_000, 1]]);
   });
 
-  it('adds a player\'s time before dividing, so a long stay outweighs a short burst', () => {
+  it('rates a player by their best session', () => {
     const [p] = rankPlayers([
       by('a', { seconds: 1800, expGained: 100_000 }), // 200K/h for 30 min
       by('a', { seconds: 5400, expGained: 100_000, startedAt: 5 }), // 66.7K/h for 90 min
     ]);
-    expect(p.expPerHour).toBe(100_000); // 200K EXP over 2h of tracked time
+    expect(p.expPerHour).toBe(200_000);
   });
 
   it('keeps only the top 9 by default and breaks ties on the name', () => {

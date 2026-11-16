@@ -31,9 +31,8 @@ const selectedMap = ref<string | null>(null);
 const sessionSeries = useSessionSeries();
 
 const columns: ReadonlyArray<{ key: RankKey; label: string; hint: string }> = [
-  { key: 'expPerHour', label: 'EXP / hr', hint: 'EXP gained per hour on this map' },
-  { key: 'expPctPerHour', label: '% / hr', hint: 'Share of a level per hour, fair across levels' },
-  { key: 'mesoPerHour', label: 'Meso / hr', hint: 'Only counts while the inventory was open' },
+  { key: 'expPerHour', label: 'EXP / hr', hint: 'EXP per hour of the best session on this map' },
+  { key: 'mesoPerHour', label: 'Meso / hr', hint: 'Meso per hour of the best session on this map (only counts while the inventory was open)' },
   { key: 'seconds', label: 'Time', hint: 'Total time tracked on this map' },
 ];
 
@@ -99,7 +98,6 @@ onMounted(async () => {
                 <col class="c-top" />
                 <col class="c-exp" />
                 <col class="c-rate" />
-                <col class="c-rate" />
                 <col class="c-small" />
               </colgroup>
               <thead>
@@ -131,13 +129,12 @@ onMounted(async () => {
                     <span class="bar" :style="{ width: barWidth(rank.expPerHour) }" aria-hidden="true" />
                     <span class="val">{{ formatPerHour(rank.expPerHour) }}</span>
                   </td>
-                  <td class="num">{{ pct(rank.expPctPerHour) }}</td>
                   <td class="num meso">{{ formatPerHour(rank.mesoPerHour) }}</td>
                   <td class="num">{{ formatStay(rank.seconds) }}</td>
                 </tr>
                 <tr v-if="selectedMap === rank.map" class="players-row">
-                  <td colspan="7">
-                    <p class="players-title">Fastest players on {{ rank.map }} <span class="dim">average EXP/h per player</span></p>
+                  <td colspan="6">
+                    <p class="players-title">Fastest players on {{ rank.map }} <span class="dim">best session EXP/h per player</span></p>
                     <ol class="players">
                       <li v-for="(p, i) in mapPlayers" :key="p.playerKey" class="player" :title="[p.player, p.level !== null ? `Lv ${p.level}` : null, p.job].filter(Boolean).join(' · ')">
                         <span class="place" :class="MEDALS[i]">{{ i + 1 }}</span>

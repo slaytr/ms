@@ -53,13 +53,24 @@ async function dump() {
   process.stdout.write(JSON.stringify(payload));
 }
 
+/**
+ * One dumped value as a query parameter. json/jsonb columns come back from `pg` as objects or arrays, and `pg`
+ * would send an array as a Postgres array literal ("invalid input syntax for type json"), so they go as JSON text.
+ */
+function toParam(table, column, value) {
+  const decode = DECODERS[table]?.[column];
+  if (decode) return decode(value);
+  if (value !== null && typeof value === 'object') return JSON.stringify(value);
+  return value;
+}
+
 async function loadTable(client, table, rows) {
   if (rows.length === 0) return 0;
   const columns = Object.keys(rows[0]);
   const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
   const sql = `insert into ${table} (${columns.join(', ')}) values (${placeholders})`;
   for (const row of rows) {
-    await client.query(sql, columns.map((col) => (DECODERS[table]?.[col] ? DECODERS[table][col](row[col]) : row[col])));
+    await client.query(sql, columns.map((col) => toParam(table, col, row[col])));
   }
   return rows.length;
 }

@@ -18,7 +18,7 @@ export interface MapSession {
   readonly mesoGained: number;
 }
 
-/** One player's pace on one map: their sessions there added together (total EXP over total time). */
+/** One player's pace on one map: the EXP/h of their best session there. */
 export interface MapPlayer {
   readonly playerKey: string;
   readonly player: string;
@@ -40,12 +40,13 @@ export interface MapRank {
   readonly players: number;
   readonly seconds: number;
   readonly expGained: number;
+  /** EXP/h of the best single session on this map. */
   readonly expPerHour: number;
-  readonly expPctPerHour: number;
+  /** Meso/h of the single session with the highest meso/h on this map. */
   readonly mesoPerHour: number;
 }
 
-export type RankKey = 'expPerHour' | 'expPctPerHour' | 'mesoPerHour' | 'seconds' | 'sessions';
+export type RankKey = 'expPerHour' | 'mesoPerHour' | 'seconds' | 'sessions';
 
 const HOUR_SECONDS = 3600;
 
@@ -57,7 +58,7 @@ const perHour = (amount: number, seconds: number) => (seconds > 0 ? (amount / se
 
 /**
  * The `limit` fastest players among `sessions` (all from one map), best EXP/h first, one entry per player:
- * a player's sessions are added together before dividing, so a long stay counts for more than a short one.
+ * a player is rated by their best single session.
  * Ties go to the name so the order is stable. Input is not modified.
  */
 export function rankPlayers(sessions: readonly MapSession[], limit: number = MAP_TOP_PLAYERS): readonly MapPlayer[] {
@@ -69,14 +70,13 @@ export function rankPlayers(sessions: readonly MapSession[], limit: number = MAP
     .map(([playerKey, group]): MapPlayer => {
       const newest = group.reduce((a, b) => (b.startedAt > a.startedAt ? b : a));
       const withJob = [...group].sort((a, b) => b.startedAt - a.startedAt).find((s) => s.job);
-      const seconds = group.reduce((total, s) => total + s.seconds, 0);
-      const exp = group.reduce((total, s) => total + s.expGained, 0);
+      const best = Math.max(...group.map((s) => perHour(s.expGained, s.seconds)));
       return {
         playerKey,
         player: newest.player,
         job: withJob?.job ?? null,
         level: newest.levelTo ?? newest.levelFrom,
-        expPerHour: perHour(exp, seconds),
+        expPerHour: best,
         sessions: group.length,
       };
     })
@@ -103,8 +103,8 @@ export function qualifyingSessions(sessions: readonly MapSession[]): readonly Ma
 }
 
 /**
- * Groups sessions by map. Rates are total gained over total time (not an average of averages), so a
- * long session counts for more than a short one. Maps come back best EXP/h first.
+ * Groups sessions by map. A map's EXP/h and meso/h are those of its best single session (not an
+ * average), so one great run isn't diluted by slower ones. Maps come back best EXP/h first.
  */
 export function rankMaps(sessions: readonly MapSession[]): readonly MapRank[] {
   const byMap = new Map<string, MapSession[]>();
@@ -122,15 +122,8 @@ export function rankMaps(sessions: readonly MapSession[]): readonly MapRank[] {
       players: new Set(group.map((s) => s.playerKey)).size,
       seconds,
       expGained,
-      expPerHour: perHour(expGained, seconds),
-      expPctPerHour: perHour(
-        sum((s) => s.expPctGained),
-        seconds,
-      ),
-      mesoPerHour: perHour(
-        sum((s) => s.mesoGained),
-        seconds,
-      ),
+      expPerHour: Math.max(...group.map((s) => perHour(s.expGained, s.seconds))),
+      mesoPerHour: Math.max(...group.map((s) => perHour(s.mesoGained, s.seconds))),
     };
   });
   return sortRanks(ranks, 'expPerHour');
