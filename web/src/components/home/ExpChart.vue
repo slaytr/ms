@@ -30,7 +30,6 @@ const W = 640;
 const H = 300;
 const PAD = { top: 16, right: 20, bottom: 34, left: 58 };
 const MIN_SPAN_MS = 5 * 60_000;
-const Y_TICKS = 4;
 const X_STEPS_MIN = [1, 2, 5, 10, 15, 30, 60, 120, 180, 360, 720];
 
 const plotW = W - PAD.left - PAD.right;
@@ -61,10 +60,41 @@ const xMax = computed(() => Math.max(props.series[props.series.length - 1]?.elap
 const xMin = computed(() => (windowMin.value === null ? 0 : Math.max(0, xMax.value - windowMin.value * 60_000)));
 const xSpan = computed(() => xMax.value - xMin.value);
 const visible = computed(() => samples.value.filter((s) => s.elapsedMs >= xMin.value));
-const yMax = computed(() => niceMax(Math.max(...visible.value.map((s) => s.value), mode.value === 'total' ? 100 : 1000)));
+/**
+ * The y axis: gridlines every 10k (20k, 50k... when that would be crowded). When the data sits well above zero
+ * (say 125k-210k) the axis starts at the gridline below the lowest value instead of 0, and a break mark says so.
+ */
+interface YAxis {
+  readonly min: number;
+  readonly max: number;
+  readonly step: number;
+}
+const MAX_Y_INTERVALS = 6;
+const MIN_BIG_STEP = 10_000;
+function buildYAxis(low: number, high: number): YAxis {
+  const floor = mode.value === 'total' ? 100 : 1000;
+  const top = Math.max(high, floor);
+  const bottom = Math.min(low, top);
+  const steps = [1, 2, 5].flatMap((m) => [0, 1, 2, 3, 4, 5, 6, 7, 8].map((p) => m * 10 ** p)).sort((a, b) => a - b);
+  for (const step of steps) {
+    if (top >= 3 * MIN_BIG_STEP && step < MIN_BIG_STEP) continue;
+    const max = Math.ceil(top / step) * step;
+    // One gridline of headroom under the lowest value, so the line never rides the axis.
+    const rawMin = Math.floor(bottom / step) * step;
+    const min = bottom - rawMin < step * 0.25 ? rawMin - step : rawMin;
+    const start = min < step * 2 ? 0 : min;
+    if ((max - start) / step <= MAX_Y_INTERVALS) return { min: start, max: Math.max(max, start + step), step };
+  }
+  return { min: 0, max: niceMax(top), step: niceMax(top) / 4 };
+}
+const yAxis = computed(() => {
+  const values = visible.value.map((s) => s.value);
+  return buildYAxis(values.length ? Math.min(...values) : 0, values.length ? Math.max(...values) : 0);
+});
+const yBroken = computed(() => yAxis.value.min > 0);
 
 const x = (ms: number) => PAD.left + ((ms - xMin.value) / xSpan.value) * plotW;
-const y = (value: number) => PAD.top + plotH - (value / yMax.value) * plotH;
+const y = (value: number) => PAD.top + plotH - ((value - yAxis.value.min) / (yAxis.value.max - yAxis.value.min)) * plotH;
 
 const points = computed(() => samples.value.map((p) => `${x(p.elapsedMs).toFixed(1)},${y(p.value).toFixed(1)}`));
 const linePath = computed(() => points.value.join(' '));
@@ -76,12 +106,20 @@ const areaPath = computed(() => {
   return `M${first},${base} L${points.value.join(' L')} L${last},${base} Z`;
 });
 
-const yTicks = computed(() =>
-  Array.from({ length: Y_TICKS + 1 }, (_, i) => {
-    const value = (yMax.value / Y_TICKS) * i;
+const yTicks = computed(() => {
+  const { min, max, step } = yAxis.value;
+  const count = Math.round((max - min) / step);
+  return Array.from({ length: count + 1 }, (_, i) => {
+    const value = min + step * i;
     return { y: y(value), label: formatCompact(value) };
-  }),
-);
+  });
+});
+/** Zigzag drawn over the axis just above the bottom gridline, marking that the axis doesn't start at 0. */
+const breakPath = computed(() => {
+  const cy = PAD.top + plotH - 9;
+  const x0 = PAD.left;
+  return `M${x0 - 6},${cy - 6} L${x0 + 6},${cy - 2} L${x0 - 6},${cy + 2} L${x0 + 6},${cy + 6}`;
+});
 
 function clockLabel(minutes: number): string {
   if (minutes < 60) return `${minutes}m`;
@@ -176,6 +214,8 @@ const waiting = computed(() =>
         <text v-for="tick in xTicks" :key="`x${tick.label}`" :x="tick.x" :y="H - 10" text-anchor="middle">{{ tick.label }}</text>
       </g>
 
+      <path v-if="yBroken" :d="breakPath" class="axis-break"><title>The axis doesn't start at 0</title></path>
+
       <g :clip-path="`url(#${clipId})`">
         <path v-if="ready" :d="areaPath" :fill="`url(#${areaId})`" />
         <polyline v-if="ready" :points="linePath" class="line" />
@@ -200,6 +240,7 @@ const waiting = computed(() =>
 svg { display: block; width: 100%; height: auto; }
 .grid line { stroke: #e3d3a2; stroke-width: 1; }
 .grid text { fill: #6b4a22; font: 700 12px 'Nunito', sans-serif; }
+.axis-break { fill: none; stroke: #6b4a22; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .line { fill: none; stroke: #2e9a1f; stroke-width: 3.5; stroke-linejoin: round; stroke-linecap: round; }
 .dot { fill: #ffd12e; stroke: #4a2a0e; stroke-width: 3; }
 .now { fill: #4a2a0e; font: 400 15px 'Lilita One', sans-serif; paint-order: stroke; stroke: #fff6dc; stroke-width: 4px; stroke-linejoin: round; }
