@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import CharacterAvatar from '../components/home/CharacterAvatar.vue';
 import CharacterRankTable from '../components/home/CharacterRankTable.vue';
@@ -16,6 +16,38 @@ const now = ref(Date.now());
 const ranked = computed(() => rankCharacters(characters.value));
 // Only jobs that have a character get a slot (job order kept).
 const slots = computed(() => specLeaders(characters.value).filter((slot) => slot.leader !== null));
+
+/** The "Top by job" carousel: arrows show only when there are more cards than the width allows. */
+const track = ref<HTMLUListElement | null>(null);
+const canPrev = ref(false);
+const canNext = ref(false);
+let resizeObserver: ResizeObserver | null = null;
+
+function updateArrows() {
+  const el = track.value;
+  if (!el) return;
+  canPrev.value = el.scrollLeft > 1;
+  canNext.value = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
+}
+/** Moves by most of a screenful of cards, so the card at the edge stays in view as a landmark. */
+function page(direction: -1 | 1) {
+  const el = track.value;
+  if (!el) return;
+  el.scrollBy({ left: direction * el.clientWidth * 0.8, behavior: 'smooth' });
+}
+watch(
+  track,
+  async (el) => {
+    resizeObserver?.disconnect();
+    if (!el) return;
+    await nextTick();
+    resizeObserver = new ResizeObserver(updateArrows);
+    resizeObserver.observe(el);
+    updateArrows();
+  },
+  { flush: 'post' },
+);
+onBeforeUnmount(() => resizeObserver?.disconnect());
 
 onMounted(async () => {
   try {
@@ -41,7 +73,9 @@ onMounted(async () => {
 
       <template v-else>
         <GameWindow v-if="slots.length > 0" title="Top by job">
-          <ul class="specs">
+          <div class="carousel">
+          <button v-if="canPrev" type="button" class="arrow prev" aria-label="Previous jobs" @click="page(-1)">‹</button>
+          <ul ref="track" class="specs" @scroll.passive="updateArrows">
             <li v-for="slot in slots" :key="slot.spec" class="slot" :title="slot.leader ? `${slot.leader.name}, Lv ${slot.leader.level}` : `No ${slot.spec} yet`">
               <span v-if="slot.leader" class="star" role="img" :aria-label="`Top ${slot.spec}`">★</span>
               <span class="spec">{{ slot.spec }}</span>
@@ -50,6 +84,8 @@ onMounted(async () => {
               <span class="who">{{ slot.leader?.name ?? '' }}</span>
             </li>
           </ul>
+          <button v-if="canNext" type="button" class="arrow next" aria-label="Next jobs" @click="page(1)">›</button>
+          </div>
         </GameWindow>
 
         <GameWindow title="Ranking">
@@ -89,7 +125,15 @@ onMounted(async () => {
 }
 .status, .alert { margin: 0 auto; max-width: 34rem; padding: 0.8rem 1.2rem; text-align: center; background: #fff6dc; border: 3px solid var(--ink); border-radius: 12px; }
 .alert { background: #fff0ee; border-color: #c4361d; color: #8a1d0c; }
-.specs { display: flex; flex-wrap: nowrap; justify-content: safe center; gap: 12px; margin: 0; padding: 12px 14px 4px; list-style: none; overflow-x: auto; }
+.carousel { position: relative; }
+.specs { display: flex; flex-wrap: nowrap; justify-content: safe center; gap: 12px; margin: 0; padding: 12px 14px 4px; list-style: none; overflow-x: auto; scroll-snap-type: x proximity; scroll-padding: 0 14px; scrollbar-width: none; }
+.specs::-webkit-scrollbar { display: none; }
+.slot { scroll-snap-align: start; }
+.arrow { position: absolute; top: 50%; z-index: 2; display: grid; place-items: center; width: 34px; height: 34px; padding: 0 0 3px; transform: translateY(-50%); font: 400 1.5rem / 1 'Lilita One', sans-serif; color: #fff; background: #3fa02a; border: 2px solid var(--ink); border-radius: 50%; box-shadow: 0 2px 0 rgba(74, 42, 14, 0.35); cursor: pointer; }
+.arrow:hover { background: #4cb734; }
+.arrow:focus-visible { outline: 3px solid #2f8fe0; outline-offset: 2px; }
+.arrow.prev { left: 4px; }
+.arrow.next { right: 4px; }
 .slot { position: relative; display: grid; justify-items: center; align-content: start; gap: 2px; box-sizing: border-box; flex: none; width: 128px; min-width: 0; padding: 10px 6px; text-align: center; background: #fffdf3; border: 2px solid #d9c48a; border-radius: 10px; }
 /* A gold star pinned to the card's top right corner, half over the border. */
 .star { position: absolute; top: -10px; right: -10px; display: grid; place-items: center; width: 24px; height: 24px; font-size: 0.95rem; line-height: 1; color: #fff; background: #f2b705; border: 2px solid #4a2a0e; border-radius: 50%; text-shadow: 0 1px 0 #a36d00; box-shadow: 0 2px 0 rgba(74, 42, 14, 0.3); }
