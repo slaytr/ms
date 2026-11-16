@@ -147,7 +147,7 @@ td input:not([type]), td input[inputmode] { width: 100%; min-width: 70px; paddin
 .tools input { padding: 4px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--card); color: var(--fg); }
 button { padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--card); color: var(--fg); cursor: pointer; }
 button:disabled { opacity: 0.5; cursor: default; }
-.danger { color: #c0392b; }
-.ok { color: #27874f; }
-.err { color: #c0392b; }
+.danger { color: var(--c-c0392b-text); }
+.ok { color: var(--c-27874f-text); }
+.err { color: var(--c-c0392b-text); }
 </style>

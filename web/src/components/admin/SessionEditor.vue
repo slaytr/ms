@@ -186,11 +186,11 @@ input { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; b
 fieldset { border: 1px solid var(--border); border-radius: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 button { padding: 7px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--card); color: var(--fg); cursor: pointer; }
-.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.danger { color: #c0392b; }
+.primary { background: var(--accent); border-color: var(--accent); color: var(--c-ffffff-text); }
+.danger { color: var(--c-c0392b-text); }
 button:disabled { opacity: 0.5; cursor: default; }
-.ok { color: #27874f; }
-.err { color: #c0392b; }
+.ok { color: var(--c-27874f-text); }
+.err { color: var(--c-c0392b-text); }
 .muted, .gains { color: var(--muted); font-size: 13px; margin: 0; }
 @media (max-width: 600px) { .snaps { grid-template-columns: 1fr; } }
 </style>

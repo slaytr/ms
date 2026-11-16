@@ -81,9 +81,9 @@ h2 { margin: 0 0 6px; font-size: 1.05rem; }
 .muted { color: var(--muted); margin: 0 0 12px; font-size: 14px; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 select { padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); font: inherit; }
-button { padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--accent); color: #fff; cursor: pointer; font: inherit; }
+button { padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--accent); color: var(--c-ffffff-text); cursor: pointer; font: inherit; }
 button.secondary { background: transparent; color: var(--fg); }
 button:disabled { opacity: 0.5; cursor: default; }
-.error { color: #c0392b; margin: 8px 0 0; }
+.error { color: var(--c-c0392b-text); margin: 8px 0 0; }
 .saved { margin: 10px 0 0; padding-left: 18px; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
 </style>

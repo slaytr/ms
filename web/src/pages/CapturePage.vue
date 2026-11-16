@@ -150,20 +150,20 @@ h2 { margin: 0 0 8px; font-size: 1.05rem; }
 .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
 .controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
 .controls input { flex: 1 1 180px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); }
-button { padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--accent); color: #fff; cursor: pointer; }
+button { padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--accent); color: var(--c-ffffff-text); cursor: pointer; }
 button:disabled { opacity: 0.6; cursor: default; }
-button.stop { background: #c0392b; }
-.error { color: #c0392b; margin: 0 0 12px; }
+button.stop { background: var(--c-c0392b-bg); }
+.error { color: var(--c-c0392b-text); margin: 0 0 12px; }
 .grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
 @media (min-width: 800px) { .grid { grid-template-columns: 2fr 1fr; } }
-.stage { position: relative; background: #000; border-radius: 6px; overflow: hidden; min-height: 180px; }
+.stage { position: relative; background: var(--c-000000-bg); border-radius: 6px; overflow: hidden; min-height: 180px; }
 .stage video { display: block; width: 100%; height: auto; }
-.placeholder { position: absolute; inset: 0; display: grid; place-items: center; color: #aaa; padding: 16px; text-align: center; }
+.placeholder { position: absolute; inset: 0; display: grid; place-items: center; color: var(--c-aaaaaa-text); padding: 16px; text-align: center; }
 .chips { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; font-size: 14px; }
 .chips li { display: flex; align-items: center; gap: 8px; }
 .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
-.chips .ok .dot { background: #3aa66b; }
-.chips .unreadable .dot { background: #e0b020; }
+.chips .ok .dot { background: var(--c-3aa66b-bg); }
+.chips .unreadable .dot { background: var(--c-e0b020-bg); }
 .chips .missing .dot { background: var(--muted); opacity: 0.5; }
 dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; }
 dt { color: var(--muted); }

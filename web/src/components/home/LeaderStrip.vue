@@ -82,20 +82,20 @@ const MEDALS = ['gold', 'silver', 'bronze'] as const;
 .strip { display: grid; gap: 10px; }
 h3 { margin: 0 0 6px; font: 400 0.95rem / 1.2 'Lilita One', sans-serif; text-align: center; }
 .with-toggle { display: flex; align-items: center; justify-content: center; gap: 6px; }
-.stat.hidden { color: #6b4a22; letter-spacing: 0.1em; }
+.stat.hidden { color: var(--c-6b4a22-text); letter-spacing: 0.1em; }
 /* The description goes on its own line under the category name (the heading is centred, so it centres too). */
-.sub { display: block; margin-top: 1px; font: 700 0.7rem 'Nunito', sans-serif; color: #6b4a22; }
+.sub { display: block; margin-top: 1px; font: 700 0.7rem 'Nunito', sans-serif; color: var(--c-6b4a22-text); }
 .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.chip { position: relative; display: grid; justify-items: center; align-content: start; gap: 1px; box-sizing: border-box; width: 96px; padding: 6px 4px; text-align: center; background: #fffdf3; border: 2px solid #d9c48a; border-radius: 10px; }
+.chip { position: relative; display: grid; justify-items: center; align-content: start; gap: 1px; box-sizing: border-box; width: 96px; padding: 6px 4px; text-align: center; background: var(--c-fffdf3-bg); border: 2px solid var(--c-d9c48a-edge); border-radius: 10px; }
 .chip :deep(.avatar) { margin: 0; }
 .chips.stack { flex-direction: column; flex-wrap: nowrap; }
 .chips.stack .chip { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; justify-items: start; gap: 8px; width: 100%; padding: 6px 10px; text-align: left; }
 .chips.stack .place { top: -8px; left: -8px; }
 .name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem; font-weight: 800; }
-.job { max-width: 100%; font-size: 0.65rem; line-height: 1.15; color: #6b4a22; }
-.stat { font-size: 0.75rem; font-variant-numeric: tabular-nums; color: #2e9a1f; }
-.place { position: absolute; top: -9px; left: 6px; display: grid; place-items: center; width: 20px; height: 20px; font: 400 0.8rem 'Lilita One', sans-serif; color: #fff; border: 2px solid #4a2a0e; border-radius: 50%; background: #c8793a; }
-.place.gold { background: #f2b705; }
-.place.silver { background: #9aa7b4; }
-.place.bronze { background: #c8793a; }
+.job { max-width: 100%; font-size: 0.65rem; line-height: 1.15; color: var(--c-6b4a22-text); }
+.stat { font-size: 0.75rem; font-variant-numeric: tabular-nums; color: var(--c-2e9a1f-text); }
+.place { position: absolute; top: -9px; left: 6px; display: grid; place-items: center; width: 20px; height: 20px; font: 400 0.8rem 'Lilita One', sans-serif; color: var(--c-ffffff-text); border: 2px solid var(--c-4a2a0e-edge); border-radius: 50%; background: var(--c-c8793a-bg); }
+.place.gold { background: var(--c-f2b705-bg); }
+.place.silver { background: var(--c-9aa7b4-bg); }
+.place.bronze { background: var(--c-c8793a-bg); }
 </style>

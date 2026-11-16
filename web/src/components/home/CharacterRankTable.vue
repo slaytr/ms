@@ -53,21 +53,20 @@ const gainClass = (c: CharacterEntry) => {
 <style scoped>
 .scroll { margin: -18px -20px -20px; overflow-x: auto; }
 table { width: 100%; min-width: 520px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-th, td { padding: 6px 12px; white-space: nowrap; border-bottom: 2px solid #ecdcae; }
-th { position: sticky; top: 0; padding-block: 9px; font-size: 0.8rem; font-weight: 800; color: #6b4a22; background: #ffeec0; border-bottom: 3px solid #4a2a0e; }
-tbody tr:nth-child(even) { background: rgba(255, 253, 243, 0.7); }
+th, td { padding: 6px 12px; white-space: nowrap; border-bottom: 2px solid var(--c-ecdcae-edge); }
+th { position: sticky; top: 0; padding-block: 9px; font-size: 0.8rem; font-weight: 800; color: var(--c-6b4a22-text); background: var(--c-ffeec0-bg); border-bottom: 3px solid var(--c-4a2a0e-edge); }
 tbody tr:last-child td { border-bottom: 0; }
 .left { text-align: left; }
 .num { text-align: right; }
-.dim { color: #6b4a22; }
-.rank { width: 2.5rem; font: 400 1.1rem 'Lilita One', sans-serif; color: #8f7a55; }
-tbody tr:nth-child(-n + 3) .rank { color: #c98a00; }
+.dim { color: var(--c-6b4a22-text); }
+.rank { width: 2.5rem; font: 400 1.1rem 'Lilita One', sans-serif; color: var(--c-8f7a55-text); }
+tbody tr:nth-child(-n + 3) .rank { color: var(--c-c98a00-text); }
 .who { display: flex; align-items: center; gap: 10px; }
 .icon { flex: none; display: grid; place-items: center; width: 48px; height: 48px; }
 .name { font-weight: 800; overflow: hidden; text-overflow: ellipsis; max-width: 14rem; }
 .level { font-weight: 800; }
-.gain { color: #2e9a1f; font-weight: 800; }
-.loss { color: #c0392b; font-weight: 800; }
-.pct { font-weight: 700; color: #6b4a22; }
+.gain { color: var(--c-2e9a1f-text); font-weight: 800; }
+.loss { color: var(--c-c0392b-text); font-weight: 800; }
+.pct { font-weight: 700; color: var(--c-6b4a22-text); }
 @media (max-width: 719px) { .job-col { display: none; } }
 </style>

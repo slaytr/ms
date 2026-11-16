@@ -239,9 +239,9 @@ onBeforeUnmount(() => {
       <div v-if="status !== 'tracking'" class="cta-wrap">
         <button class="cta" type="button" :disabled="status === 'loading'" @click="tracker.start()">
           <svg class="cta-icon" viewBox="0 0 32 28" aria-hidden="true">
-            <rect x="2" y="2" width="28" height="19" rx="3" fill="#fff" stroke="#4a2a0e" stroke-width="3" />
-            <rect x="6" y="6" width="20" height="11" rx="1.5" fill="#43a9f0" />
-            <path d="M11 26h10M16 21v5" stroke="#4a2a0e" stroke-width="3" stroke-linecap="round" />
+            <rect x="2" y="2" width="28" height="19" rx="3" style="fill: var(--c-ffffff-bg); stroke: var(--c-4a2a0e-edge)" stroke-width="3" />
+            <rect x="6" y="6" width="20" height="11" rx="1.5" style="fill: var(--c-43a9f0-bg)" />
+            <path d="M11 26h10M16 21v5" style="stroke: var(--c-4a2a0e-edge)" stroke-width="3" stroke-linecap="round" />
           </svg>
           {{ status === 'loading' ? 'Pick your game window…' : 'Click here to share your game window' }}
         </button>
@@ -405,16 +405,15 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .home {
-  --ink: #4a2a0e;
+  --ink: var(--c-4a2a0e-edge);
   --outline: -0.05em -0.05em 0 var(--ink), 0.05em -0.05em 0 var(--ink), -0.05em 0.05em 0 var(--ink), 0.05em 0.05em 0 var(--ink),
-    0 -0.06em 0 var(--ink), 0 0.06em 0 var(--ink), -0.06em 0 0 var(--ink), 0.06em 0 0 var(--ink), 0 0.12em 0 #a24a00,
+    0 -0.06em 0 var(--ink), 0 0.06em 0 var(--ink), -0.06em 0 0 var(--ink), 0.06em 0 0 var(--ink), 0 0.12em 0 var(--c-a24a00-edge),
     0 0.2em 0.1em rgba(74, 42, 14, 0.35);
   position: relative;
   min-height: 100dvh;
-  color: var(--ink);
+  color: var(--ink-text);
   font-family: 'Nunito', 'Trebuchet MS', system-ui, sans-serif;
   font-weight: 700;
-  color-scheme: light;
 }
 .content {
   position: relative;
@@ -431,11 +430,11 @@ onBeforeUnmount(() => {
   margin: 0 0 0.4rem;
   padding: 0.25rem 1.4rem 0.15rem;
   font: 700 clamp(1.1rem, 3.4vw, 1.6rem) / 1.2 'Maplestory', 'Lilita One', sans-serif;
-  color: #fff;
-  background: #e8452c;
+  color: var(--c-ffffff-text);
+  background: var(--c-e8452c-bg);
   border: 3px solid var(--ink);
   border-radius: 999px;
-  text-shadow: 0 2px 0 #9c2410;
+  text-shadow: 0 2px 0 var(--c-9c2410-edge);
   box-shadow: 0 4px 0 rgba(74, 42, 14, 0.35);
   transform: rotate(-2.5deg);
 }
@@ -454,11 +453,11 @@ onBeforeUnmount(() => {
   inset: 0;
   padding: inherit;
   z-index: -1;
-  color: var(--ink);
+  color: var(--ink-text);
   text-shadow: var(--outline);
 }
 .line > span {
-  background: linear-gradient(#fff6a8 0%, #ffd12e 45%, #ff9a1a 100%);
+  background: linear-gradient(var(--c-fff6a8-bg) 0%, var(--c-ffd12e-bg) 45%, var(--c-ff9a1a-bg) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -475,7 +474,7 @@ onBeforeUnmount(() => {
 }
 .l2 { --size: clamp(1.1rem, 4.6vw, 2.3rem); transform: rotate(1deg); white-space: nowrap; }
 
-.tagline { max-width: 30rem; margin: 0.6rem auto 1.4rem; font-size: clamp(1.05rem, 2.6vw, 1.25rem); line-height: 1.45; color: #2b4a66; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7); }
+.tagline { max-width: 30rem; margin: 0.6rem auto 1.4rem; font-size: clamp(1.05rem, 2.6vw, 1.25rem); line-height: 1.45; color: var(--c-2b4a66-text); text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7); }
 
 /* Call to action */
 .cta-wrap { margin-bottom: 1.6rem; }
@@ -485,27 +484,27 @@ onBeforeUnmount(() => {
   gap: 0.6em;
   padding: 0.35em 1.1em 0.3em;
   font: 400 clamp(1.5rem, 5vw, 2.1rem) / 1.2 'Lilita One', sans-serif;
-  color: #fff;
-  text-shadow: var(--outline);
-  background: linear-gradient(#ffe86e, #ffb11f 60%, #ff9a10);
+  color: var(--c-ffffff-text);
+  text-shadow: -0.05em -0.05em 0 var(--ink-deep), 0.05em -0.05em 0 var(--ink-deep), -0.05em 0.05em 0 var(--ink-deep), 0.05em 0.05em 0 var(--ink-deep), 0 -0.06em 0 var(--ink-deep), 0 0.06em 0 var(--ink-deep), -0.06em 0 0 var(--ink-deep), 0.06em 0 0 var(--ink-deep), 0 0.12em 0 var(--c-a24a00-edge), 0 0.2em 0.1em rgba(74, 42, 14, 0.35);
+  background: linear-gradient(var(--c-ffe86e-bg), var(--c-ffb11f-bg) 60%, var(--c-ff9a10-bg));
   border: 4px solid var(--ink);
   border-radius: 20px;
-  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.55), 0 8px 0 #a24a00, 0 16px 20px rgba(74, 42, 14, 0.3);
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.55), 0 8px 0 var(--c-a24a00-edge), 0 16px 20px rgba(74, 42, 14, 0.3);
   cursor: pointer;
   transition: transform 0.08s ease-out, box-shadow 0.08s ease-out, filter 0.15s;
 }
 .cta:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-2px); }
-.cta:active:not(:disabled) { transform: translateY(6px); box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.55), 0 2px 0 #a24a00, 0 6px 10px rgba(74, 42, 14, 0.3); }
+.cta:active:not(:disabled) { transform: translateY(6px); box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.55), 0 2px 0 var(--c-a24a00-edge), 0 6px 10px rgba(74, 42, 14, 0.3); }
 .cta:disabled { cursor: progress; filter: saturate(0.7); }
 .cta:focus-visible, .stop:focus-visible {
-  outline: 4px solid #fff;
+  outline: 4px solid var(--c-ffffff-edge);
   outline-offset: 2px;
   box-shadow: 0 0 0 7px var(--ink);
 }
 .cta-icon { width: 1.5em; height: 1.35em; flex: none; filter: none; }
-.fine { margin: 1.1rem auto 0; max-width: 28rem; font-size: 0.95rem; color: #2b4a66; }
+.fine { margin: 1.1rem auto 0; max-width: 28rem; font-size: 0.95rem; color: var(--c-2b4a66-text); }
 
-.alert { margin: 0 auto 1rem; max-width: 34rem; padding: 0.6rem 1rem; background: #fff0ee; border: 3px solid #c4361d; border-radius: 12px; color: #8a1d0c; }
+.alert { margin: 0 auto 1rem; max-width: 34rem; padding: 0.6rem 1rem; background: var(--c-fff0ee-bg); border: 3px solid var(--c-c4361d-edge); border-radius: 12px; color: var(--c-8a1d0c-text); }
 
 /* Panels */
 .panel { margin: 0 auto 1.1rem; text-align: left; }
@@ -515,27 +514,27 @@ onBeforeUnmount(() => {
 .welcome .details { min-width: 0; }
 .welcome .who { margin: 0; font: 400 2.2rem / 1.1 'Lilita One', sans-serif; overflow-wrap: anywhere; }
 .welcome .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1rem; margin: 0.5rem 0 0; }
-.job { font-weight: 800; color: #6b4a22; }
-.note { margin: 0.4rem 0 0.2rem; color: #6b4a22; }
+.job { font-weight: 800; color: var(--c-6b4a22-text); }
+.note { margin: 0.4rem 0 0.2rem; color: var(--c-6b4a22-text); }
 
-.banner { margin: 0 0 12px; padding: 10px 12px; border-radius: 10px; background: #e6f3ff; border: 2px solid #8cc4ee; font-weight: 800; }
-.banner.done { background: #eaffd9; border-color: #6cc24a; animation: settle 0.4s ease-out; }
+.banner { margin: 0 0 12px; padding: 10px 12px; border-radius: 10px; background: var(--c-e6f3ff-bg); border: 2px solid var(--c-8cc4ee-edge); font-weight: 800; }
+.banner.done { background: var(--c-eaffd9-bg); border-color: var(--c-6cc24a-edge); animation: settle 0.4s ease-out; }
 @keyframes settle { from { transform: scale(0.97); } to { transform: scale(1); } }
 
 
-.hint { margin-top: 14px; padding: 12px; background: #fff8e0; border: 2px solid #f0b030; border-radius: 10px; }
+.hint { margin-top: 14px; padding: 12px; background: var(--c-fff8e0-bg); border: 2px solid var(--c-f0b030-edge); border-radius: 10px; }
 .hint p { margin: 0 0 6px; }
 .hint ul { margin: 0; padding-left: 1.2rem; display: grid; gap: 4px; }
 
 .popout { margin-top: 14px; }
-.popout-btn { padding: 8px 16px; font: 400 1.1rem 'Lilita One', sans-serif; color: #fff; background: #2f8fe0; border: 3px solid var(--ink); border-radius: 12px; box-shadow: 0 4px 0 #1e5f9e; cursor: pointer; }
-.pause-btn { background: #f0a020; box-shadow: 0 4px 0 #b06a00; }
-.pause-btn.paused { background: #3fa02a; box-shadow: 0 4px 0 #2a6f1a; }
-.compact-btn { margin-left: 8px; background: #3fa02a; box-shadow: 0 4px 0 #2a6f1a; }
-.popout-btn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 #1e5f9e; }
+.popout-btn { padding: 8px 16px; font: 400 1.1rem 'Lilita One', sans-serif; color: var(--c-ffffff-text); background: var(--c-2f8fe0-bg); border: 3px solid var(--ink); border-radius: 12px; box-shadow: 0 4px 0 var(--c-1e5f9e-edge); cursor: pointer; }
+.pause-btn { background: var(--c-f0a020-bg); box-shadow: 0 4px 0 var(--c-b06a00-edge); }
+.pause-btn.paused { background: var(--c-3fa02a-bg); box-shadow: 0 4px 0 var(--c-2a6f1a-edge); }
+.compact-btn { margin-left: 8px; background: var(--c-3fa02a-bg); box-shadow: 0 4px 0 var(--c-2a6f1a-edge); }
+.popout-btn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--c-1e5f9e-edge); }
 .popout-btn:disabled { opacity: 0.6; cursor: default; box-shadow: none; }
-.popout-btn:focus-visible { outline: 4px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 7px var(--ink); }
-.alert-inline { margin: 6px 0 0; color: #8a1d0c; }
+.popout-btn:focus-visible { outline: 4px solid var(--c-ffffff-edge); outline-offset: 2px; box-shadow: 0 0 0 7px var(--ink); }
+.alert-inline { margin: 6px 0 0; color: var(--c-8a1d0c-text); }
 
 /* Docked view: overview box on the left, EXP chart taking the middle. */
 .content.wide { max-width: 1280px; }
@@ -547,7 +546,7 @@ onBeforeUnmount(() => {
 @media (max-width: 520px) { .pot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .chart-summary { margin: 0 0 0.5rem; font-size: 1.1rem; }
 .chart-summary strong { font: 400 1.7rem 'Lilita One', sans-serif; font-variant-numeric: tabular-nums; }
-.dim { color: #6b4a22; }
+.dim { color: var(--c-6b4a22-text); }
 /* Overview buttons: all full width, one even gap between each. */
 .overview-box .popout { margin-top: 12px; display: grid; gap: 12px; }
 .overview-box .popout-btn, .overview-box .stop, .overview-box .reset { width: 100%; margin: 0; display: block; }
@@ -565,16 +564,16 @@ onBeforeUnmount(() => {
   .stage-leave-active, .stage-enter-active { transition: none; }
 }
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0; }
-.stats div { padding: 8px 10px; background: #fffdf3; border: 2px solid #d9c48a; border-radius: 10px; text-align: center; }
-.stats dt { font-size: 0.85rem; color: #6b4a22; }
+.stats div { padding: 8px 10px; background: var(--c-fffdf3-bg); border: 2px solid var(--c-d9c48a-edge); border-radius: 10px; text-align: center; }
+.stats dt { font-size: 0.85rem; color: var(--c-6b4a22-text); }
 .stats dd { margin: 0; font: 400 1.5rem / 1.2 'Lilita One', sans-serif; font-variant-numeric: tabular-nums; }
 
-.stop { margin-top: 16px; padding: 8px 18px; font: 400 1.1rem 'Lilita One', sans-serif; color: #fff; background: #d6452c; border: 3px solid var(--ink); border-radius: 12px; box-shadow: 0 4px 0 #8f2412; cursor: pointer; }
-.stop:active { transform: translateY(3px); box-shadow: 0 1px 0 #8f2412; }
-.reset { margin-top: 12px; padding: 8px 18px; font: 400 1.1rem 'Lilita One', sans-serif; color: var(--ink); background: #ffe08a; border: 3px solid var(--ink); border-radius: 12px; box-shadow: 0 4px 0 #b08a1c; cursor: pointer; }
-.reset:active { transform: translateY(3px); box-shadow: 0 1px 0 #b08a1c; }
-.reset.confirming { color: #fff; background: #e8452c; box-shadow: 0 4px 0 #9c2410; }
-.reset:focus-visible { outline: 4px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 7px var(--ink); }
+.stop { margin-top: 16px; padding: 8px 18px; font: 400 1.1rem 'Lilita One', sans-serif; color: var(--c-ffffff-text); background: var(--c-d6452c-bg); border: 3px solid var(--ink); border-radius: 12px; box-shadow: 0 4px 0 var(--c-8f2412-edge); cursor: pointer; }
+.stop:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--c-8f2412-edge); }
+.reset { margin-top: 12px; padding: 8px 18px; font: 400 1.1rem 'Lilita One', sans-serif; color: var(--ink-text); background: var(--c-ffe08a-bg); border: 3px solid var(--ink); border-radius: 12px; box-shadow: 0 4px 0 var(--c-b08a1c-edge); cursor: pointer; }
+.reset:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--c-b08a1c-edge); }
+.reset.confirming { color: var(--c-ffffff-text); background: var(--c-e8452c-bg); box-shadow: 0 4px 0 var(--c-9c2410-edge); }
+.reset:focus-visible { outline: 4px solid var(--c-ffffff-edge); outline-offset: 2px; box-shadow: 0 0 0 7px var(--ink); }
 
 .hidden-video { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 

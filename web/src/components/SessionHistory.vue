@@ -90,7 +90,7 @@ watch(() => props.refreshKey, load);
 h2 { margin: 0 0 8px; font-size: 1.05rem; }
 h3 { margin: 16px 0 0; }
 .muted { color: var(--muted); margin: 0; }
-.error { color: #c0392b; }
+.error { color: var(--c-c0392b-text); }
 .list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .list button { width: 100%; text-align: left; display: grid; gap: 2px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: var(--fg); cursor: pointer; }
 .list button.on { border-color: var(--accent); }

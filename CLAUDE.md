@@ -172,6 +172,10 @@ The Classic UI uses exact pixel fonts, so we match pixels instead of OCR:
   rates are rounded). Icons are `web/public/nx/<itemId>.png` (from meowdb.com, which blocks plain HTTP clients: they were
   fetched through a real browser); a test checks every listed item has one. State is in memory only, nothing is saved.
 
+## Dark mode
+- A night theme, toggled by the ☾/☀ button in `NavMenu.vue` (`composables/useTheme.ts`, `lib/theme.ts`; saved in localStorage, else the system setting) and applied to the pop-out window too. `<html data-theme>` carries it.
+- **No raw hex colours in components.** Every colour is a token `--c-<hex>-<role>` (role = `bg` surfaces/fills, `text`, `edge` borders/outlines/shadows), plus `--ink-text`, `--cloud`. `web/src/theme.css` holds the light value (the original colour) and a hand-tunable night value for each. A new colour: add its token to both blocks; `color: var(--ink-text)` for brown text, `--ink` stays the outline colour. Canvas/JS colours (`open-fx.ts`, `PipCompact`) are not themed.
+
 ## Pop-out tracker
 - `components/PipTracker.vue` is the overlay: time to level, progress bar, EXP/h, meso/h, meso gained.
   `usePopOut` opens it in Chrome/Edge's Document Picture-in-Picture window (always on top) and falls

@@ -96,15 +96,15 @@ function step(delta: 1 | -1) {
 </template>
 
 <style scoped>
-.session-details { display: grid; gap: 6px; padding: 12px; background: #fff8e0; border: 2px solid #f0b030; border-radius: 10px; }
+.session-details { display: grid; gap: 6px; padding: 12px; background: var(--c-fff8e0-bg); border: 2px solid var(--c-f0b030-edge); border-radius: 10px; }
 label { font-weight: 800; }
-input { padding: 8px 10px; font: inherit; font-weight: 700; color: var(--ink); background: #fff; border: 2px solid var(--ink); border-radius: 8px; min-width: 0; }
+input { padding: 8px 10px; font: inherit; font-weight: 700; color: var(--ink-text); background: var(--c-ffffff-bg); border: 2px solid var(--ink); border-radius: 8px; min-width: 0; }
 .party { display: flex; align-items: center; gap: 6px; }
 .size { width: 3.2rem; text-align: center; }
-.party button { width: 2.2rem; height: 2.2rem; font: 400 1.2rem 'Lilita One', sans-serif; line-height: 1; color: #fff; background: #2f8fe0; border: 2px solid var(--ink); border-radius: 8px; cursor: pointer; }
+.party button { width: 2.2rem; height: 2.2rem; font: 400 1.2rem 'Lilita One', sans-serif; line-height: 1; color: var(--c-ffffff-text); background: var(--c-2f8fe0-bg); border: 2px solid var(--ink); border-radius: 8px; cursor: pointer; }
 .party button:disabled { opacity: 0.5; cursor: default; }
-.party button:focus-visible, input:focus-visible { outline: 4px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 7px var(--ink); }
-.solo { font-weight: 700; color: #6b4a22; }
-.hint { margin: 0; font-size: 0.85rem; color: #6b4a22; }
-.hint.bad { color: #b3261e; font-weight: 800; }
+.party button:focus-visible, input:focus-visible { outline: 4px solid var(--c-ffffff-edge); outline-offset: 2px; box-shadow: 0 0 0 7px var(--ink); }
+.solo { font-weight: 700; color: var(--c-6b4a22-text); }
+.hint { margin: 0; font-size: 0.85rem; color: var(--c-6b4a22-text); }
+.hint.bad { color: var(--c-b3261e-text); font-weight: 800; }
 </style>

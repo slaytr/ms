@@ -14,14 +14,14 @@ defineProps<{ title: string }>();
 
 <style scoped>
 .window {
-  --ink: #4a2a0e;
+  --ink: var(--c-4a2a0e-edge);
   text-align: left;
-  background: #fff6dc;
+  background: var(--c-fff6dc-bg);
   border: 4px solid var(--ink);
   border-radius: 14px;
-  box-shadow: inset 0 0 0 3px #ffe6a0, 0 8px 0 rgba(74, 42, 14, 0.28), 0 18px 28px rgba(40, 70, 110, 0.25);
+  box-shadow: inset 0 0 0 3px var(--c-ffe6a0-edge), 0 8px 0 rgba(74, 42, 14, 0.28), 0 18px 28px rgba(40, 70, 110, 0.25);
   overflow: hidden;
-  color: var(--ink);
+  color: var(--ink-text);
 }
 .title {
   display: flex;
@@ -32,10 +32,10 @@ defineProps<{ title: string }>();
   padding: 8px 18px 6px;
   font: 400 1.25rem/1.2 'Lilita One', 'Trebuchet MS', sans-serif;
   letter-spacing: 0.02em;
-  color: #fff;
-  background: linear-gradient(#5cbcf7, #2f8fe0);
+  color: var(--c-ffffff-text);
+  background: linear-gradient(var(--c-5cbcf7-bg), var(--c-2f8fe0-bg));
   border-bottom: 4px solid var(--ink);
-  text-shadow: 0 2px 0 #1e5f9e;
+  text-shadow: 0 2px 0 var(--c-1e5f9e-edge);
 }
 .aside { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .body { padding: 18px 20px 20px; }

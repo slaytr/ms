@@ -25,5 +25,5 @@ defineEmits<{ 'update:shown': [value: boolean] }>();
 .eye { display: grid; place-items: center; width: 26px; height: 26px; padding: 0; color: inherit; background: transparent; border: 0; border-radius: 6px; cursor: pointer; }
 .eye svg { width: 20px; height: 20px; filter: drop-shadow(0 2px 0 rgba(30, 95, 158, 0.9)); }
 .eye:hover { background: rgba(255, 255, 255, 0.2); }
-.eye:focus-visible { outline: 3px solid #fff; outline-offset: 1px; }
+.eye:focus-visible { outline: 3px solid var(--c-ffffff-edge); outline-offset: 1px; }
 </style>

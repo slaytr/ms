@@ -99,13 +99,12 @@ onMounted(async () => {
 
 <style scoped>
 .characters {
-  --ink: #4a2a0e;
+  --ink: var(--c-4a2a0e-edge);
   position: relative;
   min-height: 100dvh;
-  color: var(--ink);
+  color: var(--ink-text);
   font-family: 'Nunito', 'Trebuchet MS', system-ui, sans-serif;
   font-weight: 700;
-  color-scheme: light;
 }
 .content {
   position: relative;
@@ -120,27 +119,27 @@ onMounted(async () => {
   margin: 0;
   text-align: center;
   font: 400 clamp(2rem, 6vw, 3rem) / 1.1 'Lilita One', 'Trebuchet MS', sans-serif;
-  color: #fff;
+  color: var(--c-ffffff-text);
   text-shadow: -2px -2px 0 var(--ink), 2px -2px 0 var(--ink), -2px 2px 0 var(--ink), 2px 2px 0 var(--ink), 0 4px 0 var(--ink);
 }
-.status, .alert { margin: 0 auto; max-width: 34rem; padding: 0.8rem 1.2rem; text-align: center; background: #fff6dc; border: 3px solid var(--ink); border-radius: 12px; }
-.alert { background: #fff0ee; border-color: #c4361d; color: #8a1d0c; }
+.status, .alert { margin: 0 auto; max-width: 34rem; padding: 0.8rem 1.2rem; text-align: center; background: var(--c-fff6dc-bg); border: 3px solid var(--ink); border-radius: 12px; }
+.alert { background: var(--c-fff0ee-bg); border-color: var(--c-c4361d-edge); color: var(--c-8a1d0c-text); }
 .carousel { position: relative; }
 .specs { display: flex; flex-wrap: nowrap; justify-content: safe center; gap: 12px; margin: 0; padding: 12px 14px 4px; list-style: none; overflow-x: auto; scroll-snap-type: x proximity; scroll-padding: 0 14px; scrollbar-width: none; }
 .specs::-webkit-scrollbar { display: none; }
 .slot { scroll-snap-align: start; }
-.arrow { position: absolute; top: 50%; z-index: 2; display: grid; place-items: center; width: 34px; height: 34px; padding: 0 0 3px; transform: translateY(-50%); font: 400 1.5rem / 1 'Lilita One', sans-serif; color: #fff; background: #3fa02a; border: 2px solid var(--ink); border-radius: 50%; box-shadow: 0 2px 0 rgba(74, 42, 14, 0.35); cursor: pointer; }
-.arrow:hover { background: #4cb734; }
-.arrow:focus-visible { outline: 3px solid #2f8fe0; outline-offset: 2px; }
+.arrow { position: absolute; top: 50%; z-index: 2; display: grid; place-items: center; width: 34px; height: 34px; padding: 0 0 3px; transform: translateY(-50%); font: 400 1.5rem / 1 'Lilita One', sans-serif; color: var(--c-ffffff-text); background: var(--c-3fa02a-bg); border: 2px solid var(--ink); border-radius: 50%; box-shadow: 0 2px 0 rgba(74, 42, 14, 0.35); cursor: pointer; }
+.arrow:hover { background: var(--c-4cb734-bg); }
+.arrow:focus-visible { outline: 3px solid var(--c-2f8fe0-edge); outline-offset: 2px; }
 .arrow.prev { left: 4px; }
 .arrow.next { right: 4px; }
-.slot { position: relative; display: grid; justify-items: center; align-content: start; gap: 2px; box-sizing: border-box; flex: none; width: 128px; min-width: 0; padding: 10px 6px; text-align: center; background: #fffdf3; border: 2px solid #d9c48a; border-radius: 10px; }
+.slot { position: relative; display: grid; justify-items: center; align-content: start; gap: 2px; box-sizing: border-box; flex: none; width: 128px; min-width: 0; padding: 10px 6px; text-align: center; background: var(--c-fffdf3-bg); border: 2px solid var(--c-d9c48a-edge); border-radius: 10px; }
 /* A gold star pinned to the card's top right corner, half over the border. */
-.star { position: absolute; top: -10px; right: -10px; display: grid; place-items: center; width: 24px; height: 24px; font-size: 0.95rem; line-height: 1; color: #fff; background: #f2b705; border: 2px solid #4a2a0e; border-radius: 50%; text-shadow: 0 1px 0 #a36d00; box-shadow: 0 2px 0 rgba(74, 42, 14, 0.3); }
+.star { position: absolute; top: -10px; right: -10px; display: grid; place-items: center; width: 24px; height: 24px; font-size: 0.95rem; line-height: 1; color: var(--c-ffffff-text); background: var(--c-f2b705-bg); border: 2px solid var(--c-4a2a0e-edge); border-radius: 50%; text-shadow: 0 1px 0 var(--c-a36d00-edge); box-shadow: 0 2px 0 rgba(74, 42, 14, 0.3); }
 .portrait { display: grid; place-items: center; width: 96px; height: 96px; }
 .portrait :deep(.avatar) { margin: 0; }
 /* The job sits above the head; two lines tall so a long job ("Wizard (Ice,Lightning)") doesn't push its card's portrait out of line. */
 .spec { display: grid; place-items: center; max-width: 100%; min-height: 2.4em; font-size: 0.75rem; font-weight: 800; line-height: 1.2; }
-.lvl { min-height: 1.2em; font-size: 0.7rem; font-weight: 800; color: #6b4a22; }
-.who { max-width: 100%; min-height: 1.2em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.7rem; color: #6b4a22; }
+.lvl { min-height: 1.2em; font-size: 0.7rem; font-weight: 800; color: var(--c-6b4a22-text); }
+.who { max-width: 100%; min-height: 1.2em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.7rem; color: var(--c-6b4a22-text); }
 </style>

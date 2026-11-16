@@ -232,8 +232,8 @@ const waiting = computed(() =>
     >
       <defs>
         <linearGradient :id="areaId" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#6cc24a" stop-opacity="0.55" />
-          <stop offset="100%" stop-color="#6cc24a" stop-opacity="0.04" />
+          <stop offset="0%" style="stop-color: var(--chart-fill)" stop-opacity="0.55" />
+          <stop offset="100%" style="stop-color: var(--chart-fill)" stop-opacity="0.04" />
         </linearGradient>
         <clipPath :id="clipId"><rect :x="PAD.left" :y="PAD.top" :width="plotW" :height="plotH + 2" /></clipPath>
       </defs>
@@ -261,23 +261,23 @@ const waiting = computed(() =>
 </template>
 
 <style scoped>
-.chart { margin: 0; position: relative; }
+.chart { margin: 0; position: relative; padding: 6px 8px; background: var(--chart-bg); border-radius: 8px; }
 .modes { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; }
-.modes button { padding: 3px 12px; font: 400 0.9rem 'Lilita One', sans-serif; color: #4a2a0e; background: #ecdcae; border: 2px solid #4a2a0e; border-radius: 999px; cursor: pointer; }
-.modes button.on { color: #fff; background: #3fa02a; }
-.modes button:focus-visible { outline: 3px solid #2f8fe0; outline-offset: 2px; }
+.modes button { padding: 3px 12px; font: 400 0.9rem 'Lilita One', sans-serif; color: var(--c-4a2a0e-text); background: var(--c-ecdcae-bg); border: 2px solid var(--c-4a2a0e-edge); border-radius: 999px; cursor: pointer; }
+.modes button.on { color: var(--c-ffffff-text); background: var(--c-3fa02a-bg); }
+.modes button:focus-visible { outline: 3px solid var(--c-2f8fe0-edge); outline-offset: 2px; }
 .modes .spacer { flex: 1; }
 .windows { display: flex; gap: 4px; }
 .windows button { padding: 2px 9px; font-size: 0.8rem; }
-.modes .note { margin-left: 4px; font-size: 0.75rem; color: #6b4a22; }
+.modes .note { margin-left: 4px; font-size: 0.75rem; color: var(--c-6b4a22-text); }
 svg { display: block; width: 100%; height: auto; }
-.grid line { stroke: #e3d3a2; stroke-width: 1; }
-.grid text { fill: #6b4a22; font: 700 12px 'Nunito', sans-serif; }
-.axis-break { fill: none; stroke: #6b4a22; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.line { fill: none; stroke: #2e9a1f; stroke-width: 3.5; stroke-linejoin: round; stroke-linecap: round; }
-.hover-line { stroke: #6b4a22; stroke-width: 1.5; stroke-dasharray: 4 3; opacity: 0.6; pointer-events: none; }
+.grid line { stroke: var(--chart-grid); stroke-width: 1; }
+.grid text { fill: var(--chart-text); font: 700 12px 'Nunito', sans-serif; }
+.axis-break { fill: none; stroke: var(--chart-text); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.line { fill: none; stroke: var(--chart-line); stroke-width: 3.5; stroke-linejoin: round; stroke-linecap: round; }
+.hover-line { stroke: var(--chart-text); stroke-width: 1.5; stroke-dasharray: 4 3; opacity: 0.6; pointer-events: none; }
 svg { touch-action: pan-y; }
-.dot { pointer-events: none; fill: #ffd12e; stroke: #4a2a0e; stroke-width: 3; }
-.now { pointer-events: none; fill: #4a2a0e; font: 400 15px 'Lilita One', sans-serif; paint-order: stroke; stroke: #fff6dc; stroke-width: 4px; stroke-linejoin: round; }
-.waiting { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 2rem 3rem 2rem; text-align: center; color: #6b4a22; }
+.dot { pointer-events: none; fill: var(--c-ffd12e-bg); stroke: var(--c-4a2a0e-edge); stroke-width: 3; }
+.now { pointer-events: none; fill: var(--chart-now); font: 400 15px 'Lilita One', sans-serif; paint-order: stroke; stroke: var(--chart-now-halo); stroke-width: 4px; stroke-linejoin: round; }
+.waiting { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 2rem 3rem 2rem; text-align: center; color: var(--chart-text); }
 </style>

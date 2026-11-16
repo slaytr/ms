@@ -70,6 +70,6 @@ onMounted(() => {
 .bar h1 { margin: 0; font-size: 22px; }
 .tabs { display: flex; gap: 4px; flex: 1; }
 .tabs button, .ghost { border: 1px solid var(--border); background: var(--card); color: var(--fg); padding: 6px 14px; border-radius: 6px; cursor: pointer; }
-.tabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
-.err { color: #c0392b; margin: 0; }
+.tabs button.on { background: var(--accent); border-color: var(--accent); color: var(--c-ffffff-text); }
+.err { color: var(--c-c0392b-text); margin: 0; }
 </style>

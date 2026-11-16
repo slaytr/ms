@@ -92,13 +92,12 @@ onMounted(async () => {
 
 <style scoped>
 .rankings {
-  --ink: #4a2a0e;
+  --ink: var(--c-4a2a0e-edge);
   position: relative;
   min-height: 100dvh;
-  color: var(--ink);
+  color: var(--ink-text);
   font-family: 'Nunito', 'Trebuchet MS', system-ui, sans-serif;
   font-weight: 700;
-  color-scheme: light;
 }
 .content {
   position: relative;
@@ -113,19 +112,19 @@ onMounted(async () => {
   margin: 0;
   text-align: center;
   font: 400 clamp(2rem, 6vw, 3rem) / 1.1 'Lilita One', 'Trebuchet MS', sans-serif;
-  color: #fff;
+  color: var(--c-ffffff-text);
   text-shadow: -2px -2px 0 var(--ink), 2px -2px 0 var(--ink), -2px 2px 0 var(--ink), 2px 2px 0 var(--ink), 0 4px 0 var(--ink);
 }
-.sub { margin: -8px 0 0; text-align: center; color: #fff; text-shadow: 0 2px 0 var(--ink); }
-.status, .alert { margin: 0 auto; max-width: 34rem; padding: 0.8rem 1.2rem; text-align: center; background: #fff6dc; border: 3px solid var(--ink); border-radius: 12px; }
-.alert { background: #fff0ee; border-color: #c4361d; color: #8a1d0c; }
+.sub { margin: -8px 0 0; text-align: center; color: var(--c-ffffff-text); text-shadow: 0 2px 0 var(--ink); }
+.status, .alert { margin: 0 auto; max-width: 34rem; padding: 0.8rem 1.2rem; text-align: center; background: var(--c-fff6dc-bg); border: 3px solid var(--ink); border-radius: 12px; }
+.alert { background: var(--c-fff0ee-bg); border-color: var(--c-c4361d-edge); color: var(--c-8a1d0c-text); }
 
 .podium { display: grid; gap: 16px; margin: 0; padding: 0; list-style: none; }
 .card {
   position: relative;
   padding: 18px 14px 16px;
   text-align: center;
-  background: #fff6dc;
+  background: var(--c-fff6dc-bg);
   border: 3px solid var(--ink);
   border-radius: 14px;
   box-shadow: 0 5px 0 rgba(74, 42, 14, 0.3);
@@ -140,18 +139,18 @@ onMounted(async () => {
   height: 34px;
   transform: translateX(-50%);
   font: 400 1.2rem 'Lilita One', sans-serif;
-  color: #fff;
+  color: var(--c-ffffff-text);
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
   border: 3px solid var(--ink);
   border-radius: 50%;
   background: var(--medal);
 }
-.gold { --medal: #f2b705; background: #fff1bf; }
-.silver { --medal: #9aa7b4; }
-.bronze { --medal: #c8793a; }
+.gold { --medal: var(--c-f2b705-edge); background: var(--c-fff1bf-bg); }
+.silver { --medal: var(--c-9aa7b4-edge); }
+.bronze { --medal: var(--c-c8793a-edge); }
 .name { margin: 4px 0 0; font: 400 1.4rem 'Lilita One', sans-serif; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.meta { margin: 4px 0 0; font-size: 0.85rem; color: #6b4a22; }
-.exp { margin: 8px 0 0; font: 400 1.9rem 'Lilita One', sans-serif; color: #2e9a1f; font-variant-numeric: tabular-nums; }
+.meta { margin: 4px 0 0; font-size: 0.85rem; color: var(--c-6b4a22-text); }
+.exp { margin: 8px 0 0; font: 400 1.9rem 'Lilita One', sans-serif; color: var(--c-2e9a1f-text); font-variant-numeric: tabular-nums; }
 .unit { font-size: 1rem; }
 
 @media (min-width: 720px) { .more { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }

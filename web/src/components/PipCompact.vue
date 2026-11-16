@@ -3,7 +3,8 @@ import { onMounted, ref } from 'vue';
 
 import type { TrackerView } from '../lib/tracker-view';
 
-const FRAME = '#4a2a0e';
+/** The bar's border colour, as a theme token so the frame follows night mode too. */
+const FRAME = 'var(--c-4a2a0e-edge)';
 
 /**
  * The compact pop-out: one bar with EXP gained on the left and EXP/hour on the right. The green
@@ -50,19 +51,19 @@ onMounted(() => {
   height: 100vh;
   padding: 0 14px;
   box-sizing: border-box;
-  background: #2d5a22;
-  border: 2px solid #4a2a0e;
-  color: #fff;
+  background: var(--c-2d5a22-bg);
+  border: 2px solid var(--c-4a2a0e-edge);
+  color: var(--c-ffffff-text);
   font: 400 1rem/1 'Lilita One', 'Nunito', sans-serif;
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 1px 0 #1f5c14;
+  text-shadow: 0 1px 0 var(--c-1f5c14-edge);
   white-space: nowrap;
   overflow: hidden;
 }
 .fill {
   position: absolute;
   inset: 0 auto 0 0;
-  background: linear-gradient(#8fe35f, #3fa02a);
+  background: linear-gradient(var(--c-8fe35f-bg), var(--c-3fa02a-bg));
   transition: width 0.6s ease-out;
 }
 .gained, .rate { position: relative; }

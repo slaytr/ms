@@ -43,34 +43,33 @@ const iconUrl = (id: number) => `/nx/${id}.png`;
 
 <style scoped>
 .rates {
-  --edge: #243247;
-  color: #1c2636;
-  background: #f6f1e2;
+  --edge: var(--c-243247-edge);
+  color: var(--c-1c2636-text);
+  background: var(--c-f6f1e2-bg);
   border: 2px solid var(--edge);
   border-radius: 6px;
-  box-shadow: inset 0 0 0 1px #f4f7fb, 0 6px 0 rgba(36, 50, 71, 0.35);
+  box-shadow: inset 0 0 0 1px var(--c-f4f7fb-edge), 0 6px 0 rgba(36, 50, 71, 0.35);
   font: 700 12px/1.3 'Nunito', 'Trebuchet MS', system-ui, sans-serif;
   overflow: hidden;
 }
 .title {
   padding: 3px 8px 2px;
-  color: #fff;
-  background: linear-gradient(#5a78a6, #34507c);
+  color: var(--c-ffffff-text);
+  background: linear-gradient(var(--c-5a78a6-bg), var(--c-34507c-bg));
   border-bottom: 2px solid var(--edge);
   font: 400 13px/1.4 'Lilita One', sans-serif;
   letter-spacing: 0.03em;
-  text-shadow: 0 1px 0 #1c2d49;
+  text-shadow: 0 1px 0 var(--c-1c2d49-edge);
 }
 .scroll { max-height: 420px; overflow-y: auto; scrollbar-width: thin; }
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-th { position: sticky; top: 0; padding: 2px 6px; text-align: left; font-size: 10px; color: #50607a; background: #dde4ef; border-bottom: 1px solid #8f9db3; }
-td { padding: 2px 6px; border-bottom: 1px solid #e3dcc4; }
-tr:nth-child(even) td { background: #f0ead8; }
+th { position: sticky; top: 0; padding: 2px 6px; text-align: left; font-size: 10px; color: var(--c-50607a-text); background: var(--c-dde4ef-bg); border-bottom: 1px solid var(--c-8f9db3-edge); }
+td { padding: 2px 6px; border-bottom: 1px solid var(--c-e3dcc4-edge); }
 .ic { width: 1%; padding-right: 0; }
 .ic img { display: block; image-rendering: pixelated; }
 .num { text-align: right; white-space: nowrap; }
-tr.got td { background: #e4f4d2; }
-.have { margin-left: 4px; padding: 0 5px; font-size: 10px; color: #fff; background: #3fa02a; border-radius: 999px; }
-.note { margin: 0; padding: 5px 8px; font-size: 10px; color: #6b6a5a; border-top: 1px solid #e3dcc4; }
+tr.got td { background: var(--c-e4f4d2-bg); }
+.have { margin-left: 4px; padding: 0 5px; font-size: 10px; color: var(--c-ffffff-text); background: var(--c-3fa02a-bg); border-radius: 999px; }
+.note { margin: 0; padding: 5px 8px; font-size: 10px; color: var(--c-6b6a5a-text); border-top: 1px solid var(--c-e3dcc4-edge); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 </style>

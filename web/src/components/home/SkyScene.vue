@@ -7,8 +7,8 @@
     <svg class="defs" width="0" height="0" focusable="false">
       <defs>
         <symbol id="cloud" viewBox="0 0 220 100">
-          <g fill="#dff1fd"><ellipse cx="110" cy="80" rx="100" ry="16" /></g>
-          <g fill="#fff">
+          <g style="fill: var(--cloud-shade)"><ellipse cx="110" cy="80" rx="100" ry="16" /></g>
+          <g style="fill: var(--cloud)">
             <circle cx="58" cy="62" r="28" /><circle cx="96" cy="44" r="36" /><circle cx="140" cy="52" r="30" />
             <circle cx="172" cy="66" r="22" /><rect x="40" y="62" width="150" height="26" rx="13" />
           </g>
@@ -22,11 +22,11 @@
     <svg class="cloud c3"><use href="#cloud" /></svg>
 
     <svg class="hills" viewBox="0 0 1440 300" preserveAspectRatio="none">
-      <path d="M0 150C180 70 340 70 520 130S900 200 1100 120s240-50 340-10V300H0z" fill="#86d957" />
-      <path d="M0 210C220 140 420 150 640 200s460 40 800-30V300H0z" fill="#4fb83a" />
-      <path d="M0 210C220 140 420 150 640 200s460 40 800-30" fill="none" stroke="#8fe35f" stroke-width="6" />
-      <rect x="0" y="262" width="1440" height="38" fill="#8a5a2b" />
-      <rect x="0" y="262" width="1440" height="7" fill="#3f9e2e" />
+      <path d="M0 150C180 70 340 70 520 130S900 200 1100 120s240-50 340-10V300H0z" style="fill: var(--c-86d957-bg)" />
+      <path d="M0 210C220 140 420 150 640 200s460 40 800-30V300H0z" style="fill: var(--c-4fb83a-bg)" />
+      <path d="M0 210C220 140 420 150 640 200s460 40 800-30" fill="none" style="stroke: var(--c-8fe35f-edge)" stroke-width="6" />
+      <rect x="0" y="262" width="1440" height="38" style="fill: var(--c-8a5a2b-bg)" />
+      <rect x="0" y="262" width="1440" height="7" style="fill: var(--c-3f9e2e-bg)" />
     </svg>
   </div>
 </template>
@@ -38,7 +38,7 @@
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
-  background: linear-gradient(180deg, #4fb2f0 0%, #8fd2fa 48%, #d7f0ff 100%);
+  background: linear-gradient(180deg, var(--c-4fb2f0-bg) 0%, var(--c-8fd2fa-bg) 48%, var(--c-d7f0ff-bg) 100%);
 }
 .defs { position: absolute; }
 .sun {
@@ -48,7 +48,7 @@
   width: clamp(70px, 10vw, 130px);
   aspect-ratio: 1;
   border-radius: 50%;
-  background: radial-gradient(circle at 40% 38%, #fffbd0, #ffe156 62%, #ffc21f);
+  background: radial-gradient(circle at 40% 38%, var(--c-fffbd0-bg), var(--c-ffe156-bg) 62%, var(--c-ffc21f-bg));
   box-shadow: 0 0 0 10px rgba(255, 238, 140, 0.35), 0 0 0 26px rgba(255, 238, 140, 0.18);
 }
 .cloud { position: absolute; width: clamp(150px, 20vw, 260px); height: auto; aspect-ratio: 2.2; animation: drift linear infinite; }

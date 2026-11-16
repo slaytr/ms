@@ -70,7 +70,7 @@ onMounted(load);
 .row { text-align: left; display: grid; gap: 1px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); color: var(--fg); cursor: pointer; }
 .row.on { border-color: var(--accent); }
 .row small, .muted { color: var(--muted); }
-.err { color: #c0392b; }
+.err { color: var(--c-c0392b-text); }
 .pick { padding-top: 40px; }
 @media (max-width: 800px) { .split { grid-template-columns: 1fr; } }
 </style>

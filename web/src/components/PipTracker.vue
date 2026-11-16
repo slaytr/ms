@@ -44,13 +44,13 @@ defineEmits<{ rescan: []; repot: [] }>();
 
 <style scoped>
 .pip {
-  --ink: #4a2a0e;
+  --ink: var(--c-4a2a0e-edge);
   display: flex;
   flex-direction: column;
   min-height: var(--pip-min-height, 100vh); /* the pop-out sets this to 0 so the window can fit the content */
   box-sizing: border-box;
-  background: #fff6dc;
-  color: var(--ink);
+  background: var(--c-fff6dc-bg);
+  color: var(--ink-text);
   font: 700 14px/1.35 'Nunito', 'Trebuchet MS', system-ui, sans-serif;
   border: 3px solid var(--ink);
 }
@@ -66,15 +66,15 @@ defineEmits<{ rescan: []; repot: [] }>();
   justify-content: space-between;
   gap: 8px;
   padding: 6px 10px 5px;
-  background: linear-gradient(#5cbcf7, #2f8fe0);
+  background: linear-gradient(var(--c-5cbcf7-bg), var(--c-2f8fe0-bg));
   border-bottom: 3px solid var(--ink);
 }
-.name { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 1.1rem/1.2 'Lilita One', sans-serif; color: #fff; text-shadow: 0 2px 0 #1e5f9e; }
+.name { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 1.1rem/1.2 'Lilita One', sans-serif; color: var(--c-ffffff-text); text-shadow: 0 2px 0 var(--c-1e5f9e-edge); }
 
-.bar.slim { padding: 2px 10px 1px; border-bottom-width: 2px; font: 400 0.85rem/1.3 'Lilita One', sans-serif; color: #fff; text-shadow: 0 1px 0 #1e5f9e; }
+.bar.slim { padding: 2px 10px 1px; border-bottom-width: 2px; font: 400 0.85rem/1.3 'Lilita One', sans-serif; color: var(--c-ffffff-text); text-shadow: 0 1px 0 var(--c-1e5f9e-edge); }
 .map-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .timer { flex: none; font-variant-numeric: tabular-nums; }
-.name-aside { margin: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 1.1rem/1.2 'Lilita One', sans-serif; color: var(--ink); }
+.name-aside { margin: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 1.1rem/1.2 'Lilita One', sans-serif; color: var(--ink-text); }
 
 .body { flex: 1; padding: 10px 12px 8px; display: flex; flex-direction: column; }
 .top { margin-bottom: 8px; }

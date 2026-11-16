@@ -106,7 +106,7 @@ onBeforeUnmount(() => timers.forEach((t) => clearTimeout(t)));
 .crate { image-rendering: pixelated; transform: scale(4); animation: shake var(--shake) ease-in-out forwards; }
 .t-epic .crate, .t-legendary .crate { filter: drop-shadow(0 0 14px var(--c)); }
 
-.slot { position: relative; z-index: 2; display: grid; place-items: center; width: 150px; height: 150px; background: linear-gradient(#fffdf0, #e9dfbd); border: 4px solid #4a2a0e; border-radius: 14px; box-shadow: inset 0 0 0 3px #fff6, 0 6px 0 #00000055; overflow: hidden; }
+.slot { position: relative; z-index: 2; display: grid; place-items: center; width: 150px; height: 150px; background: linear-gradient(var(--c-fffdf0-bg), var(--c-e9dfbd-bg)); border: 4px solid var(--c-4a2a0e-edge); border-radius: 14px; box-shadow: inset 0 0 0 3px #fff6, 0 6px 0 #00000055; overflow: hidden; }
 .slot.tinted { border-color: var(--b); box-shadow: 0 0 22px var(--b), inset 0 0 0 3px #fff6; }
 .item { image-rendering: pixelated; transform: scale(2.6); }
 .slot.fast .item { filter: blur(1.5px); animation: flick 0.08s linear infinite; }
@@ -114,15 +114,15 @@ onBeforeUnmount(() => timers.forEach((t) => clearTimeout(t)));
 
 .glow { position: absolute; width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(var(--c), transparent 70%); opacity: 0.8; animation: glow 0.8s ease-out both; }
 .t-common .glow { opacity: 0.35; }
-.label { position: absolute; bottom: 0; margin: 0; z-index: 3; color: #fff; font: 400 20px/1.1 'Lilita One', sans-serif; text-shadow: 0 2px 0 #000; text-align: center; animation: rise 0.4s 0.2s both; }
-.label small { font-size: 14px; color: #ffe9a8; }
-.rate { position: absolute; bottom: -22px; margin: 0; color: var(--c); font-size: 14px; text-shadow: 0 1px 0 #000; animation: rise 0.4s 0.3s both; }
+.label { position: absolute; bottom: 0; margin: 0; z-index: 3; color: var(--c-ffffff-text); font: 400 20px/1.1 'Lilita One', sans-serif; text-shadow: 0 2px 0 var(--c-000000-edge); text-align: center; animation: rise 0.4s 0.2s both; }
+.label small { font-size: 14px; color: var(--c-ffe9a8-text); }
+.rate { position: absolute; bottom: -22px; margin: 0; color: var(--c); font-size: 14px; text-shadow: 0 1px 0 var(--c-000000-edge); animation: rise 0.4s 0.3s both; }
 .skip { position: absolute; bottom: 18px; margin: 0; color: #fff9; font-size: 12px; }
 
 .bit { position: absolute; width: var(--s); height: var(--s); background: var(--c); border-radius: 50%; box-shadow: 0 0 8px var(--c); animation: burst 1s var(--t) ease-out both; }
-.star { position: absolute; z-index: 4; width: var(--w); height: var(--w); background: #fff; clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); filter: drop-shadow(0 0 4px var(--c)); animation: twinkle 0.9s var(--t) ease-in-out infinite; }
-.rays { position: absolute; width: 1400px; height: 1400px; opacity: 0.55; background: repeating-conic-gradient(from 0deg, var(--c) 0 6deg, transparent 6deg 24deg); mask-image: radial-gradient(circle, #000 0, transparent 60%); -webkit-mask-image: radial-gradient(circle, #000 0, transparent 60%); animation: spin 8s linear infinite, fade 0.6s ease-out; }
-.flash { position: absolute; inset: 0; background: #fff; animation: flash 0.7s ease-out forwards; pointer-events: none; }
+.star { position: absolute; z-index: 4; width: var(--w); height: var(--w); background: var(--c-ffffff-bg); clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); filter: drop-shadow(0 0 4px var(--c)); animation: twinkle 0.9s var(--t) ease-in-out infinite; }
+.rays { position: absolute; width: 1400px; height: 1400px; opacity: 0.55; background: repeating-conic-gradient(from 0deg, var(--c) 0 6deg, transparent 6deg 24deg); mask-image: radial-gradient(circle, var(--c-000000-edge) 0, transparent 60%); -webkit-mask-image: radial-gradient(circle, var(--c-000000-edge) 0, transparent 60%); animation: spin 8s linear infinite, fade 0.6s ease-out; }
+.flash { position: absolute; inset: 0; background: var(--c-ffffff-bg); animation: flash 0.7s ease-out forwards; pointer-events: none; }
 .t-legendary.shake { animation: quake 0.12s linear infinite; }
 
 @keyframes fade { from { opacity: 0; } }

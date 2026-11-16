@@ -5,18 +5,16 @@
   --card: #fff;
   --border: #deded6;
   --accent: #d9622b;
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #161614;
-    --fg: #ecebe6;
-    --muted: #9b9a92;
-    --card: #1f1f1c;
-    --border: #35342f;
-    --accent: #f08a5d;
-  }
+html[data-theme='dark'] {
+  --bg: #11151f;
+  --fg: #ecebe6;
+  --muted: #9b9a92;
+  --card: #1a2030;
+  --border: #2d3548;
+  --accent: #f08a5d;
 }
 
 * { box-sizing: border-box; }
@@ -38,3 +36,4 @@ button, input { font: inherit; }
   font-style: normal;
   font-display: swap;
 }
+

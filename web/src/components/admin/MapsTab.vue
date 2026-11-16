@@ -56,6 +56,6 @@ input { padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; b
 button { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--card); color: var(--fg); cursor: pointer; }
 button:disabled { opacity: 0.5; cursor: default; }
 .muted, small { color: var(--muted); }
-.ok { color: #27874f; }
-.err { color: #c0392b; }
+.ok { color: var(--c-27874f-text); }
+.err { color: var(--c-c0392b-text); }
 </style>

@@ -18,18 +18,18 @@ const digits = computed(() => (props.level === null ? [] : String(props.level).s
 
 <style scoped>
 .badge { display: inline-flex; align-items: center; gap: 3px; vertical-align: middle; }
-.lv { font: 400 1.05rem/1 'Lilita One', sans-serif; color: #4a2a0e; margin-right: 4px; }
+.lv { font: 400 1.05rem/1 'Lilita One', sans-serif; color: var(--c-4a2a0e-text); margin-right: 4px; }
 .tile {
   display: inline-grid;
   place-items: center;
   width: 1.5rem;
   height: 1.9rem;
   font: 400 1.35rem/1 'Lilita One', sans-serif;
-  color: #fff6c9;
-  background: linear-gradient(#ffb12e, #f27a00);
-  border: 2px solid #a64a00;
+  color: var(--c-fff6c9-text);
+  background: linear-gradient(var(--c-ffb12e-bg), var(--c-f27a00-bg));
+  border: 2px solid var(--c-a64a00-edge);
   border-radius: 6px;
-  text-shadow: 0 1px 0 #7a3300, 1px 0 0 #7a3300, -1px 0 0 #7a3300, 0 -1px 0 #7a3300;
+  text-shadow: 0 1px 0 var(--c-7a3300-edge), 1px 0 0 var(--c-7a3300-edge), -1px 0 0 var(--c-7a3300-edge), 0 -1px 0 var(--c-7a3300-edge);
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35);
 }
 .tile.blank { opacity: 0.45; }

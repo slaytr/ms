@@ -99,40 +99,40 @@ onBeforeUnmount(stop);
 
 <style scoped>
 .live {
-  --ink: #4a2a0e;
+  --ink: var(--c-4a2a0e-edge);
   /* As wide as its cards need (one to five of them), never wider than the page. */
   width: fit-content;
   max-width: 100%;
   margin: 0 auto 0.9rem;
   padding: 8px 10px 10px;
-  background: #fff6dc;
-  color: var(--ink);
+  background: var(--c-fff6dc-bg);
+  color: var(--ink-text);
   border: 3px solid var(--ink);
   border-radius: 14px;
   box-shadow: 0 5px 0 rgba(74, 42, 14, 0.3);
   font: 700 14px/1.3 'Nunito', 'Trebuchet MS', system-ui, sans-serif;
 }
 .head { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0 0 6px; font: 400 1rem/1 'Lilita One', sans-serif; }
-.dot { width: 9px; height: 9px; border-radius: 50%; background: #3fa02a; box-shadow: 0 0 0 0 rgba(63, 160, 42, 0.6); animation: ping 1.8s infinite; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c-3fa02a-bg); box-shadow: 0 0 0 0 rgba(63, 160, 42, 0.6); animation: ping 1.8s infinite; }
 @keyframes ping { 70% { box-shadow: 0 0 0 8px rgba(63, 160, 42, 0); } 100% { box-shadow: 0 0 0 0 rgba(63, 160, 42, 0); } }
 
 .row { display: flex; align-items: center; justify-content: center; gap: 6px; }
 /* Width follows the number of players (--n, at most one page), so a last page with fewer cards doesn't resize the box. */
 .cards { --card: 6.5rem; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; width: calc(var(--n) * var(--card) + (var(--n) - 1) * 6px); max-width: 100%; min-width: 0; margin: 0; padding: 0; list-style: none; }
-.card { flex: none; width: var(--card); min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; background: #fffdf3; border: 2px solid #d9c48a; border-radius: 10px; text-align: center; }
+.card { flex: none; width: var(--card); min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; background: var(--c-fffdf3-bg); border: 2px solid var(--c-d9c48a-edge); border-radius: 10px; text-align: center; }
 .who { max-width: 100%; margin: 2px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 1rem/1.2 'Lilita One', sans-serif; }
-.pct { margin: 0; font-size: 12px; font-variant-numeric: tabular-nums; color: #6b4a22; }
-.rate { margin: 0; font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; color: #6b4a22; }
-.gain { margin: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; font: 400 0.95rem/1.2 'Lilita One', sans-serif; color: #2e9a1f; font-variant-numeric: tabular-nums; }
+.pct { margin: 0; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--c-6b4a22-text); }
+.rate { margin: 0; font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--c-6b4a22-text); }
+.gain { margin: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; font: 400 0.95rem/1.2 'Lilita One', sans-serif; color: var(--c-2e9a1f-text); font-variant-numeric: tabular-nums; }
 .card :deep(.badge) { transform: scale(0.75); transform-origin: center; margin: -3px 0; }
 @media (max-width: 520px) { .cards { --card: 5.4rem; } }
 
-.nav { flex: none; width: 26px; height: 40px; font: 400 1.4rem/1 'Lilita One', sans-serif; color: var(--ink); background: #ecdcae; border: 2px solid var(--ink); border-radius: 8px; cursor: pointer; }
-.nav:focus-visible, .pip:focus-visible { outline: 3px solid #2f8fe0; outline-offset: 2px; }
+.nav { flex: none; width: 26px; height: 40px; font: 400 1.4rem/1 'Lilita One', sans-serif; color: var(--ink-text); background: var(--c-ecdcae-bg); border: 2px solid var(--ink); border-radius: 8px; cursor: pointer; }
+.nav:focus-visible, .pip:focus-visible { outline: 3px solid var(--c-2f8fe0-edge); outline-offset: 2px; }
 
 .dots { display: flex; justify-content: center; gap: 6px; margin-top: 8px; }
-.pip { width: 9px; height: 9px; padding: 0; background: #ecdcae; border: 2px solid var(--ink); border-radius: 50%; cursor: pointer; }
-.pip.on { background: #3fa02a; }
+.pip { width: 9px; height: 9px; padding: 0; background: var(--c-ecdcae-bg); border: 2px solid var(--ink); border-radius: 50%; cursor: pointer; }
+.pip.on { background: var(--c-3fa02a-bg); }
 
 @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
 </style>

@@ -110,13 +110,13 @@ onMounted(refresh);
 .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 h2 { margin: 0; font-size: 1.05rem; }
 .muted { color: var(--muted); }
-.error { color: #c0392b; }
-button { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--accent); color: #fff; cursor: pointer; }
+.error { color: var(--c-c0392b-text); }
+button { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--accent); color: var(--c-ffffff-text); cursor: pointer; }
 button.ghost { background: transparent; color: var(--fg); }
 button:disabled { opacity: 0.5; cursor: default; }
 .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 .tabs button { background: transparent; color: var(--fg); }
-.tabs button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.tabs button.on { background: var(--accent); color: var(--c-ffffff-text); border-color: var(--accent); }
 .count { margin-left: 4px; opacity: 0.7; font-size: 0.85em; }
 .scroll { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }

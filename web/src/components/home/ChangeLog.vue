@@ -27,8 +27,8 @@ function dayLabel(date: string): string {
 </template>
 
 <style scoped>
-.empty { margin: 0; text-align: center; font-size: 0.85rem; color: #6b4a22; }
+.empty { margin: 0; text-align: center; font-size: 0.85rem; color: var(--c-6b4a22-text); }
 .log { display: grid; gap: 6px; max-height: 14rem; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
 .log li { display: grid; grid-template-columns: 3.4rem minmax(0, 1fr); gap: 8px; font-size: 0.85rem; line-height: 1.3; }
-time { font-weight: 800; color: #6b4a22; font-variant-numeric: tabular-nums; }
+time { font-weight: 800; color: var(--c-6b4a22-text); font-variant-numeric: tabular-nums; }
 </style>

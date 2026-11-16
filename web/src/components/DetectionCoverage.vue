@@ -80,23 +80,18 @@ const chipsOf = (area: AreaCoverage): readonly Chip[] =>
 .coverage { margin-top: 16px; }
 h2 { margin: 0 0 6px; }
 h3 { margin: 16px 0 2px; font-size: 1rem; }
-.count { margin-left: 8px; font-size: 0.8rem; font-weight: 400; color: var(--muted, #6b7280); }
+.count { margin-left: 8px; font-size: 0.8rem; font-weight: 400; color: var(--muted, var(--c-6b7280-text)); }
 .where { margin: 0 0 6px; }
 .summary { margin: 4px 0 8px; }
 .small { font-size: 0.85rem; }
-.muted { color: var(--muted, #6b7280); }
+.muted { color: var(--muted, var(--c-6b7280-text)); }
 .key { padding: 0 6px; border-radius: 4px; font-size: 0.8rem; }
 .todo { margin: 0 0 8px; padding-left: 1.2rem; }
 .todo code { font-size: 0.9rem; letter-spacing: 0.05em; }
 .chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 0; list-style: none; }
 .chips li { min-width: 1.9rem; padding: 3px 6px; text-align: center; font: 600 0.9rem ui-monospace, monospace; border: 1px solid transparent; border-radius: 6px; }
-.real, .chips .real { background: #dff3df; color: #1d6b1d; border-color: #9ccf9c; }
-.drafted, .chips .drafted { background: #fff1cf; color: #8a5a00; border-color: #e6c36a; border-style: dashed; }
-.missing, .chips .missing { background: #fde4e1; color: #a1281a; border-color: #e59a92; }
+.real, .chips .real { background: var(--c-dff3df-bg); color: var(--c-1d6b1d-text); border-color: var(--c-9ccf9c-edge); }
+.drafted, .chips .drafted { background: var(--c-fff1cf-bg); color: var(--c-8a5a00-text); border-color: var(--c-e6c36a-edge); border-style: dashed; }
+.missing, .chips .missing { background: var(--c-fde4e1-bg); color: var(--c-a1281a-text); border-color: var(--c-e59a92-edge); }
 .notes { margin: 4px 0 0; padding-left: 1.2rem; }
-@media (prefers-color-scheme: dark) {
-  .real, .chips .real { background: #1f3a1f; color: #a6e0a6; border-color: #3f6f3f; }
-  .drafted, .chips .drafted { background: #3d3216; color: #f0cf7a; border-color: #8a6f2a; }
-  .missing, .chips .missing { background: #43201c; color: #f3a79e; border-color: #8a3f37; }
-}
 </style>

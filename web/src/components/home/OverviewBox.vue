@@ -34,5 +34,5 @@ defineEmits<{ rescan: []; repot: [] }>();
 <style scoped>
 .who-row { display: flex; align-items: center; gap: 0.75rem; }
 .who-row :deep(.avatar) { margin: 0; flex: none; width: 72px; height: 72px; }
-.job { margin: 0; min-width: 0; font-weight: 800; color: #6b4a22; overflow-wrap: anywhere; }
+.job { margin: 0; min-width: 0; font-weight: 800; color: var(--c-6b4a22-text); overflow-wrap: anywhere; }
 </style>

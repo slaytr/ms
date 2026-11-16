@@ -1,4 +1,6 @@
-import { computed, onBeforeUnmount, ref, shallowRef } from 'vue';
+import { computed, onBeforeUnmount, ref, shallowRef, watchEffect } from 'vue';
+
+import { applyTheme, useTheme } from './useTheme.ts';
 
 /** Chrome/Edge's Document Picture-in-Picture: a small always-on-top window that can hold real HTML. */
 interface DocumentPictureInPicture {
@@ -49,7 +51,7 @@ function copyStyles(target: Window): void {
  */
 function fitHeightToContent(win: Window, mount: HTMLElement): () => void {
   win.document.documentElement.style.setProperty('--pip-min-height', '0px');
-  win.document.body.style.background = '#fff6dc';
+  win.document.body.style.background = 'var(--c-fff6dc-bg)';
   let lastHeight = 0;
   const fit = (): void => {
     const height = Math.ceil(mount.getBoundingClientRect().height);
@@ -87,6 +89,8 @@ export function usePopOut(title: string, options: { fitHeight?: boolean } = {}) 
   }
 
   /** Must be called straight from a click: browsers only allow opening a window from a user gesture. */
+  const { theme } = useTheme();
+
   async function open(size: { width: number; height: number } = DEFAULT_SIZE): Promise<void> {
     if (popWindow.value) return;
     error.value = null;
@@ -99,6 +103,7 @@ export function usePopOut(title: string, options: { fitHeight?: boolean } = {}) 
         return;
       }
       copyStyles(win);
+      const stopTheme = watchEffect(() => applyTheme(win.document, theme.value));
       win.document.title = title;
       win.document.body.style.margin = '0';
       const mount = win.document.createElement('div');
@@ -116,6 +121,7 @@ export function usePopOut(title: string, options: { fitHeight?: boolean } = {}) 
       const stopFitting = options.fitHeight ? fitHeightToContent(win, mount) : () => undefined;
       win.addEventListener('pagehide', () => {
         stopFitting();
+        stopTheme();
         release();
       });
       popWindow.value = win;

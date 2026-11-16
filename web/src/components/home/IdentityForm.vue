@@ -32,11 +32,11 @@ function submit() {
 </template>
 
 <style scoped>
-.identity { display: grid; gap: 6px; margin-top: 14px; padding: 12px; background: #fff8e0; border: 2px solid #f0b030; border-radius: 10px; }
+.identity { display: grid; gap: 6px; margin-top: 14px; padding: 12px; background: var(--c-fff8e0-bg); border: 2px solid var(--c-f0b030-edge); border-radius: 10px; }
 .lead { margin: 0 0 4px; font-weight: 800; }
 label { font-weight: 800; }
-input, select { padding: 8px 10px; font: inherit; font-weight: 700; color: var(--ink); background: #fff; border: 2px solid var(--ink); border-radius: 8px; }
-button { justify-self: start; margin-top: 4px; padding: 8px 14px; font: 400 1.05rem 'Lilita One', sans-serif; color: #fff; background: #2f8fe0; border: 2px solid var(--ink); border-radius: 8px; cursor: pointer; }
+input, select { padding: 8px 10px; font: inherit; font-weight: 700; color: var(--ink-text); background: var(--c-ffffff-bg); border: 2px solid var(--ink); border-radius: 8px; }
+button { justify-self: start; margin-top: 4px; padding: 8px 14px; font: 400 1.05rem 'Lilita One', sans-serif; color: var(--c-ffffff-text); background: var(--c-2f8fe0-bg); border: 2px solid var(--ink); border-radius: 8px; cursor: pointer; }
 button:disabled { opacity: 0.5; cursor: default; }
-button:focus-visible { outline: 4px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 7px var(--ink); }
+button:focus-visible { outline: 4px solid var(--c-ffffff-edge); outline-offset: 2px; box-shadow: 0 0 0 7px var(--ink); }
 </style>

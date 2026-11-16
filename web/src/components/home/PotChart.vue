@@ -62,12 +62,12 @@ const summary = computed(() => `${props.name}: ${used.value} used.`);
 </template>
 
 <style scoped>
-.pot-chart { margin: 0; padding: 6px 8px 2px; background: #fffdf3; border: 2px solid #d9c48a; border-radius: 8px; min-width: 0; }
+.pot-chart { margin: 0; padding: 6px 8px 2px; background: var(--chart-bg-solid); border: 2px solid var(--c-d9c48a-edge); border-radius: 8px; min-width: 0; }
 figcaption { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; font-size: 12px; }
 .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.used { font: 400 1.1rem / 1 'Lilita One', sans-serif; color: #1f8f8a; font-variant-numeric: tabular-nums; }
+.used { font: 400 1.1rem / 1 'Lilita One', sans-serif; color: var(--chart-line-pot); font-variant-numeric: tabular-nums; }
 svg { display: block; width: 100%; height: auto; }
-.grid line { stroke: #e3d3a2; stroke-width: 1; }
-.grid text { fill: #6b4a22; font: 700 9px 'Nunito', sans-serif; }
-.line { fill: none; stroke: #1f8f8a; stroke-width: 2.5; stroke-linejoin: round; }
+.grid line { stroke: var(--chart-grid); stroke-width: 1; }
+.grid text { fill: var(--chart-text); font: 700 9px 'Nunito', sans-serif; }
+.line { fill: none; stroke: var(--chart-line-pot); stroke-width: 2.5; stroke-linejoin: round; }
 </style>
