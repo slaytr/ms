@@ -147,6 +147,57 @@ describe('expGainSeries', () => {
     expect(series[1].gained).toBe(10);
   });
 
+  describe('when raw EXP drops out for a while and comes back', () => {
+    const gap = [
+      reading(0, { exp: 100, expPct: 0 }),
+      reading(1, { expPct: 10 }),
+      reading(2, { expPct: 20 }),
+      reading(3, { expPct: 30 }),
+      reading(4, { exp: 400, expPct: 40 }),
+    ];
+
+    it('spreads the exact gain over the gap by how far the percent moved, instead of one lump at the end', () => {
+      const series = expGainSeries(gap);
+      expect(series.map((p) => p.elapsedMs / 60_000)).toEqual([0, 1, 2, 3, 4]);
+      expect(series.map((p) => Math.round(p.gained))).toEqual([0, 75, 150, 225, 300]);
+    });
+
+    it('does not change the total', () => {
+      expect(expGainSeries(gap).at(-1)?.gained).toBeCloseTo(300, 6);
+      expect(computeRates(gap).expGained).toBe(300);
+    });
+
+    it('weights the pieces unevenly when the percent moved unevenly', () => {
+      const series = expGainSeries([
+        reading(0, { exp: 0, expPct: 0 }),
+        reading(1, { expPct: 30 }),
+        reading(2, { expPct: 40 }),
+        reading(3, { exp: 400, expPct: 40 }),
+      ]);
+      expect(series.map((p) => Math.round(p.gained))).toEqual([0, 300, 400, 400]);
+    });
+
+    it('falls back to even time when the percent did not move at all', () => {
+      const series = expGainSeries([
+        reading(0, { exp: 0, expPct: 5 }),
+        reading(1, { expPct: 5 }),
+        reading(2, { expPct: 5 }),
+        reading(3, { exp: 300, expPct: 5 }),
+      ]);
+      expect(series.map((p) => Math.round(p.gained))).toEqual([0, 100, 200, 300]);
+    });
+
+    it('keeps the EXP/h line smooth through the gap, with no spike when raw EXP returns', () => {
+      const rates = expRateSeries(expGainSeries(gap), 60_000).map((p) => p.expPerHour);
+      expect(Math.max(...rates)).toBeLessThanOrEqual(75 * 60 + 1);
+    });
+
+    it('leaves a gap with no readings in it as a single step', () => {
+      const series = expGainSeries([reading(0, { exp: 0 }), reading(4, { exp: 400 })]);
+      expect(series.map((p) => p.gained)).toEqual([0, 400]);
+    });
+  });
+
   it('ignores readings with no EXP and sorts out-of-order input', () => {
     const series = expGainSeries([reading(2, { exp: 300 }), reading(1, { exp: null }), reading(0, { exp: 100 })]);
     expect(series.map((p) => p.gained)).toEqual([0, 200]);

@@ -171,12 +171,38 @@ interface GainStep {
 }
 
 /**
- * Every EXP gain in the session, in time order. Where raw EXP was read it is exact. Before the first raw
+ * Splits one exact gain (raw EXP at `a` to raw EXP at `b`) over the readings in between that showed only
+ * the percent, so a stretch where raw EXP went unreadable doesn't land as a single lump when it returns.
+ * Each in-between reading gets its share of the gain by how far the percent moved up to it; if the percent
+ * can't say (a missing value, or it didn't move) the shares follow elapsed time instead. The pieces add up
+ * to exactly `gain`, so totals don't change, only when within the gap each part is counted.
+ */
+function spreadGain(a: Reading, b: Reading, gain: number, between: readonly Reading[]): readonly GainStep[] {
+  if (between.length === 0) return [{ to: b, gain, estimated: false }];
+  const chain = [a, ...between, b];
+  const links = chain.slice(1).map((to, i) => [chain[i], to] as const);
+  const byPercent = links.map(([from, to]) =>
+    from.expPct === null || to.expPct === null ? null : leveledUp(from, to) ? 100 - from.expPct + to.expPct : Math.max(0, to.expPct - from.expPct),
+  );
+  const percentTotal = byPercent.reduce<number>((sum, w) => sum + (w ?? 0), 0);
+  const usePercent = byPercent.every((w) => w !== null) && percentTotal > 0;
+  const weights = links.map(([from, to], i) => (usePercent ? byPercent[i]! : to.takenAt - from.takenAt));
+  const total = weights.reduce((sum, w) => sum + w, 0);
+  if (total <= 0) return [{ to: b, gain, estimated: false }];
+  return links.map(([, to], i) => ({ to, gain: (gain * weights[i]) / total, estimated: false }));
+}
+
+/**
+ * Every EXP gain in the session, in time order. Where raw EXP was read it is exact (and where raw EXP went
+ * unreadable for a while in between, spread over that gap by the percent). Before the first raw
  * reading and after the last one (all of it, when the game never shows raw EXP) the gain is estimated from
  * the percent. Inside the raw span the exact figures already cover everything, so nothing is added twice.
  */
 function expGainSteps(sorted: readonly Reading[], pauses: readonly Pause[]): readonly GainStep[] {
-  const steps: GainStep[] = consecutive(sorted, (r) => r.exp, pauses).map(([a, b]) => ({ to: b, gain: expDelta(a, b), estimated: false }));
+  const steps: GainStep[] = consecutive(sorted, (r) => r.exp, pauses).flatMap(([a, b]) => {
+    const between = sorted.filter((r) => r.takenAt > a.takenAt && r.takenAt < b.takenAt && r.exp === null && r.expPct !== null);
+    return spreadGain(a, b, expDelta(a, b), between);
+  });
   const raw = sorted.filter((r) => r.exp !== null);
   const firstRaw = raw[0]?.takenAt ?? null;
   const lastRaw = raw[raw.length - 1]?.takenAt ?? null;
