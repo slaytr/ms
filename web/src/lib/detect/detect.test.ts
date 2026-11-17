@@ -181,7 +181,7 @@ describe('map name (minimap title, top left)', () => {
 
   it('reads several different maps, so the width of the panel is not what makes it work', () => {
     const maps = new Set(withMinimap.map((f) => detectFrame(loadFrame(f), DEFAULT_TEMPLATES).map.name));
-    expect(maps).toEqual(new Set(['Line 1 <Area 1>', 'Line 1 <Area 4>', 'Tree Dungeon, Forest Up North VIII', 'Tree Dungeon, Forest Up North IX', 'The Forest North of Ellinia', 'The Burnt Land III', 'Henesys Hunting Ground I', 'Dangerous Valley', 'Lith Harbor', 'Kerning City Construction Site', 'Remains <Tomb> I', 'Free Market <13>', 'The Forest of Evil I', 'The Forest of Evil II', 'The Swamp of Despair II', 'Line 2 <Area 3>', "Golem's Temple I", 'Sleepy Dungeon II', 'Sleepy Dungeon III', 'Sleepy Dungeon IV']));
+    expect(maps).toEqual(new Set(['Line 1 <Area 1>', 'Line 1 <Area 4>', 'Tree Dungeon, Forest Up North VIII', 'Tree Dungeon, Forest Up North IX', 'The Forest North of Ellinia', 'The Burnt Land III', 'Henesys Hunting Ground I', 'Dangerous Valley', 'Lith Harbor', 'Kerning City Construction Site', 'Remains <Tomb> I', 'Free Market <13>', 'The Forest of Evil I', 'The Forest of Evil II', 'The Swamp of Despair II', 'Line 2 <Area 3>', "Golem's Temple I", 'Sleepy Dungeon II', 'Sleepy Dungeon III', 'Sleepy Dungeon IV', 'Perion', 'Perion Street Corner', 'East Rocky Mountain I', 'Rocky Road I', 'East Domain of Perion', 'Excavation Site I', 'Excavation Site <Camp>', 'Remains <Tomb> IV', 'Remains <Cliff>']));
   }, SLOW_TEST_MS);
 
   it('keeps a roman numeral as capital I\'s but reads the same bar as l inside a word', () => {

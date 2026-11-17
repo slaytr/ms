@@ -1318,5 +1318,87 @@
     "street": "Dungeon",
     "exp": "591,612[60.52%]",
     "map": "Sleepy Dungeon IV"
+  },
+  "inventory-open_1368x800_1794875677990.png": {
+    "level": "58",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Vi}ctoria Road",
+    "exp": "112,375[10.33%]",
+    "meso": "1,352,246",
+    "map": "Perion"
+  },
+  "inventory-open_1368x800_1794875752642.png": {
+    "level": "58",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Vi}ctoria Road",
+    "exp": "112,375[10.33%]",
+    "meso": "1,352,246",
+    "map": "Perion Street Corner"
+  },
+  "inventory-closed_1368x800_1794875771733.png": {
+    "level": "58",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Vi}ctoria Road",
+    "exp": "112,405[10.34%]",
+    "map": "East Rocky Mountain I"
+  },
+  "inventory-closed_1368x800_1794875779077.png": {
+    "level": "58",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Vi}ctoria Road",
+    "exp": "112,405[10.34%]",
+    "map": "Rocky Road I"
+  },
+  "inventory-closed_1368x800_1794875799348.png": {
+    "level": "58",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Vi}ctoria Road",
+    "exp": "112,453[10.34%]",
+    "map": "East Domain of Perion"
+  },
+  "inventory-closed_1368x800_1794875830109.png": {
+    "level": "58",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Vi}ctoria Road",
+    "exp": "112,770[10.37%]",
+    "map": "Exca{va}tion Site I"
+  },
+  "inventory-closed_1368x800_1794875889551.png": {
+    "level": "58",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Vi}ctoria Road",
+    "exp": "112,893[10.38%]",
+    "map": "Exca{va}tion Site <Camp>"
+  },
+  "inventory-closed_1368x800_1794875906528.png": {
+    "level": "58",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Vi}ctoria Road",
+    "exp": "112,893[10.38%]",
+    "map": "Remains <Tom~b~> I"
+  },
+  "inventory-closed_1368x800_1794875940948.png": {
+    "level": "58",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Vi}ctoria Road",
+    "exp": "113,010[10.39%]",
+    "map": "Remains <Tom~b~> IV"
+  },
+  "inventory-closed_1368x800_1794875965397.png": {
+    "level": "58",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "street": "{Vi}ctoria Road",
+    "exp": "113,010[10.39%]",
+    "map": "Remains <Cli{ff>}"
   }
 }

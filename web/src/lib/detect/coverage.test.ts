@@ -45,9 +45,9 @@ describe('detectionCoverage', () => {
     }
   });
 
-  it('shows the level digits still unmeasured, from the real templates', () => {
-    expect(area('level').real).toEqual(expect.arrayContaining(['0', '1', '2', '3', '4', '5', '6', '7', '9']));
-    expect(area('level').drafted).toEqual(['8']); // drafted, not measured
+  it('has every level digit measured from real frames', () => {
+    expect(area('level').real).toEqual(expect.arrayContaining(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']));
+    expect(area('level').drafted).toEqual([]);
     expect(area('level').missing).toEqual([]);
   });
 
