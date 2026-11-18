@@ -1,4 +1,4 @@
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, shallowRef } from 'vue';
 
 import { createSession, endSession, labelSession, postReadings, saveSessionIdentity, setSessionPartySize } from '../lib/api';
 import type { Detection, MapPlate } from '../lib/detect/detect.ts';
@@ -43,7 +43,8 @@ export function useTracker() {
 
   const status = ref<TrackerStatus>('idle');
   const message = ref<string | null>(null);
-  const readings = ref<readonly Reading[]>([]);
+  // Shallow: readings are only ever replaced, never edited, so Vue needn't wrap thousands of them in proxies (about 10x slower to scan).
+  const readings = shallowRef<readonly Reading[]>([]);
   const lastDetection = ref<Detection | null>(null);
   const ticks = ref(0);
   const streak = ref(0);

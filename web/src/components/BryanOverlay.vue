@@ -15,8 +15,9 @@ const props = defineProps<{ view: TrackerView; series: readonly ExpGainPoint[] }
 const WINDOW_MS = 30 * 60_000;
 const GRAPH_W = 100;
 const GRAPH_H = 30;
+const rateSeries = computed(() => expRateSeries(props.series));
 const graph = computed(() => {
-  const rate = expRateSeries(props.series);
+  const rate = rateSeries.value;
   const end = props.series[props.series.length - 1]?.elapsedMs ?? 0;
   const start = Math.max(0, end - WINDOW_MS);
   const span = Math.max(end - start, 60_000);
@@ -31,7 +32,7 @@ const graph = computed(() => {
 
 /** Pace right now: the latest 1-minute point, projected to an hour (the big figure is the last hour). */
 const nowRate = computed(() => {
-  const rate = expRateSeries(props.series);
+  const rate = rateSeries.value;
   const last = rate[rate.length - 1];
   return last ? formatPerHour(last.expPerHour) : '—';
 });

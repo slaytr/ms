@@ -163,6 +163,18 @@ function levelsByReading(sorted: readonly Reading[]): ReadonlyMap<Reading, numbe
   return levels;
 }
 
+/** Index of the first item for which `test` holds, in an array where it holds from some point onward (else the length). */
+function firstIndexWhere<T>(items: readonly T[], test: (item: T) => boolean): number {
+  let low = 0;
+  let high = items.length;
+  while (low < high) {
+    const mid = (low + high) >>> 1;
+    if (test(items[mid])) high = mid;
+    else low = mid + 1;
+  }
+  return low;
+}
+
 /** One stretch of EXP gain, ending at reading `to`. */
 interface GainStep {
   readonly to: Reading;
@@ -200,7 +212,10 @@ function spreadGain(a: Reading, b: Reading, gain: number, between: readonly Read
  */
 function expGainSteps(sorted: readonly Reading[], pauses: readonly Pause[]): readonly GainStep[] {
   const steps: GainStep[] = consecutive(sorted, (r) => r.exp, pauses).flatMap(([a, b]) => {
-    const between = sorted.filter((r) => r.takenAt > a.takenAt && r.takenAt < b.takenAt && r.exp === null && r.expPct !== null);
+    // Only the readings strictly between a and b matter, so find that slice instead of scanning the whole session per pair.
+    const from = firstIndexWhere(sorted, (r) => r.takenAt > a.takenAt);
+    const to = firstIndexWhere(sorted, (r) => r.takenAt >= b.takenAt);
+    const between = sorted.slice(from, Math.max(from, to)).filter((r) => r.exp === null && r.expPct !== null);
     return spreadGain(a, b, expDelta(a, b), between);
   });
   const raw = sorted.filter((r) => r.exp !== null);
@@ -296,15 +311,12 @@ const MIN_RATE_SPAN_MS = 15_000;
 
 /** The EXP gained by `at` ms, read off the running total between its two nearest points. */
 function gainedAt(series: readonly ExpGainPoint[], at: number): number {
-  let before = series[0];
-  for (const point of series) {
-    if (point.elapsedMs > at) {
-      const span = point.elapsedMs - before.elapsedMs;
-      return span <= 0 ? point.gained : before.gained + ((point.gained - before.gained) * (at - before.elapsedMs)) / span;
-    }
-    before = point;
-  }
-  return before.gained;
+  const next = firstIndexWhere(series, (point) => point.elapsedMs > at);
+  if (next >= series.length) return series[series.length - 1].gained;
+  const point = series[next];
+  const before = series[Math.max(0, next - 1)];
+  const span = point.elapsedMs - before.elapsedMs;
+  return span <= 0 ? point.gained : before.gained + ((point.gained - before.gained) * (at - before.elapsedMs)) / span;
 }
 
 /**
