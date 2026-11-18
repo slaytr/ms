@@ -1,0 +1,118 @@
+<script setup lang="ts">
+import { computed, onMounted, ref } from 'vue';
+
+import { formatPerHour } from '../lib/format';
+import { expRateSeries, type ExpGainPoint } from '../lib/metrics';
+import type { TrackerView } from '../lib/tracker-view';
+
+/**
+ * Bryan's Overlay: a bare, compact pop-out. Flat dark surface, plain text, one thin progress bar,
+ * no borders or cards, three short rows. Presentation only.
+ */
+const props = defineProps<{ view: TrackerView; series: readonly ExpGainPoint[] }>();
+
+/** The backdrop is the last 30 minutes of EXP/hr, drawn in a 100x30 box that stretches to the window. */
+const WINDOW_MS = 30 * 60_000;
+const GRAPH_W = 100;
+const GRAPH_H = 30;
+const graph = computed(() => {
+  const rate = expRateSeries(props.series);
+  const end = props.series[props.series.length - 1]?.elapsedMs ?? 0;
+  const start = Math.max(0, end - WINDOW_MS);
+  const span = Math.max(end - start, 60_000);
+  const pts = rate.filter((p) => p.elapsedMs >= start);
+  if (pts.length < 2) return null;
+  const top = Math.max(...pts.map((p) => p.expPerHour), 1);
+  const coords = pts.map((p) => `${(((p.elapsedMs - start) / span) * GRAPH_W).toFixed(2)},${(GRAPH_H - (Math.max(p.expPerHour, 0) / top) * GRAPH_H).toFixed(2)}`);
+  const first = coords[0].split(',')[0];
+  const last = coords[coords.length - 1].split(',')[0];
+  return { line: coords.join(' '), area: `${first},${GRAPH_H} ${coords.join(' ')} ${last},${GRAPH_H}` };
+});
+
+/** Pace right now: the latest 1-minute point, projected to an hour (the big figure is the last hour). */
+const nowRate = computed(() => {
+  const rate = expRateSeries(props.series);
+  const last = rate[rate.length - 1];
+  return last ? formatPerHour(last.expPerHour) : '—';
+});
+
+const SURFACE = '#14161a';
+
+const fmt = (n: number) => Math.round(n).toLocaleString();
+const percent = computed(() => (props.view.progress ? (props.view.progress.fraction * 100).toFixed(2) : null));
+const eta = computed(() => (props.view.eta.state === 'ready' ? (props.view.etaText ?? '—') : '—'));
+
+/** The pop-out's page is cream by default; paint it the overlay's own surface so no frame shows. */
+const root = ref<HTMLElement | null>(null);
+onMounted(() => {
+  const doc = root.value?.ownerDocument;
+  if (doc) doc.body.style.background = SURFACE;
+});
+</script>
+
+<template>
+  <section ref="root" class="bryan" aria-label="Bryan's Overlay">
+    <svg v-if="graph" class="graph" :viewBox="`0 0 ${GRAPH_W} ${GRAPH_H}`" preserveAspectRatio="none" aria-hidden="true">
+      <polygon :points="graph.area" class="area" />
+      <polyline :points="graph.line" class="line" vector-effect="non-scaling-stroke" />
+    </svg>
+    <div class="top">
+      <span class="rate" :class="{ dim: view.expPerHour === '—' }">{{ view.expPerHour }}<span class="unit">/hr</span></span>
+      <span class="side">
+        <span class="dim who">{{ view.name ?? 'Tracking' }}<template v-if="view.level !== null"> Lv.{{ view.level }}</template> · {{ view.paused ? 'Paused ' : '' }}{{ view.elapsed }}</span>
+        <span>+{{ fmt(view.expGained) }} <i>exp</i></span>
+      </span>
+    </div>
+
+    <div class="bar-row">
+      <div
+        class="track"
+        role="progressbar"
+        aria-label="EXP into this level"
+        :aria-valuenow="percent === null ? undefined : Number(percent)"
+        aria-valuemin="0"
+        aria-valuemax="100"
+      >
+        <div v-if="view.progress" class="fill" :style="{ width: `${view.progress.fraction * 100}%` }" />
+      </div>
+      <span class="pct">{{ percent === null ? '—' : `${percent}%` }}</span>
+    </div>
+
+    <div class="row">
+      <span>{{ nowRate }} <i>/hr (min)</i></span>
+      <span>{{ eta }} <i>to lv</i></span>
+      <span>{{ view.mesoPerHour ?? '—' }} <i>meso/hr</i></span>
+    </div>
+  </section>
+</template>
+
+<style scoped>
+.bryan {
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 5px 10px 6px;
+  background: #14161a;
+  color: #e8eaed;
+  font: 600 11px/1.25 'Nunito', system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.graph { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.area { fill: rgba(126, 231, 135, 0.16); }
+.line { fill: none; stroke: rgba(126, 231, 135, 0.45); stroke-width: 1.5; }
+.top, .bar-row, .row { position: relative; }
+.top, .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; white-space: nowrap; }
+.top { align-items: flex-end; }
+.side { min-width: 0; display: flex; flex-direction: column; align-items: flex-end; }
+.who { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.dim { color: #8b9098; }
+.rate { flex: none; font: 700 1.45rem/1.1 'Nunito', system-ui, sans-serif; color: #7ee787; }
+.rate.dim { color: #8b9098; }
+.unit { margin-left: 2px; font-size: 0.5em; font-weight: 600; color: #8b9098; }
+.bar-row { display: flex; align-items: center; gap: 6px; margin: 3px 0 4px; }
+.track { flex: 1; height: 6px; background: #2a2e35; border-radius: 3px; overflow: hidden; }
+.fill { height: 100%; background: #7ee787; transition: width 0.6s ease-out; }
+.pct { flex: none; min-width: 46px; text-align: right; }
+.row i { font-style: normal; color: #8b9098; }
+@media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
+</style>
