@@ -59,7 +59,10 @@ onMounted(() => {
     <div class="top">
       <span class="rate" :class="{ dim: view.expPerHour === '—' }">{{ view.expPerHour }}<span class="unit">/hr</span></span>
       <span class="side">
-        <span class="dim who">{{ view.name ?? 'Tracking' }}<template v-if="view.level !== null"> Lv.{{ view.level }}</template> · {{ view.paused ? 'Paused ' : '' }}{{ view.elapsed }}</span>
+        <span class="line1">
+          <span class="dim who">{{ view.name ?? 'Tracking' }}<template v-if="view.level !== null"> Lv.{{ view.level }}</template> · {{ view.paused ? 'Paused ' : '' }}{{ view.elapsed }}</span>
+          <img class="leaf" src="/maple-leaf.png" alt="MapleStory" width="16" height="16" />
+        </span>
         <span>+{{ fmt(view.expGained) }} <i>exp</i></span>
       </span>
     </div>
@@ -104,6 +107,8 @@ onMounted(() => {
 .top, .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; white-space: nowrap; }
 .top { align-items: flex-end; }
 .side { min-width: 0; display: flex; flex-direction: column; align-items: flex-end; }
+.line1 { min-width: 0; display: flex; align-items: center; gap: 6px; }
+.leaf { flex: none; width: 16px; height: 16px; object-fit: contain; }
 .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .dim { color: #8b9098; }
 .rate { flex: none; font: 700 1.45rem/1.1 'Nunito', system-ui, sans-serif; color: #7ee787; }
