@@ -1,11 +1,11 @@
 import type { StoredSlot } from './bag';
 import type { CharacterEntry } from './characters';
 import type { WeeklySessions } from './rankings';
-import type { MapSession } from './maps';
+import type { MapPlayer, MapRank, MapSession, RankSort } from './maps';
 import type { Reading } from './metrics';
 import type { NxStatus } from './nx-economy';
 import type { PlayerSnapshot } from './snapshot';
-import { createTtlCache } from './ttl-cache';
+import { createKeyedTtlCache, createTtlCache } from './ttl-cache';
 
 interface Envelope<T> {
   success: boolean;
@@ -160,12 +160,49 @@ export function openLootCrates(fingerprint: string, indexes: readonly number[]):
  * change slowly. Each is kept for a minute, so flipping between tabs doesn't refetch them. A reload starts fresh.
  */
 const LIST_TTL_MS = 60_000;
-const mapSessionsCache = createTtlCache<MapSession[]>(LIST_TTL_MS);
+const rankingCache = createKeyedTtlCache<MapRankingPage>(LIST_TTL_MS);
+const historyCache = createKeyedTtlCache<MapHistoryPage>(LIST_TTL_MS);
+const playersCache = createKeyedTtlCache<readonly MapPlayer[]>(LIST_TTL_MS);
 const charactersCache = createTtlCache<CharacterEntry[]>(LIST_TTL_MS);
 const weeklyCache = createTtlCache<WeeklySessions>(LIST_TTL_MS);
 
-export function listMapSessions(): Promise<MapSession[]> {
-  return mapSessionsCache.get(() => request('/api/maps/sessions'));
+/** One page of the Maps page's ranking: 20 maps in `sort` order, plus the counts the page's note needs. */
+export interface MapRankingPage {
+  readonly maps: readonly MapRank[];
+  /** The page the server returned (it pulls a page past the end back to the last one). */
+  readonly page: number;
+  readonly pageSize: number;
+  readonly totalMaps: number;
+  readonly totalPages: number;
+  /** The best EXP/h of any map, so bars are scaled the same on every page. */
+  readonly bestExpPerHour: number;
+  /** Sessions that count (30+ minutes, above 50K EXP/h) out of `tracked`, all named sessions of a minute or more. */
+  readonly qualifying: number;
+  readonly tracked: number;
+}
+
+/** One page of the Maps page's history: qualifying sessions, newest first. */
+export interface MapHistoryPage {
+  readonly sessions: readonly MapSession[];
+  readonly page: number;
+  readonly pageSize: number;
+  readonly total: number;
+  readonly totalPages: number;
+}
+
+export function getMapRanking(sort: RankSort, page: number): Promise<MapRankingPage> {
+  return rankingCache.get(`${sort}:${page}`, () => request(`/api/maps/ranking?sort=${sort}&page=${page}`));
+}
+
+/** One page of the history; `map` limits it to one map, null is every map. */
+export function getMapHistory(map: string | null, page: number): Promise<MapHistoryPage> {
+  const mapParam = map === null ? '' : `map=${encodeURIComponent(map)}&`;
+  return historyCache.get(`${map ?? ''}:${page}`, () => request(`/api/maps/history?${mapParam}page=${page}`));
+}
+
+/** The fastest players on one map. */
+export function getMapPlayers(map: string): Promise<readonly MapPlayer[]> {
+  return playersCache.get(map, async () => (await request<{ players: readonly MapPlayer[] }>(`/api/maps/players?map=${encodeURIComponent(map)}`)).players);
 }
 
 export function listCharacters(): Promise<CharacterEntry[]> {

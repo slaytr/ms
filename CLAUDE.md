@@ -208,6 +208,13 @@ The Classic UI uses exact pixel fonts, so we match pixels instead of OCR:
   fingerprint). Tiny. This is the source for graphs across sessions; group by `fingerprint`.
   The end snapshot carries the last known value forward (meso is only visible with the inventory open).
   A tab closed without Stop sends no end snapshot; the last `ms_readings` row is the fallback.
+- `ms_session_stats` (migration 015): one row per session with the numbers derived from its readings (span, level range,
+  EXP / EXP% / meso gained), so the Maps, Rankings and live pages never scan `ms_readings` (~150ms -> ~2ms at 140k rows). Only
+  readings-derived numbers are stored; map label, player and job are joined in at read time, so renames need nothing. **Every
+  write to `ms_readings` must call `markStatsStale(sessionId, client)` in the same transaction** (`appendReadings` and the three
+  admin reading edits do). It bumps `version` and sets `stale`; every read goes through `refreshStaleStats()` first, which recomputes
+  only stale sessions (and any session with no row, e.g. after `sync:prod`'s truncate cascade, so the table needn't be synced) and keeps
+  a row stale if a write landed mid-compute. The gain rules live in `api/store/session-stats.mjs` and mirror `lib/metrics.ts`.
 - Per-hour figures display as whole numbers under 1000, else truncated `numK` (`lib/format.ts`).
 
 ## Stack
@@ -222,10 +229,15 @@ Railway for prod: service `maplestory frontend` (renamed from `ms`; `railway ssh
 - `npm test`, `npm run typecheck`
 
 ## Caching
-- **Data lists, 1 minute, client side.** `listMapSessions`, `listCharacters` and `getWeeklySessions` (Maps, Characters, Rankings and the
-  home leaderboard) go through `createTtlCache` (`lib/ttl-cache.ts`) in `lib/api.ts`: kept 60s in memory from when the data arrived, one
-  shared request for simultaneous callers, failures never kept. A reload starts fresh. The cached arrays are shared between pages,
-  so nothing may sort or mutate them in place.
+- **Data lists, 1 minute, client side.** `getMapRanking`, `getMapHistory`, `getMapPlayers`, `listCharacters` and `getWeeklySessions` (Maps,
+  Characters, Rankings and the home leaderboard) go through `createTtlCache` / `createKeyedTtlCache` (`lib/ttl-cache.ts`, one entry per
+  sort+page or map+page) in `lib/api.ts`: kept 60s in memory from when the data arrived, one shared request for simultaneous callers,
+  failures never kept. A reload starts fresh. The cached values are shared between pages, so nothing may sort or mutate them in place.
+- **Maps page is paged by the server** (`api/routes/maps.mjs`, `store/maps.mjs`): `/api/maps/ranking?sort=&page=` (20 maps; sort is
+  expPerHour | mesoPerHour | seconds and orders ALL maps), `/api/maps/history?map=&page=` (20 qualifying sessions) and
+  `/api/maps/players?map=` (fetched when a map row opens). Qualifying (30+ min, over 50K EXP/h) is decided in SQL from the
+  thresholds in `lib/maps.ts`; ranking and player rules are `rankMaps`/`rankPlayers` run server-side through type stripping
+  (`api/lib/map-ranking.mjs`), so there is one implementation. `MAPS_PAGE_SIZE` = 20 is shared by both ends.
 - **Images, 1 day.** `/api/avatar/:name` and every static image (`.png/.webp/.svg/...`, e.g. `/nx`, `/potions`) are sent with
   `Cache-Control: public, max-age=86400`; pages and code stay `max-age=0` (revalidated by ETag) so a deploy is picked up. The static plugin's
   own header is off (`cacheControl: false`) because it overrides `setHeaders`; `server.mjs` sets it for every file.

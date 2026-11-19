@@ -1,4 +1,5 @@
 import { query, withTransaction } from '../db.mjs';
+import { markStatsStale } from './session-stats.mjs';
 
 const MAX_READINGS_PER_BATCH = 500;
 
@@ -109,22 +110,26 @@ export async function isOwner(id, token) {
   return rows.length > 0;
 }
 
-/** Appends readings in one statement via unnest. Returns the number inserted. */
+/** Appends readings in one statement via unnest, and marks the session's stats for recompute. Returns the number inserted. */
 export async function appendReadings(sessionId, readings) {
-  const { rowCount } = await query(
-    `insert into ms_readings (session_id, taken_at, meso, exp, exp_pct, level)
-     select $1, to_timestamp(t / 1000.0), m, x, e, l
-       from unnest($2::float8[], $3::bigint[], $4::bigint[], $5::numeric[], $6::int[]) as u(t, m, x, e, l)`,
-    [
-      sessionId,
-      readings.map((r) => r.takenAt),
-      readings.map((r) => r.meso),
-      readings.map((r) => r.exp ?? null),
-      readings.map((r) => r.expPct),
-      readings.map((r) => r.level),
-    ],
-  );
-  return rowCount;
+  return withTransaction(async (client) => {
+    const { rowCount } = await query(
+      `insert into ms_readings (session_id, taken_at, meso, exp, exp_pct, level)
+       select $1, to_timestamp(t / 1000.0), m, x, e, l
+         from unnest($2::float8[], $3::bigint[], $4::bigint[], $5::numeric[], $6::int[]) as u(t, m, x, e, l)`,
+      [
+        sessionId,
+        readings.map((r) => r.takenAt),
+        readings.map((r) => r.meso),
+        readings.map((r) => r.exp ?? null),
+        readings.map((r) => r.expPct),
+        readings.map((r) => r.level),
+      ],
+      client,
+    );
+    if (rowCount > 0) await markStatsStale(sessionId, client);
+    return rowCount;
+  });
 }
 
 /** Sets the session's display name (the tracker names it after the map once the map has been read). */

@@ -39,3 +39,25 @@ export function createTtlCache<T>(ttlMs: number, now: () => number = Date.now): 
     },
   };
 }
+
+/** Several `TtlCache`s sharing one TTL, told apart by a key (e.g. one per page of a list). */
+export interface KeyedTtlCache<T> {
+  /** The saved value for `key` if it is still fresh, otherwise the result of `load` (saved under that key). */
+  get(key: string, load: () => Promise<T>): Promise<T>;
+  /** Forgets every key. */
+  clear(): void;
+}
+
+export function createKeyedTtlCache<T>(ttlMs: number, now: () => number = Date.now): KeyedTtlCache<T> {
+  const caches = new Map<string, TtlCache<T>>();
+  return {
+    get(key, load) {
+      const cache = caches.get(key) ?? createTtlCache<T>(ttlMs, now);
+      caches.set(key, cache);
+      return cache.get(load);
+    },
+    clear() {
+      caches.forEach((cache) => cache.clear());
+    },
+  };
+}

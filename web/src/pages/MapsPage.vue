@@ -3,72 +3,129 @@ import { computed, onMounted, ref } from 'vue';
 
 import GameWindow from '../components/home/GameWindow.vue';
 import ExpChart from '../components/home/ExpChart.vue';
+import PagerBar from '../components/home/PagerBar.vue';
 import SkyScene from '../components/home/SkyScene.vue';
 import { useSessionSeries } from '../composables/useSessionSeries';
-import { listMapSessions } from '../lib/api';
+import { getMapHistory, getMapPlayers, getMapRanking, type MapHistoryPage, type MapRankingPage } from '../lib/api';
 import { formatPerHour } from '../lib/format';
 import {
   formatLevels,
   formatStay,
-  MAX_RANKED_MAPS,
   MIN_EXP_PER_HOUR,
   MIN_SESSION_SECONDS,
-  qualifyingSessions,
-  rankMaps,
-  rankPlayers,
   sessionRates,
-  sortRanks,
-  type MapSession,
-  type RankKey,
+  type MapPlayer,
+  type RankSort,
 } from '../lib/maps';
 
-/** Everything the API returned; `sessions` is the part that counts (30+ minutes, above 50K EXP/h). */
-const allSessions = ref<readonly MapSession[]>([]);
-const sessions = computed(() => qualifyingSessions(allSessions.value));
+/** The ranking and the history are separate pages of data; each loads (and pages) on its own. */
+const ranking = ref<MapRankingPage | null>(null);
+const history = ref<MapHistoryPage | null>(null);
+const players = ref<readonly MapPlayer[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
-const sortKey = ref<RankKey>('expPerHour');
+const sortKey = ref<RankSort>('expPerHour');
+const rankPage = ref(1);
+const historyPage = ref(1);
 const selectedMap = ref<string | null>(null);
 const sessionSeries = useSessionSeries();
 
-const columns: ReadonlyArray<{ key: RankKey; label: string; hint: string }> = [
+/**
+ * Runs `fetch` and hands the result to `apply`, but only for the newest call: a slow answer to an earlier
+ * click never overwrites a later one. `busy` is on while the newest call runs.
+ */
+function createLoader<T>(fetch: () => Promise<T>, apply: (data: T) => void) {
+  const busy = ref(false);
+  let latest = 0;
+  async function run() {
+    const mine = ++latest;
+    busy.value = true;
+    try {
+      const data = await fetch();
+      if (mine !== latest) return;
+      apply(data);
+      error.value = null;
+    } catch (cause) {
+      if (mine === latest) error.value = (cause as Error).message;
+    } finally {
+      if (mine === latest) busy.value = false;
+    }
+  }
+  return { busy, run };
+}
+
+const rankingLoader = createLoader(
+  () => getMapRanking(sortKey.value, rankPage.value),
+  (data) => {
+    ranking.value = data;
+    rankPage.value = data.page; // the server pulls a page past the end back to the last one
+  },
+);
+const historyLoader = createLoader(
+  () => getMapHistory(selectedMap.value, historyPage.value),
+  (data) => {
+    history.value = data;
+    historyPage.value = data.page;
+  },
+);
+const playersLoader = createLoader(
+  () => getMapPlayers(selectedMap.value ?? ''),
+  (data) => {
+    players.value = data;
+  },
+);
+
+const columns: ReadonlyArray<{ key: RankSort; label: string; hint: string }> = [
   { key: 'expPerHour', label: 'EXP / hr', hint: 'EXP per hour of the best session on this map' },
   { key: 'mesoPerHour', label: 'Meso / hr', hint: 'Meso per hour of the best session on this map (only counts while the inventory was open)' },
   { key: 'seconds', label: 'Time', hint: 'Total time tracked on this map' },
 ];
 
-// The 20 best maps by EXP/h (rankMaps already orders by it); the column choice only reorders those.
-const ranks = computed(() => sortRanks(rankMaps(sessions.value).slice(0, MAX_RANKED_MAPS), sortKey.value));
-const bestExpPerHour = computed(() => Math.max(1, ...ranks.value.map((r) => r.expPerHour)));
-/** The open map's fastest players, 3 per row. Empty when no map is open. */
-const mapPlayers = computed(() =>
-  selectedMap.value ? rankPlayers(sessions.value.filter((s) => s.map === selectedMap.value)) : [],
-);
 const MEDALS = ['gold', 'silver', 'bronze'] as const;
-const history = computed(() => (selectedMap.value ? sessions.value.filter((s) => s.map === selectedMap.value) : sessions.value));
+/** Rank of the first row on this page, so page 2 starts at 21. */
+const rankOffset = computed(() => (ranking.value ? (ranking.value.page - 1) * ranking.value.pageSize : 0));
 
 /** Why some tracked sessions are missing from the tables. */
 const qualifyNote = computed(
   () =>
-    `Only sessions of ${MIN_SESSION_SECONDS / 60}+ minutes above ${formatPerHour(MIN_EXP_PER_HOUR)} EXP/h are shown (${sessions.value.length} of ${allSessions.value.length} tracked).`,
+    `Only sessions of ${MIN_SESSION_SECONDS / 60}+ minutes above ${formatPerHour(MIN_EXP_PER_HOUR)} EXP/h are shown (${ranking.value?.qualifying ?? 0} of ${ranking.value?.tracked ?? 0} tracked).`,
 );
 const fmt = (n: number) => Math.round(n).toLocaleString();
 const pct = (n: number) => `${n.toFixed(1)}%`;
 const when = (ms: number) => new Date(ms).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-const barWidth = (expPerHour: number) => `${Math.max(2, (expPerHour / bestExpPerHour.value) * 100)}%`;
+const barWidth = (expPerHour: number) => `${Math.max(2, (expPerHour / Math.max(1, ranking.value?.bestExpPerHour ?? 1)) * 100)}%`;
 
-function toggleMap(map: string) {
-  selectedMap.value = selectedMap.value === map ? null : map;
+function setSort(key: RankSort) {
+  if (key === sortKey.value) return;
+  sortKey.value = key;
+  rankPage.value = 1;
+  void rankingLoader.run();
 }
 
+function goRankPage(page: number) {
+  rankPage.value = page;
+  void rankingLoader.run();
+}
+
+function goHistoryPage(page: number) {
+  historyPage.value = page;
+  void historyLoader.run();
+}
+
+/** Opens `map` (its fastest players, and the history narrowed to it), or closes it when it is already open. */
+function selectMap(map: string | null) {
+  selectedMap.value = map;
+  historyPage.value = 1;
+  players.value = [];
+  void historyLoader.run();
+  if (map !== null) void playersLoader.run();
+}
+
+const toggleMap = (map: string) => selectMap(selectedMap.value === map ? null : map);
+
 onMounted(async () => {
-  try {
-    allSessions.value = await listMapSessions();
-  } catch (cause) {
-    error.value = (cause as Error).message;
-  } finally {
-    loading.value = false;
-  }
+  await Promise.all([rankingLoader.run(), historyLoader.run()]);
+  loading.value = false;
 });
 </script>
 
@@ -79,20 +136,20 @@ onMounted(async () => {
       <h1 class="heading">Map rankings</h1>
 
       <p v-if="error" class="alert" role="alert">{{ error }}</p>
-      <p v-else-if="loading" class="status">Loading…</p>
-      <p v-else-if="sessions.length === 0" class="status">
-        <template v-if="allSessions.length === 0">
+      <p v-if="loading" class="status">Loading…</p>
+      <p v-else-if="ranking && ranking.qualifying === 0" class="status">
+        <template v-if="ranking.tracked === 0">
           No map data yet. Track a session with the minimap visible and it will show up here once it qualifies.
         </template>
         <template v-else>
-          None of your {{ allSessions.length }} tracked sessions qualify yet. A session needs 30+ minutes at over 50K EXP/h.
+          None of your {{ ranking.tracked }} tracked sessions qualify yet. A session needs 30+ minutes at over 50K EXP/h.
         </template>
       </p>
 
-      <template v-else>
+      <template v-else-if="ranking && history">
         <GameWindow title="Ranking">
-          <template #aside>{{ ranks.length }} {{ ranks.length === 1 ? 'map' : 'maps' }}</template>
-          <div class="scroll">
+          <template #aside>{{ ranking.totalMaps }} {{ ranking.totalMaps === 1 ? 'map' : 'maps' }}</template>
+          <div class="scroll" :class="{ busy: rankingLoader.busy.value }" :aria-busy="rankingLoader.busy.value">
             <table class="ranking">
               <colgroup>
                 <col class="c-rank" />
@@ -108,16 +165,16 @@ onMounted(async () => {
                   <th class="left">Map</th>
                   <th class="left" title="Highest EXP/h on this map">Top player</th>
                   <th v-for="col in columns" :key="col.key" :class="col.key === 'expPerHour' ? 'left' : 'num'" :aria-sort="sortKey === col.key ? 'descending' : undefined">
-                    <button type="button" :class="{ on: sortKey === col.key }" :title="col.hint" @click="sortKey = col.key">
+                    <button type="button" :class="{ on: sortKey === col.key }" :title="col.hint" @click="setSort(col.key)">
                       {{ col.label }}<span v-if="sortKey === col.key" aria-hidden="true"> ▼</span>
                     </button>
                   </th>
                 </tr>
               </thead>
               <tbody>
-                <template v-for="(rank, index) in ranks" :key="rank.map">
+                <template v-for="(rank, index) in ranking.maps" :key="rank.map">
                 <tr :class="{ picked: selectedMap === rank.map }">
-                  <td class="num rank" :class="{ top: index < 3 }">{{ index + 1 }}</td>
+                  <td class="num rank" :class="{ top: rankOffset + index < 3 }">{{ rankOffset + index + 1 }}</td>
                   <td class="left">
                     <button type="button" class="map-btn" :aria-expanded="selectedMap === rank.map" title="Show the fastest players on this map" @click="toggleMap(rank.map)">
                       <span class="caret" aria-hidden="true">{{ selectedMap === rank.map ? '▼' : '▶' }}</span>{{ rank.map }}
@@ -137,8 +194,9 @@ onMounted(async () => {
                 <tr v-if="selectedMap === rank.map" class="players-row">
                   <td colspan="6">
                     <p class="players-title">Fastest players on {{ rank.map }} <span class="dim">best session EXP/h per player</span></p>
-                    <ol class="players">
-                      <li v-for="(p, i) in mapPlayers" :key="p.playerKey" class="player" :title="[p.player, p.level !== null ? `Lv ${p.level}` : null, p.job].filter(Boolean).join(' · ')">
+                    <p v-if="playersLoader.busy.value" class="detail-msg">Loading…</p>
+                    <ol v-else class="players">
+                      <li v-for="(p, i) in players" :key="p.playerKey" class="player" :title="[p.player, p.level !== null ? `Lv ${p.level}` : null, p.job].filter(Boolean).join(' · ')">
                         <span class="place" :class="MEDALS[i]">{{ i + 1 }}</span>
                         <span class="pname">{{ p.player }}</span>
                         <span class="prate">{{ formatPerHour(p.expPerHour) }}<span class="unit">/h</span></span>
@@ -150,15 +208,16 @@ onMounted(async () => {
               </tbody>
             </table>
           </div>
+          <PagerBar :page="ranking.page" :total-pages="ranking.totalPages" :busy="rankingLoader.busy.value" label="Map ranking pages" @change="goRankPage" />
         </GameWindow>
 
         <p class="note">{{ qualifyNote }}</p>
         <GameWindow title="History" class="history">
           <template #aside>
-            <button v-if="selectedMap" type="button" class="clear" @click="selectedMap = null">{{ selectedMap }} ✕</button>
+            <button v-if="selectedMap" type="button" class="clear" @click="selectMap(null)">{{ selectedMap }} ✕</button>
             <template v-else>All maps</template>
           </template>
-          <div class="scroll">
+          <div class="scroll" :class="{ busy: historyLoader.busy.value }" :aria-busy="historyLoader.busy.value">
             <table class="history-table">
               <colgroup>
                 <col class="h-when" />
@@ -187,7 +246,7 @@ onMounted(async () => {
                 </tr>
               </thead>
               <tbody>
-                <template v-for="(s, index) in history" :key="s.id">
+                <template v-for="s in history.sessions" :key="s.id">
                 <tr :class="{ picked: sessionSeries.openId.value === s.id }">
                   <td class="left dim">
                     <button
@@ -224,6 +283,7 @@ onMounted(async () => {
               </tbody>
             </table>
           </div>
+          <PagerBar :page="history.page" :total-pages="history.totalPages" :busy="historyLoader.busy.value" label="History pages" @change="goHistoryPage" />
         </GameWindow>
       </template>
     </main>
@@ -259,7 +319,8 @@ onMounted(async () => {
 .note { margin: -8px 0 -12px; text-align: center; font-size: 0.8rem; color: var(--c-ffffff-text); text-shadow: 0 1px 0 var(--ink), 0 2px 0 var(--ink); }
 .alert { background: var(--c-fff0ee-bg); border-color: var(--c-c4361d-edge); color: var(--c-8a1d0c-text); }
 
-.scroll { margin: -18px -20px -20px; overflow-x: auto; }
+.scroll { margin: -18px -20px -20px; overflow-x: auto; transition: opacity 0.15s; }
+.scroll.busy { opacity: 0.55; }
 table { width: 100%; min-width: 640px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 th, td { padding: 9px 12px; white-space: nowrap; border-bottom: 2px solid var(--c-ecdcae-edge); }
 th { position: sticky; top: 0; font-size: 0.8rem; font-weight: 800; color: var(--c-6b4a22-text); background: var(--c-ffeec0-bg); border-bottom: 3px solid var(--ink); }

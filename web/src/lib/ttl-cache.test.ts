@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createTtlCache } from './ttl-cache';
+import { createKeyedTtlCache, createTtlCache } from './ttl-cache';
 
 /** A loader that counts how often it was really called, and a clock the test moves by hand. */
 function setup(ttlMs = 60_000) {
@@ -62,5 +62,33 @@ describe('createTtlCache', () => {
     await cache.get(load);
     cache.clear();
     expect(await cache.get(load)).toBe('value 2');
+  });
+});
+
+describe('createKeyedTtlCache', () => {
+  it('keeps each key separately, so one page never answers for another', async () => {
+    let calls = 0;
+    const cache = createKeyedTtlCache<string>(60_000, () => 0);
+    expect(await cache.get('a', async () => `a${++calls}`)).toBe('a1');
+    expect(await cache.get('b', async () => `b${++calls}`)).toBe('b2');
+    expect(await cache.get('a', async () => `a${++calls}`)).toBe('a1');
+    expect(calls).toBe(2);
+  });
+
+  it('expires each key on its own clock', async () => {
+    let clock = 0;
+    const cache = createKeyedTtlCache<string>(1_000, () => clock);
+    await cache.get('a', async () => 'old');
+    clock = 1_000;
+    expect(await cache.get('a', async () => 'new')).toBe('new');
+  });
+
+  it('clear() forgets every key', async () => {
+    const cache = createKeyedTtlCache<string>(60_000, () => 0);
+    await cache.get('a', async () => 'one');
+    await cache.get('b', async () => 'two');
+    cache.clear();
+    expect(await cache.get('a', async () => 'again')).toBe('again');
+    expect(await cache.get('b', async () => 'again too')).toBe('again too');
   });
 });

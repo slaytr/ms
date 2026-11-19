@@ -1,4 +1,5 @@
 import { query, withTransaction } from '../db.mjs';
+import { markStatsStale } from './session-stats.mjs';
 
 /** API field -> column, for the fields an admin may set on a snapshot. */
 const SNAPSHOT_COLUMNS = { name: 'name', job: 'job', level: 'level', exp: 'exp', expPct: 'exp_pct', meso: 'meso' };
@@ -116,18 +117,25 @@ export async function updateAdminSession(id, patch) {
 export async function updateReading(sessionId, readingId, patch) {
   const pairs = pickColumns(patch, READING_COLUMNS);
   if (pairs.length === 0) return true;
-  const { rowCount } = await query(
-    `update ms_readings set ${pairs.map(([column], i) => `${column} = $${i + 3}`).join(', ')}
-      where id = $1 and session_id = $2`,
-    [readingId, sessionId, ...pairs.map(([, value]) => value)],
-  );
-  return rowCount > 0;
+  return withTransaction(async (client) => {
+    const { rowCount } = await query(
+      `update ms_readings set ${pairs.map(([column], i) => `${column} = $${i + 3}`).join(', ')}
+        where id = $1 and session_id = $2`,
+      [readingId, sessionId, ...pairs.map(([, value]) => value)],
+      client,
+    );
+    if (rowCount > 0) await markStatsStale(sessionId, client);
+    return rowCount > 0;
+  });
 }
 
 /** Deletes readings (by id) from a session. Returns how many went. */
 export async function deleteReadings(sessionId, ids) {
-  const { rowCount } = await query('delete from ms_readings where session_id = $1 and id = any($2::bigint[])', [sessionId, ids]);
-  return rowCount;
+  return withTransaction(async (client) => {
+    const { rowCount } = await query('delete from ms_readings where session_id = $1 and id = any($2::bigint[])', [sessionId, ids], client);
+    if (rowCount > 0) await markStatsStale(sessionId, client);
+    return rowCount;
+  });
 }
 
 /**
@@ -135,12 +143,16 @@ export async function deleteReadings(sessionId, ids) {
  * (a misread 8 -> 18 across a stretch). Returns how many changed.
  */
 export async function setReadingLevels(sessionId, level, onlyLevel) {
-  const { rowCount } = await query(
-    `update ms_readings set level = $2
-      where session_id = $1 and ($3::int is null or level = $3) and level is distinct from $2`,
-    [sessionId, level, onlyLevel ?? null],
-  );
-  return rowCount;
+  return withTransaction(async (client) => {
+    const { rowCount } = await query(
+      `update ms_readings set level = $2
+        where session_id = $1 and ($3::int is null or level = $3) and level is distinct from $2`,
+      [sessionId, level, onlyLevel ?? null],
+      client,
+    );
+    if (rowCount > 0) await markStatsStale(sessionId, client);
+    return rowCount;
+  });
 }
 
 /** Deletes a whole session (readings and snapshots cascade). */

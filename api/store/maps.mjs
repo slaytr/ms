@@ -1,124 +1,49 @@
 import { query } from '../db.mjs';
+import { clampPage, pageCount } from '../lib/paging.mjs';
+import { rankingPage } from '../lib/map-ranking.mjs';
+import { MAP_TOP_PLAYERS, MAPS_PAGE_SIZE, MIN_EXP_PER_HOUR, MIN_SESSION_SECONDS, rankPlayers } from '../../web/src/lib/maps.ts';
+import { refreshStaleStats } from './session-stats.mjs';
 
 /** Sessions shorter than this (first to last reading) say nothing reliable about a map's rate. */
-const MIN_SESSION_SECONDS = 60;
-const MAX_SESSIONS = 1000;
+const TRACKED_MIN_SECONDS = 60;
+const MAX_WEEK_SESSIONS = 1000;
 
 /**
- * One row per labelled session: which map, who, for how long, and what was gained. A session is
- * named after the first map the minimap showed, so this is "where the session was spent".
- *
- * The gains mirror web/src/lib/metrics.ts: they sum the change between consecutive successful reads
- * of each field (a failed read is skipped, a drop is a death penalty and counts as zero).
- * A wrapped bar (a drop of 50+ points) is a level-up whatever the label says, and a rising level label
- * only counts as one unless the readings are under 30s apart and EXP kept climbing (the label just
- * catching up to a level-up already counted), exactly as `leveledUp` does in metrics.ts.
- * EXP uses the raw counter, which resets on a level-up, so the single gap that crosses a level-up
- * contributes 0 to `expGained` (a slight undercount, never an invention). `expPctGained` wraps the
- * level-up exactly, so it is also the level-fair figure for comparing characters.
+ * One row per session: which map, who, for how long, and what was gained. A session is named after the
+ * first map the minimap showed, so this is "where the session was spent". The numbers come from
+ * ms_session_stats (see session-stats.mjs); the names are joined in live, so a rename needs no recompute.
  */
-const SESSION_STATS_SQL = `
-with e as (
-  select session_id, taken_at, exp, level, exp_pct,
-         lag(exp) over w as p_exp, lag(level) over w as p_level, lag(exp_pct) over w as p_pct,
-         lag(taken_at) over w as p_at
-    from ms_readings
-   where exp is not null
-  and ($5::uuid[] is null or session_id = any($5::uuid[]))
-  window w as (partition by session_id order by taken_at)
-), exp_gain as (
-  select session_id,
-         sum(case
-               when p_exp is null then 0
-               when exp_pct is not null and p_pct is not null and exp_pct - p_pct < -50 then 0
-               when level is not null and p_level is not null and level > p_level
-                    and not (taken_at - p_at <= interval '30 seconds' and exp >= p_exp) then 0
-               else greatest(0, exp - p_exp)
-             end)::bigint as gained
-    from e group by session_id
-), p as (
-  select session_id, taken_at, exp, exp_pct, level,
-         lag(exp_pct) over w as p_pct, lag(level) over w as p_level, lag(exp) over w as p_exp,
-         lag(taken_at) over w as p_at
-    from ms_readings
-   where exp_pct is not null
-  and ($5::uuid[] is null or session_id = any($5::uuid[]))
-  window w as (partition by session_id order by taken_at)
-), pct_gain as (
-  select session_id,
-         sum(case
-               when p_pct is null then 0
-               when exp_pct - p_pct < -50 then 100 - p_pct + exp_pct
-               when level is not null and p_level is not null and level > p_level
-                    and not (taken_at - p_at <= interval '30 seconds'
-                             and (case when exp is not null and p_exp is not null then exp >= p_exp else exp_pct >= p_pct end))
-                 then 100 - p_pct + exp_pct
-               else greatest(0, exp_pct - p_pct)
-             end)::float8 as gained
-    from p group by session_id
-), m as (
-  select session_id, meso, lag(meso) over (partition by session_id order by taken_at) as p_meso
-    from ms_readings
-   where meso is not null
-  and ($5::uuid[] is null or session_id = any($5::uuid[]))
-), meso_gain as (
-  select session_id, sum(case when p_meso is null then 0 else greatest(0, meso - p_meso) end)::bigint as gained
-    from m group by session_id
-), span as (
-  select session_id,
-         min(taken_at) as first_at, max(taken_at) as last_at, count(*)::int as readings,
-         min(level) as level_from, max(level) as level_to
-    from ms_readings
-   where ($5::uuid[] is null or session_id = any($5::uuid[]))
-   group by session_id
-)
+const SESSION_SELECT = `
 select s.id,
        s.label as map,
        coalesce(nullif(st.name, ''), nullif(s.character, ''), nullif(ci.name, ''), 'Unknown') as player,
        coalesce(nullif(st.job, ''), nullif(en.job, ''), nullif(ci.job, '')) as job,
        coalesce(s.fingerprint, lower(coalesce(nullif(st.name, ''), nullif(s.character, ''), s.id::text))) as "playerKey",
-       extract(epoch from sp.first_at) * 1000 as "startedAt",
-       extract(epoch from (sp.last_at - sp.first_at)) as seconds,
-       sp.level_from as "levelFrom", sp.level_to as "levelTo",
-       coalesce(eg.gained, 0) as "expGained",
-       coalesce(pg.gained, 0) as "expPctGained",
-       coalesce(mg.gained, 0) as "mesoGained"
-  from ms_capture_sessions s
-  join span sp on sp.session_id = s.id
+       extract(epoch from x.first_at) * 1000 as "startedAt",
+       x.seconds,
+       x.level_from as "levelFrom", x.level_to as "levelTo",
+       x.exp_gained as "expGained", x.exp_pct_gained as "expPctGained", x.meso_gained as "mesoGained"
+  from ms_session_stats x
+  join ms_capture_sessions s on s.id = x.session_id
   left join ms_session_snapshots st on st.session_id = s.id and st.kind = 'start'
   left join ms_session_snapshots en on en.session_id = s.id and en.kind = 'end'
-  left join ms_character_identities ci on ci.fingerprint = s.fingerprint
-  left join exp_gain eg on eg.session_id = s.id
-  left join pct_gain pg on pg.session_id = s.id
-  left join meso_gain mg on mg.session_id = s.id
- where ($3::boolean = false or s.label <> '')
-   and sp.first_at >= to_timestamp($4::float8 / 1000.0)
-   and sp.readings >= 2
-   and extract(epoch from (sp.last_at - sp.first_at)) >= $1
- order by sp.first_at desc
- limit $2`;
-
-/** Per-session map stats, newest first. Numbers come back as JS numbers (Postgres returns bigint as text). */
-export function listMapSessions() {
-  return listSessionStats({ requireLabel: true, sinceMs: 0 });
-}
+  left join ms_character_identities ci on ci.fingerprint = s.fingerprint`;
 
 /**
- * The same per-session stats with a choice of filters: `requireLabel` drops sessions that never got
- * a map name, and `sinceMs` keeps only sessions whose first reading is at or after that epoch-ms time.
+ * The Maps page counts only real grinding sessions: named, long enough to trust and fast enough to matter.
+ * $1 = minimum seconds, $2 = minimum EXP/h (the thresholds of `isQualifyingSession` in web/src/lib/maps.ts),
+ * $3 = a map name to limit to, or null for every map. Compared without dividing, so a zero-length session is safe.
  */
-export function listSessionStats({ requireLabel, sinceMs }) {
-  return runSessionStats({ minSeconds: MIN_SESSION_SECONDS, requireLabel, sinceMs, ids: null });
-}
+const QUALIFYING = `
+ where s.label <> '' and x.readings >= 2
+   and x.seconds >= $1 and x.exp_gained::float8 * 3600 > $2::float8 * x.seconds
+   and ($3::text is null or s.label = $3)`;
 
-/** Stats for just these sessions (no length minimum), without scanning every reading in the table. */
-export function listStatsForSessions(ids) {
-  return runSessionStats({ minSeconds: 0, requireLabel: false, sinceMs: 0, ids });
-}
+const QUALIFYING_PARAMS = (map) => [MIN_SESSION_SECONDS, MIN_EXP_PER_HOUR, map ?? null];
 
-async function runSessionStats({ minSeconds, requireLabel, sinceMs, ids }) {
-  const { rows } = await query(SESSION_STATS_SQL, [minSeconds, MAX_SESSIONS, requireLabel, sinceMs, ids]);
-  return rows.map((row) => ({
+/** Numbers come back as JS numbers (Postgres returns bigint as text unless parsed, and numeric always). */
+function toSession(row) {
+  return {
     id: row.id,
     map: row.map,
     player: row.player,
@@ -131,5 +56,75 @@ async function runSessionStats({ minSeconds, requireLabel, sinceMs, ids }) {
     expGained: Number(row.expGained),
     expPctGained: Number(row.expPctGained),
     mesoGained: Number(row.mesoGained),
-  }));
+  };
+}
+
+/** Every qualifying session (optionally of one map), newest first. Reads the stats table only. */
+async function qualifyingSessions(map) {
+  await refreshStaleStats();
+  const { rows } = await query(`${SESSION_SELECT}${QUALIFYING} order by x.first_at desc, s.id`, QUALIFYING_PARAMS(map));
+  return rows.map(toSession);
+}
+
+/** How many named sessions of a minute or more have been tracked: the "N tracked" the page compares against. */
+async function countTracked() {
+  const { rows } = await query(
+    `select count(*)::int as n from ms_session_stats x join ms_capture_sessions s on s.id = x.session_id
+      where s.label <> '' and x.readings >= 2 and x.seconds >= $1`,
+    [TRACKED_MIN_SECONDS],
+  );
+  return rows[0].n;
+}
+
+/**
+ * One page of the map ranking: 20 maps ordered by `sort`, each with its fastest player, plus how many
+ * sessions qualify out of how many are tracked (for the note under the table).
+ */
+export async function getMapRanking({ sort, page }) {
+  const [sessions, tracked] = await Promise.all([qualifyingSessions(null), countTracked()]);
+  return { ...rankingPage(sessions, { sort, page }), qualifying: sessions.length, tracked };
+}
+
+/** The fastest players on one map (one entry per player, rated by their best session there). */
+export async function getMapPlayers(map) {
+  return rankPlayers(await qualifyingSessions(map), MAP_TOP_PLAYERS);
+}
+
+/** One page of qualifying sessions, newest first: every map, or just `map`. */
+export async function getMapHistory({ map, page }) {
+  await refreshStaleStats();
+  const params = QUALIFYING_PARAMS(map);
+  const { rows: counted } = await query(
+    `select count(*)::int as n from ms_session_stats x join ms_capture_sessions s on s.id = x.session_id${QUALIFYING}`,
+    params,
+  );
+  const total = counted[0].n;
+  const totalPages = pageCount(total, MAPS_PAGE_SIZE);
+  const current = clampPage(page, totalPages);
+  const { rows } = await query(`${SESSION_SELECT}${QUALIFYING} order by x.first_at desc, s.id limit $4 offset $5`, [
+    ...params,
+    MAPS_PAGE_SIZE,
+    (current - 1) * MAPS_PAGE_SIZE,
+  ]);
+  return { sessions: rows.map(toSession), page: current, pageSize: MAPS_PAGE_SIZE, total, totalPages };
+}
+
+/** Every session that started at or after `sinceMs` (epoch ms), named or not, newest first. For the weekly rankings. */
+export async function listWeekSessions(sinceMs) {
+  await refreshStaleStats();
+  const { rows } = await query(
+    `${SESSION_SELECT}
+      where x.readings >= 2 and x.seconds >= $1 and x.first_at >= to_timestamp($2::float8 / 1000.0)
+      order by x.first_at desc, s.id
+      limit $3`,
+    [TRACKED_MIN_SECONDS, sinceMs, MAX_WEEK_SESSIONS],
+  );
+  return rows.map(toSession);
+}
+
+/** Stats for just these sessions (no length minimum), e.g. whoever is grinding right now. */
+export async function listStatsForSessions(ids) {
+  await refreshStaleStats();
+  const { rows } = await query(`${SESSION_SELECT} where x.readings >= 2 and s.id = any($1::uuid[])`, [ids]);
+  return rows.map(toSession);
 }
