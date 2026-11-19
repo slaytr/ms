@@ -9,7 +9,7 @@ import { emptyPotHistory, recordPotHistory, type PotHistory } from '../lib/pot-h
 import { buildPotView,observePots, observeQuick, pausePots, rescanPots, resumePots, startPotTracking } from '../lib/pot-tracker';
 import { cleanSessionName, MAX_PARTY_SIZE, MIN_PARTY_SIZE } from '../lib/session-input';
 import { saveSessionToken } from '../lib/session-tokens';
-import { applyIdentity, carryForward, snapshotFrom, type PlayerIdentity, type PlayerSnapshot } from '../lib/snapshot';
+import { applyIdentity, carryForward, nextRawMissStreak, snapshotFrom, type PlayerIdentity, type PlayerSnapshot } from '../lib/snapshot';
 import { useDetector } from './useDetector';
 import { useMissReporter } from './useMissReporter';
 import { useScreenCapture } from './useScreenCapture';
@@ -65,6 +65,8 @@ export function useTracker() {
   let sentPartySize = MIN_PARTY_SIZE;
   /** Latest known state of the player, carried forward across ticks; becomes the session's end snapshot. */
   let latestSnapshot: PlayerSnapshot | null = null;
+  /** Ticks in a row with the EXP percent but no raw EXP: past a few, raw EXP is hidden, not misread. */
+  let rawMissStreak = 0;
   /** The name and spec the player entered; overrides whatever the detector reads. */
   let identity: PlayerIdentity | null = null;
   /** The session the current identity was last saved against, so it is sent once per session, not every tick. */
@@ -222,7 +224,8 @@ export function useTracker() {
         ticks.value += 1;
         lastDetection.value = detection;
         streak.value = coreReady(detection) ? streak.value + 1 : 0;
-        latestSnapshot = applyIdentity(carryForward(latestSnapshot, detection, Date.now()), identity);
+        rawMissStreak = nextRawMissStreak(rawMissStreak, detection);
+        latestSnapshot = applyIdentity(carryForward(latestSnapshot, detection, Date.now(), rawMissStreak), identity);
         current.value = latestSnapshot;
         if (mapLabel(detection.map)) map.value = detection.map;
         await record(detection);
@@ -261,6 +264,7 @@ export function useTracker() {
       savedCount.value = 0;
       pending = [];
       latestSnapshot = null;
+      rawMissStreak = 0;
       identity = null;
       identitySavedFor = '';
       current.value = null;
@@ -331,6 +335,7 @@ export function useTracker() {
       savedCount.value = 0;
       pending = [];
       latestSnapshot = null;
+      rawMissStreak = 0;
       identitySavedFor = '';
       current.value = null;
       session.id = '';

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { Detection } from './detect/detect.ts';
-import { carryForward, snapshotFrom } from './snapshot';
+import { carryForward, snapshotFrom, nextRawMissStreak, RAW_GONE_AFTER_TICKS } from './snapshot';
 
 const detection = (over: Partial<Detection> = {}): Detection => ({
   meso: 721_592,
@@ -97,5 +97,22 @@ describe('carryForward when raw EXP stops appearing', () => {
     const next = carryForward(raw, detection({ exp: null, expPct: 3, level: 62 }), 2000);
     expect(next.exp).toBeNull();
     expect(next.expPct).toBe(3);
+  });
+
+  it('moves to the percent alone when raw EXP stays missing for several ticks, even within a level', () => {
+    const raw = carryForward(null, detection({ exp: 999_000, expPct: 50, level: 61 }), 1000);
+    const early = carryForward(raw, detection({ exp: null, expPct: 50.1, level: 61 }), 2000, 2);
+    expect(early.exp).toBe(999_000);
+    const next = carryForward(early, detection({ exp: null, expPct: 50.2, level: 61 }), 3000, RAW_GONE_AFTER_TICKS);
+    expect(next.exp).toBeNull();
+    expect(next.expPct).toBe(50.2);
+  });
+
+  it('counts the ticks in a row that showed the percent without raw EXP', () => {
+    const missing = detection({ exp: null, expPct: 50 });
+    expect(nextRawMissStreak(0, missing)).toBe(1);
+    expect(nextRawMissStreak(2, missing)).toBe(3);
+    expect(nextRawMissStreak(2, detection({ exp: 900_000, expPct: 50 }))).toBe(0);
+    expect(nextRawMissStreak(2, detection({ exp: null, expPct: null }))).toBe(0);
   });
 });

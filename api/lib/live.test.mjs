@@ -49,6 +49,13 @@ describe('shapeLive', () => {
     expect(entry.expGained).toBe(7_000);
   });
 
+  it('keeps counting after raw EXP disappears part way through: exact EXP plus the percent gained since', () => {
+    const need = expToNext(62);
+    const [entry] = shapeLive([row({ id: 's1', expGained: 40_000, expPctGained: 9, expTailPctGained: 3, seconds: 1800 })], latest({ s1: { level: 62, pct: 80 } }));
+    expect(entry.estimated).toBe(true);
+    expect(entry.expGained).toBeCloseTo(40_000 + need * 0.03, 0);
+  });
+
   it('counts nothing for a percent-only session whose level was never read', () => {
     const [entry] = shapeLive([row({ expGained: 0, expPctGained: 5 })], latest({}));
     expect(entry.expGained).toBe(0);

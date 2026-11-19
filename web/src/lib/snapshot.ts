@@ -41,6 +41,14 @@ export function applyIdentity(snapshot: PlayerSnapshot, identity: PlayerIdentity
   return { ...snapshot, name: identity.name, job: identity.job };
 }
 
+/** Ticks (~3s each) of percent without raw EXP before the raw EXP is taken as hidden rather than misread. */
+export const RAW_GONE_AFTER_TICKS = 3;
+
+/** How many ticks in a row (this one included) showed the EXP percent but no raw EXP. */
+export function nextRawMissStreak(streak: number, detection: Detection): number {
+  return detection.exp === null && detection.expPct !== null ? streak + 1 : 0;
+}
+
 /** What one detection says on its own. Unread values stay null: a snapshot never guesses. */
 export function snapshotFrom(detection: Detection, takenAt: number): PlayerSnapshot {
   return carryForward(null, detection, takenAt);
@@ -53,7 +61,13 @@ export function snapshotFrom(detection: Detection, takenAt: number): PlayerSnaps
  * percent come from the same tick, and the identity fields from the same name plate, so the result
  * never mixes one tick's EXP with another's percent.
  */
-export function carryForward(previous: PlayerSnapshot | null, detection: Detection, takenAt: number): PlayerSnapshot {
+export function carryForward(
+  previous: PlayerSnapshot | null,
+  detection: Detection,
+  takenAt: number,
+  /** Ticks in a row that showed the percent but no raw EXP, this one included (see `nextRawMissStreak`). */
+  rawMissStreak = 0,
+): PlayerSnapshot {
   const base = previous ?? { takenAt, ...BLANK };
   const { character } = detection;
   const hasIdentity = character.fingerprint !== null;
@@ -61,7 +75,7 @@ export function carryForward(previous: PlayerSnapshot | null, detection: Detecti
   // single failed read (keep the last exact pair, never mixing two ticks) by raw EXP never having been seen at
   // this level: none known yet, or the level just changed.
   const levelChanged = detection.level !== null && base.level !== null && detection.level !== base.level;
-  const percentOnly = detection.exp === null && detection.expPct !== null && (base.exp === null || levelChanged);
+  const percentOnly = detection.exp === null && detection.expPct !== null && (base.exp === null || levelChanged || rawMissStreak >= RAW_GONE_AFTER_TICKS);
   const hasExp = detection.exp !== null || percentOnly;
 
   return {
