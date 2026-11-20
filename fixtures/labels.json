@@ -1416,5 +1416,28 @@
     "street": "Deep Passage",
     "exp": "378,038[32.96%]",
     "map": "Deca{ye}d Tunnel III"
+  },
+  "inventory-open_1368x800_1795215976945.png": {
+    "level": "62",
+    "meso": "620,735",
+    "name": "Pa{yY}oBills",
+    "job": "Wizard (Ice,Lightning)",
+    "exp": "182,921[13.59%]",
+    "quickSlots": [
+      [
+        "Lemon:964",
+        "Orange Potion:1112",
+        "Pure Water:106",
+        "?:409"
+      ],
+      [
+        "White Potion:118",
+        "Blue Potion:444",
+        "Elixir:108",
+        "Pumpkin Pie:293"
+      ]
+    ],
+    "street": "Victoria Road",
+    "map": "Henesys"
   }
 }

@@ -118,3 +118,14 @@ describe('quickSlotOrigin', () => {
     expect(readQuickSlots(frame, { x: 100, y: 190 }, DEFAULT_INVENTORY_TEMPLATES)).toBeNull();
   });
 });
+
+describe('Elixir and Pumpkin Pie on the quick slots', () => {
+  // The frame is labelled too (so the generic checks above cover it); this pins the two new items explicitly.
+  const file = 'inventory-open_1368x800_1795215976945.png';
+  const slotAt = (row: number, col: number) => readFrame(file)?.find((s) => s.row === row && s.col === col);
+
+  it('finds both items by icon and reads their counts', () => {
+    expect(slotAt(1, 2)).toMatchObject({ itemId: idByName.get('Elixir'), quantity: 108 });
+    expect(slotAt(1, 3)).toMatchObject({ itemId: idByName.get('Pumpkin Pie'), quantity: 293 });
+  });
+});

@@ -31,7 +31,8 @@ describe('POTIONS', () => {
     expect(potionById(2000000)).toMatchObject({ name: 'Red Potion', hp: 100, buyPrice: 50, sellPrice: 5 });
     expect(potionById(2000002)).toMatchObject({ name: 'White Potion', hp: 500, buyPrice: 350 });
     expect(potionById(2000003)).toMatchObject({ name: 'Blue Potion', mp: 200, buyPrice: 220 });
-    expect(potionById(2000004)).toMatchObject({ name: 'Elixir', hpPercent: 35, mpPercent: 35, buyPrice: 3000 });
+    expect(potionById(2000004)).toMatchObject({ name: 'Elixir', hpPercent: 35, mpPercent: 35, buyPrice: 900 });
+    expect(potionById(2020027)).toMatchObject({ name: 'Pumpkin Pie', hp: 700, mp: 400, buyPrice: 0 });
     // Sold at 1,000 in three shops and 1,800 in one: the lowest is what the player can pay.
     expect(potionById(2022003)).toMatchObject({ name: 'Unagi', hp: 1000, buyPrice: 1000 });
   });
