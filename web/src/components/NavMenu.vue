@@ -11,6 +11,7 @@ const links = [
   { to: '/characters', label: 'Characters' },
   { to: '/rankings', label: 'Rankings' },
   { to: '/loot', label: 'Loot' },
+  { to: '/merch', label: 'Merch' },
 ] as const;
 </script>
 

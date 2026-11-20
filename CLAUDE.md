@@ -172,6 +172,17 @@ The Classic UI uses exact pixel fonts, so we match pixels instead of OCR:
   rates are rounded). Icons are `web/public/nx/<itemId>.png` (from meowdb.com, which blocks plain HTTP clients: they were
   fetched through a real browser); a test checks every listed item has one. State is in memory only, nothing is saved.
 
+## Merch tab (flip tracker)
+- `/merch` (`pages/MerchPage.vue`, `components/merch/MerchItemCard.vue`) logs buys and sells per item and shows stock, profit and margin.
+  **Client only**: the ledger is in localStorage (`maple-metrics:merch`), nothing goes to the API. Logic is `lib/merch.ts` (tested): **average cost**
+  (a sale realises price minus the average cost of what is held), margin = profit / revenue, a sell can never exceed what is held (also enforced
+  when loading). Prices accept `1500`, `12k`, `1.5m`. Undo removes only the latest trade, so the ledger never becomes invalid.
+- **Item pictures come from a bundled cozy.markets catalog**, not a live lookup: cozy.markets sends no CORS header and Cloudflare blocks scripts and
+  servers, so neither the page nor the API can query it (and its icons 403 when hotlinked with a referer). `data/merch-items.json` holds all 2,140 items
+  (`[id, name, category]`, pulled through a real browser from `/api/items?size=100&page=N`) and `web/public/merch/<id>.png` their icons
+  (plain `curl` of `https://cozy.markets/api/icons/<id>.png` works). A name not in the catalog is tracked without a picture. To refresh,
+  re-pull the list in a browser and re-fetch the icons.
+
 ## Dark mode
 - A night theme, toggled by the ☾/☀ button in `NavMenu.vue` (`composables/useTheme.ts`, `lib/theme.ts`; saved in localStorage, else the system setting) and applied to the pop-out window too. `<html data-theme>` carries it.
 - **No raw hex colours in components.** Every colour is a token `--c-<hex>-<role>` (role = `bg` surfaces/fills, `text`, `edge` borders/outlines/shadows), plus `--ink-text`, `--cloud`. `web/src/theme.css` holds the light value (the original colour) and a hand-tunable night value for each. A new colour: add its token to both blocks; `color: var(--ink-text)` for brown text, `--ink` stays the outline colour. Canvas/JS colours (`open-fx.ts`, `PipCompact`) are not themed.
