@@ -35,6 +35,8 @@
   --c-2a6f1a-edge: #2a6f1a;
   --c-8a4fd8-bg: #8a4fd8;
   --c-5b2d9e-edge: #5b2d9e;
+  --c-ec5fa8-bg: #ec5fa8;
+  --c-a8336f-edge: #a8336f;
   --c-2b4a66-text: #2b4a66;
   --c-2c5d18-text: #2c5d18;
   --c-2c7d18-edge: #2c7d18;
@@ -228,6 +230,8 @@ html[data-theme='dark'] {
   --c-2a6f1a-edge: #45ff1a;
   --c-8a4fd8-bg: #7a43c0;
   --c-5b2d9e-edge: #5b2d9e;
+  --c-ec5fa8-bg: #d4529a;
+  --c-a8336f-edge: #a8336f;
   --c-2b4a66-text: #8facc6;
   --c-2c5d18-text: #6eff33;
   --c-2c7d18-edge: #47ff1a;

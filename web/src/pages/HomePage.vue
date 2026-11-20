@@ -128,6 +128,9 @@ const COMPACT_SIZE = { width: 240, height: 28 };
 // Bryan's Overlay: same width as the full tracker, about half its height; the window then fits its content.
 const bryanPopOut = usePopOut("Bryan's Overlay", { fitHeight: true });
 const BRYAN_SIZE = { width: 300, height: 85 };
+// Leslie's and Jesse's Overlays are the same overlay in their own windows.
+const leslieOverlayPopOut = usePopOut("Leslie's Overlay", { fitHeight: true });
+const jesseOverlayPopOut = usePopOut("Jesse's Overlay", { fitHeight: true });
 const trackerView = computed(() =>
   buildTrackerView({
     name: displayName.value,
@@ -163,6 +166,8 @@ watch(status, (now) => {
     popOut.close();
     compactPopOut.close();
     bryanPopOut.close();
+    leslieOverlayPopOut.close();
+    jesseOverlayPopOut.close();
   }
   if (now !== 'tracking') {
     clearDockTimer();
@@ -349,7 +354,19 @@ onBeforeUnmount(() => {
               <button class="popout-btn bryan-btn" type="button" :disabled="bryanPopOut.isOpen.value" @click="bryanPopOut.open(BRYAN_SIZE)">
                 {{ bryanPopOut.isOpen.value ? "Bryan's Overlay (popped out)" : "Bryan's Overlay" }}
               </button>
+              <div class="popout-below">
+                <button class="popout-btn bryan-btn leslie-btn" type="button" :disabled="leslieOverlayPopOut.isOpen.value" @click="leslieOverlayPopOut.open(BRYAN_SIZE)">
+                  {{ leslieOverlayPopOut.isOpen.value ? "Leslie's Overlay (popped out)" : "Leslie's Overlay" }}
+                </button>
+              </div>
+              <div class="popout-below">
+                <button class="popout-btn bryan-btn jesse-btn" type="button" :disabled="jesseOverlayPopOut.isOpen.value" @click="jesseOverlayPopOut.open(BRYAN_SIZE)">
+                  {{ jesseOverlayPopOut.isOpen.value ? "Jesse's Overlay (popped out)" : "Jesse's Overlay" }}
+                </button>
+              </div>
               <p v-if="bryanPopOut.error.value" class="alert-inline" role="alert">{{ bryanPopOut.error.value }}</p>
+              <p v-if="leslieOverlayPopOut.error.value" class="alert-inline" role="alert">{{ leslieOverlayPopOut.error.value }}</p>
+              <p v-if="jesseOverlayPopOut.error.value" class="alert-inline" role="alert">{{ jesseOverlayPopOut.error.value }}</p>
               <p v-if="popOut.error.value" class="alert-inline" role="alert">{{ popOut.error.value }}</p>
               <p v-if="compactPopOut.error.value" class="alert-inline" role="alert">{{ compactPopOut.error.value }}</p>
             </div>
@@ -385,6 +402,12 @@ onBeforeUnmount(() => {
         <PipTracker :view="trackerView" />
       </Teleport>
       <Teleport v-if="bryanPopOut.target.value" :to="bryanPopOut.target.value">
+        <BryanOverlay :view="trackerView" :series="expSeries" />
+      </Teleport>
+      <Teleport v-if="leslieOverlayPopOut.target.value" :to="leslieOverlayPopOut.target.value">
+        <BryanOverlay :view="trackerView" :series="expSeries" />
+      </Teleport>
+      <Teleport v-if="jesseOverlayPopOut.target.value" :to="jesseOverlayPopOut.target.value">
         <BryanOverlay :view="trackerView" :series="expSeries" />
       </Teleport>
       <Teleport v-if="compactPopOut.target.value":to="compactPopOut.target.value">
@@ -544,6 +567,9 @@ onBeforeUnmount(() => {
 .pause-btn.paused { background: var(--c-3fa02a-bg); box-shadow: 0 4px 0 var(--c-2a6f1a-edge); }
 .compact-btn { margin-left: 8px; background: var(--c-3fa02a-bg); box-shadow: 0 4px 0 var(--c-2a6f1a-edge); }
 .bryan-btn { margin-left: 8px; background: var(--c-8a4fd8-bg); box-shadow: 0 4px 0 var(--c-5b2d9e-edge); }
+.popout-below { margin-top: 10px; }
+.leslie-btn { background: var(--c-ec5fa8-bg); box-shadow: 0 4px 0 var(--c-a8336f-edge); }
+.jesse-btn { background: var(--c-3fa02a-bg); box-shadow: 0 4px 0 var(--c-2a6f1a-edge); }
 .popout-btn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--c-1e5f9e-edge); }
 .popout-btn:disabled { opacity: 0.6; cursor: default; box-shadow: none; }
 .popout-btn:focus-visible { outline: 4px solid var(--c-ffffff-edge); outline-offset: 2px; box-shadow: 0 0 0 7px var(--ink); }
