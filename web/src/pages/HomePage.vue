@@ -561,13 +561,14 @@ onBeforeUnmount(() => {
 .hint p { margin: 0 0 6px; }
 .hint ul { margin: 0; padding-left: 1.2rem; display: grid; gap: 4px; }
 
-.popout { margin-top: 14px; }
+.popout { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 10px 8px; }
 .popout-btn { padding: 8px 16px; font: 400 1.1rem 'Lilita One', sans-serif; color: var(--c-ffffff-text); background: var(--c-2f8fe0-bg); border: 3px solid var(--ink); border-radius: 12px; box-shadow: 0 4px 0 var(--c-1e5f9e-edge); cursor: pointer; }
 .pause-btn { background: var(--c-f0a020-bg); box-shadow: 0 4px 0 var(--c-b06a00-edge); }
 .pause-btn.paused { background: var(--c-3fa02a-bg); box-shadow: 0 4px 0 var(--c-2a6f1a-edge); }
-.compact-btn { margin-left: 8px; background: var(--c-3fa02a-bg); box-shadow: 0 4px 0 var(--c-2a6f1a-edge); }
-.bryan-btn { margin-left: 8px; background: var(--c-8a4fd8-bg); box-shadow: 0 4px 0 var(--c-5b2d9e-edge); }
-.popout-below { margin-top: 10px; }
+.compact-btn {background: var(--c-3fa02a-bg); box-shadow: 0 4px 0 var(--c-2a6f1a-edge); }
+.bryan-btn {background: var(--c-8a4fd8-bg); box-shadow: 0 4px 0 var(--c-5b2d9e-edge); }
+.popout-below { flex-basis: 100%; }
+.popout .alert-inline { flex-basis: 100%; margin: 0; }
 .leslie-btn { background: var(--c-ec5fa8-bg); box-shadow: 0 4px 0 var(--c-a8336f-edge); }
 .jesse-btn { background: var(--c-3fa02a-bg); box-shadow: 0 4px 0 var(--c-2a6f1a-edge); }
 .popout-btn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--c-1e5f9e-edge); }
