@@ -9,7 +9,7 @@ import type { TrackerView } from '../lib/tracker-view';
  * Bryan's Overlay: a bare, compact pop-out. Flat dark surface, plain text, one thin progress bar,
  * no borders or cards, three short rows. Presentation only.
  */
-const props = defineProps<{ view: TrackerView; series: readonly ExpGainPoint[] }>();
+const props = defineProps<{ view: TrackerView; series: readonly ExpGainPoint[]; tone?: 'green' | 'blue' }>();
 
 /** The backdrop is the last 30 minutes of EXP/hr, drawn in a 100x30 box that stretches to the window. */
 const WINDOW_MS = 30 * 60_000;
@@ -52,7 +52,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <section ref="root" class="bryan" aria-label="Bryan's Overlay">
+  <section ref="root" class="bryan" :class="{ blue: tone === 'blue' }" aria-label="Bryan's Overlay">
     <svg v-if="graph" class="graph" :viewBox="`0 0 ${GRAPH_W} ${GRAPH_H}`" preserveAspectRatio="none" aria-hidden="true">
       <polygon :points="graph.area" class="area" />
       <polyline :points="graph.line" class="line" vector-effect="non-scaling-stroke" />
@@ -92,6 +92,8 @@ onMounted(() => {
 
 <style scoped>
 .bryan {
+  --accent: #7ee787;
+  --accent-rgb: 126, 231, 135;
   position: relative;
   overflow: hidden;
   box-sizing: border-box;
@@ -101,9 +103,10 @@ onMounted(() => {
   font: 600 11px/1.25 'Nunito', system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
 }
+.bryan.blue { --accent: #7cc8ff; --accent-rgb: 124, 200, 255; }
 .graph { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.area { fill: rgba(126, 231, 135, 0.16); }
-.line { fill: none; stroke: rgba(126, 231, 135, 0.45); stroke-width: 1.5; }
+.area { fill: rgba(var(--accent-rgb), 0.16); }
+.line { fill: none; stroke: rgba(var(--accent-rgb), 0.45); stroke-width: 1.5; }
 .top, .bar-row, .row { position: relative; }
 .top, .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; white-space: nowrap; }
 .top { align-items: flex-end; }
@@ -112,12 +115,12 @@ onMounted(() => {
 .leaf { flex: none; width: 16px; height: 16px; object-fit: contain; }
 .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .dim { color: #8b9098; }
-.rate { flex: none; font: 700 1.45rem/1.1 'Nunito', system-ui, sans-serif; color: #7ee787; }
+.rate { flex: none; font: 700 1.45rem/1.1 'Nunito', system-ui, sans-serif; color: var(--accent); }
 .rate.dim { color: #8b9098; }
 .unit { margin-left: 2px; font-size: 0.5em; font-weight: 600; color: #8b9098; }
 .bar-row { display: flex; align-items: center; gap: 6px; margin: 3px 0 4px; }
 .track { flex: 1; height: 6px; background: #2a2e35; border-radius: 3px; overflow: hidden; }
-.fill { height: 100%; background: #7ee787; transition: width 0.6s ease-out; }
+.fill { height: 100%; background: var(--accent); transition: width 0.6s ease-out; }
 .pct { flex: none; min-width: 46px; text-align: right; }
 .row i { font-style: normal; color: #8b9098; }
 @media (prefers-reduced-motion: reduce) { .fill { transition: none; } }

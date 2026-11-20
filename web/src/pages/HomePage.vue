@@ -405,7 +405,7 @@ onBeforeUnmount(() => {
         <BryanOverlay :view="trackerView" :series="expSeries" />
       </Teleport>
       <Teleport v-if="leslieOverlayPopOut.target.value" :to="leslieOverlayPopOut.target.value">
-        <BryanOverlay :view="trackerView" :series="expSeries" />
+        <BryanOverlay :view="trackerView" :series="expSeries" tone="blue" />
       </Teleport>
       <Teleport v-if="jesseOverlayPopOut.target.value" :to="jesseOverlayPopOut.target.value">
         <BryanOverlay :view="trackerView" :series="expSeries" />
