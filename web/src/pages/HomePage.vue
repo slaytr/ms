@@ -24,6 +24,7 @@ import { usePopOut } from '../composables/usePopOut';
 import { useLiveGrinders } from '../composables/useLiveGrinders';
 import { useTracker } from '../composables/useTracker';
 import { formatClock } from '../lib/format';
+import { displayName as shownName } from '../lib/display-name';
 import { assessDetection } from '../lib/health';
 import { getSavedIdentity, listCharacters, getWeeklySessions } from '../lib/api';
 import { richest, specLeaders, type CharacterEntry, type SpecSlot } from '../lib/characters';
@@ -276,7 +277,7 @@ onBeforeUnmount(() => {
         <div class="welcome">
           <CharacterAvatar :name="profile.name" />
           <div class="details">
-            <p class="who">{{ profile.name ?? 'Your character' }}</p>
+            <p class="who">{{ shownName(profile.name) ?? 'Your character' }}</p>
             <p class="meta">
               <LevelBadge :level="profile.level" />
               <span v-if="profile.job" class="job">{{ profile.job }}</span>
