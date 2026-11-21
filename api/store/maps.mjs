@@ -22,7 +22,7 @@ select s.id,
        extract(epoch from x.first_at) * 1000 as "startedAt",
        x.seconds,
        x.level_from as "levelFrom", x.level_to as "levelTo",
-       x.exp_gained as "expGained", x.exp_pct_gained as "expPctGained", x.exp_tail_pct_gained as "expTailPctGained", x.meso_gained as "mesoGained"
+       x.exp_gained as "expGained", x.exp_pct_gained as "expPctGained", x.exp_estimated as "expEstimated", x.meso_gained as "mesoGained"
   from ms_session_stats x
   join ms_capture_sessions s on s.id = x.session_id
   left join ms_session_snapshots st on st.session_id = s.id and st.kind = 'start'
@@ -55,7 +55,7 @@ function toSession(row) {
     levelTo: row.levelTo,
     expGained: Number(row.expGained),
     expPctGained: Number(row.expPctGained),
-    expTailPctGained: Number(row.expTailPctGained),
+    expEstimated: row.expEstimated === true,
     mesoGained: Number(row.mesoGained),
   };
 }

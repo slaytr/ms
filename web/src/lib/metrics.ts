@@ -1,4 +1,4 @@
-import { expToNext } from '../data/expTable';
+import { expToNext } from '../data/expTable.ts';
 
 export interface Reading {
   /** Epoch milliseconds the frame was captured. */

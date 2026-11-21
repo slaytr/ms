@@ -1,103 +1,58 @@
 import { query } from '../db.mjs';
+import { sessionGains } from '../lib/session-gains.mjs';
 
 /**
  * Per-session stats kept in `ms_session_stats` (migration 015). The numbers come from ms_readings and are
  * recomputed only for sessions whose readings changed, so reading them costs a few hundred small rows
  * however many readings there are.
  *
- * The gains mirror web/src/lib/metrics.ts: they sum the change between consecutive successful reads
- * of each field (a failed read is skipped, a drop is a death penalty and counts as zero).
- * A wrapped bar (a drop of 50+ points) is a level-up whatever the label says, and a rising level label
- * only counts as one unless the readings are under 30s apart and EXP kept climbing (the label just
- * catching up to a level-up already counted), exactly as `leveledUp` does in metrics.ts.
- * EXP uses the raw counter, which resets on a level-up, so the single gap that crosses a level-up
- * contributes 0 to `expGained` (a slight undercount, never an invention). `expPctGained` wraps the
- * level-up exactly, so it is also the level-fair figure for comparing characters.
+ * The gains are the tracker's own maths (`sessionGains`, which runs `computeRates` from
+ * web/src/lib/metrics.ts), so level-ups, raw EXP, percent-only EXP and a mix of the two are all counted
+ * the way the player sees them. `exp_gained` is the whole EXP gain and `exp_estimated` says part of it was
+ * sized from the EXP percent. `exp_pct_gained` wraps the level-up exactly, so it is also the level-fair
+ * figure for comparing characters.
  */
 
-/** Recomputes the sessions in `target` ($1 ids, $2 the versions that were read) and stores the result. */
-const REFRESH_SQL = `
-with target as (
-  select * from unnest($1::uuid[], $2::bigint[]) as t(id, version)
-), e as (
-  select session_id, taken_at, exp, level, exp_pct,
-         lag(exp) over w as p_exp, lag(level) over w as p_level, lag(exp_pct) over w as p_pct,
-         lag(taken_at) over w as p_at
-    from ms_readings
-   where exp is not null and session_id in (select id from target)
-  window w as (partition by session_id order by taken_at)
-), exp_gain as (
-  select session_id,
-         sum(case
-               when p_exp is null then 0
-               when exp_pct is not null and p_pct is not null and exp_pct - p_pct < -50 then 0
-               when level is not null and p_level is not null and level > p_level
-                    and not (taken_at - p_at <= interval '30 seconds' and exp >= p_exp) then 0
-               else greatest(0, exp - p_exp)
-             end)::bigint as gained
-    from e group by session_id
-), p as (
-  select session_id, taken_at, exp, exp_pct, level,
-         lag(exp_pct) over w as p_pct, lag(level) over w as p_level, lag(exp) over w as p_exp,
-         lag(taken_at) over w as p_at,
-         max(taken_at) filter (where exp is not null) over (partition by session_id) as last_raw_at
-    from ms_readings
-   where exp_pct is not null and session_id in (select id from target)
-  window w as (partition by session_id order by taken_at)
-), p_step as (
-  select session_id, taken_at, last_raw_at,
-         case
-           when p_pct is null then 0
-           when exp_pct - p_pct < -50 then 100 - p_pct + exp_pct
-           when level is not null and p_level is not null and level > p_level
-                and not (taken_at - p_at <= interval '30 seconds'
-                         and (case when exp is not null and p_exp is not null then exp >= p_exp else exp_pct >= p_pct end))
-             then 100 - p_pct + exp_pct
-           else greatest(0, exp_pct - p_pct)
-         end as step
-    from p
-), pct_gain as (
-  select session_id,
-         sum(step)::float8 as gained,
-         -- Only after the last raw reading: that part has no exact figure in exp_gained.
-         coalesce(sum(step) filter (where last_raw_at is not null and taken_at > last_raw_at), 0)::float8 as tail
-    from p_step group by session_id
-), m as (
-  select session_id, meso, lag(meso) over (partition by session_id order by taken_at) as p_meso
-    from ms_readings
-   where meso is not null and session_id in (select id from target)
-), meso_gain as (
-  select session_id, sum(case when p_meso is null then 0 else greatest(0, meso - p_meso) end)::bigint as gained
-    from m group by session_id
-), span as (
-  select session_id,
-         min(taken_at) as first_at, max(taken_at) as last_at, count(*)::int as readings,
-         min(level) as level_from, max(level) as level_to
-    from ms_readings
-   where session_id in (select id from target)
-   group by session_id
-)
+const READINGS_SQL = `
+select taken_at, meso, exp, exp_pct, level from ms_readings where session_id = $1 order by taken_at`;
+
+const UPSERT_SQL = `
 insert into ms_session_stats
   (session_id, version, stale, readings, first_at, last_at, seconds, level_from, level_to,
-   exp_gained, exp_pct_gained, exp_tail_pct_gained, meso_gained, computed_at)
-select t.id, t.version, false,
-       coalesce(sp.readings, 0), sp.first_at, sp.last_at,
-       coalesce(extract(epoch from (sp.last_at - sp.first_at)), 0)::float8,
-       sp.level_from, sp.level_to,
-       coalesce(eg.gained, 0), coalesce(pg.gained, 0), coalesce(pg.tail, 0), coalesce(mg.gained, 0), now()
-  from target t
-  left join span sp on sp.session_id = t.id
-  left join exp_gain eg on eg.session_id = t.id
-  left join pct_gain pg on pg.session_id = t.id
-  left join meso_gain mg on mg.session_id = t.id
+   exp_gained, exp_estimated, exp_pct_gained, exp_tail_pct_gained, meso_gained, computed_at)
+values ($1, $2, false, $3, $4, $5, $6, $7, $8, $9, $10, $11, 0, $12, now())
 on conflict (session_id) do update set
   readings = excluded.readings, first_at = excluded.first_at, last_at = excluded.last_at,
   seconds = excluded.seconds, level_from = excluded.level_from, level_to = excluded.level_to,
-  exp_gained = excluded.exp_gained, exp_pct_gained = excluded.exp_pct_gained,
-  exp_tail_pct_gained = excluded.exp_tail_pct_gained,
+  exp_gained = excluded.exp_gained, exp_estimated = excluded.exp_estimated,
+  exp_pct_gained = excluded.exp_pct_gained, exp_tail_pct_gained = 0,
   meso_gained = excluded.meso_gained, computed_at = excluded.computed_at,
   -- A readings write that landed while this ran bumped the version: stay stale for the next refresh.
   stale = ms_session_stats.version <> excluded.version`;
+
+/** Recomputes one session from its readings and stores the result. `version` is the one that was read. */
+async function refreshSession(id, version) {
+  const { rows } = await query(READINGS_SQL, [id]);
+  const gains = sessionGains(rows);
+  const levels = rows.map((r) => r.level).filter((l) => l !== null);
+  const first = rows.length > 0 ? new Date(rows[0].taken_at) : null;
+  const last = rows.length > 0 ? new Date(rows[rows.length - 1].taken_at) : null;
+  await query(UPSERT_SQL, [
+    id,
+    version,
+    rows.length,
+    first,
+    last,
+    first && last ? (last.getTime() - first.getTime()) / 1000 : 0,
+    levels.length > 0 ? Math.min(...levels) : null,
+    levels.length > 0 ? Math.max(...levels) : null,
+    gains.expGained,
+    gains.expEstimated,
+    gains.expPctGained,
+    gains.mesoGained,
+  ]);
+}
+
 
 /** Sessions with no stats row yet, or whose readings changed since the row was computed. */
 const STALE_SQL = `
@@ -123,7 +78,7 @@ let inFlight = null;
 async function refreshOnce() {
   const { rows } = await query(STALE_SQL);
   if (rows.length === 0) return 0;
-  await query(REFRESH_SQL, [rows.map((r) => r.id), rows.map((r) => r.version)]);
+  for (const row of rows) await refreshSession(row.id, row.version);
   return rows.length;
 }
 

@@ -1,5 +1,3 @@
-import { expToNext } from '../../web/src/data/expTable.ts';
-
 /** A session counts as "grinding now" when its latest reading is newer than this. */
 export const LIVE_WINDOW_SECONDS = 5 * 60;
 const MAX_LIVE = 12;
@@ -9,24 +7,18 @@ export const MIN_SHOWN = 3;
 export const MIN_RATE_SECONDS = 2 * 60;
 
 /**
- * EXP gained, and whether part of it is a guess. Raw EXP readings give it exactly. Where the game stops
- * showing raw EXP (it hides it above 1M, which can happen part way through a session) the rest is sized
- * from the percent gained since the last raw reading and the level's EXP from the table, so a session that
- * switches to percent-only keeps counting. A session that never showed raw EXP is sized from its whole
- * percent gain. Both ignore a level-up part way through, which is fine for a rough figure.
+ * EXP gained, and whether part of it is a guess. The stored figure is already the whole gain, worked out by
+ * the tracker's own maths (api/lib/session-gains.mjs): exact where raw EXP was read, sized from the percent
+ * and the EXP table where the game hid it, level-ups carried across either way.
  */
-function expOf(row, level) {
-  const need = level === null ? null : expToNext(level);
-  const exact = row.expGained > 0 ? row.expGained : 0;
-  const pct = exact > 0 ? (row.expTailPctGained ?? 0) : row.expPctGained;
-  if (need === null || !(pct > 0)) return { exp: exact, estimated: false };
-  return { exp: exact + (pct / 100) * need, estimated: true };
+function expOf(row) {
+  return { exp: row.expGained, estimated: row.expEstimated === true };
 }
 
 /** One player's entry: who they are, their latest level / EXP%, and what the session gained. */
 function toEntry(row, latest) {
   const now = latest.get(row.id) ?? { level: null, pct: null };
-  const { exp, estimated } = expOf(row, now.level);
+  const { exp, estimated } = expOf(row);
   return {
     id: row.id,
     player: row.player,
@@ -44,7 +36,7 @@ function toEntry(row, latest) {
  * one entry per player (their most recent session), unnamed players left out (no one to show), the
  * biggest EXP gain first. Pure, so it is easy to test.
  *
- * @param {ReadonlyArray<{ id: string, player: string, job: string | null, playerKey: string, expGained: number, expPctGained: number, expTailPctGained?: number, seconds: number, startedAt: number }>} stats
+ * @param {ReadonlyArray<{ id: string, player: string, job: string | null, playerKey: string, expGained: number, expPctGained: number, expEstimated?: boolean, seconds: number, startedAt: number }>} stats
  * @param {ReadonlyMap<string, { level: number | null, pct: number | null }>} latest by session id
  */
 export function shapeLive(stats, latest) {
@@ -66,7 +58,7 @@ export function shapeLive(stats, latest) {
  * live (excludeKeys), unnamed players and sessions with no reading are left out. Each entry carries
  * lastSeenAt (ISO time of its latest reading), which is how the page tells them from live ones.
  *
- * @param {ReadonlyArray<{ id: string, player: string, job: string | null, playerKey: string, expGained: number, expPctGained: number, expTailPctGained?: number, seconds: number, startedAt: number }>} stats
+ * @param {ReadonlyArray<{ id: string, player: string, job: string | null, playerKey: string, expGained: number, expPctGained: number, expEstimated?: boolean, seconds: number, startedAt: number }>} stats
  * @param {ReadonlyMap<string, { level: number | null, pct: number | null }>} latest by session id
  * @param {ReadonlyMap<string, number>} lastSeen epoch ms of each session's latest reading, by session id
  * @param {ReadonlySet<string>} excludeKeys player keys to skip
