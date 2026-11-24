@@ -2,6 +2,7 @@ import { computed, reactive, ref, shallowRef } from 'vue';
 
 import { createSession, endSession, labelSession, postReadings, saveSessionIdentity, setSessionPartySize } from '../lib/api';
 import type { Detection, MapPlate } from '../lib/detect/detect.ts';
+import { noSwitch, observeFingerprint } from '../lib/character-switch';
 import { coreReady } from '../lib/health';
 import { mapLabel } from '../lib/map-label';
 import { computeRates, type Pause, type Reading } from '../lib/metrics';
@@ -71,6 +72,9 @@ export function useTracker() {
   let identity: PlayerIdentity | null = null;
   /** The session the current identity was last saved against, so it is sent once per session, not every tick. */
   let identitySavedFor = '';
+  /** The character (fingerprint) the open session belongs to. A different one on screen ends it and starts another. */
+  let sessionFingerprint: string | null = null;
+  let switchState = noSwitch;
   /** The same latest-known state, reactive, for the live overlay (level and EXP are present even on a tick that missed them). */
   const current = ref<PlayerSnapshot | null>(null);
   /** The map the player is on now. Holds the last readable one while the minimap is covered or unreadable. */
@@ -115,6 +119,7 @@ export function useTracker() {
         partySize: size,
       });
       session.id = created.id;
+      sessionFingerprint = fingerprint;
       session.token = created.ownerToken;
       sentLabel = label;
       sentPartySize = size;
@@ -179,7 +184,8 @@ export function useTracker() {
    * until it succeeds.
    */
   async function syncIdentity(): Promise<void> {
-    if (!identity || !session.id || identitySavedFor === session.id) return;
+    // A typed name belongs to one character: never save it against a session that is another one's.
+    if (!identity || !session.id || identitySavedFor === session.id || identity.fingerprint !== sessionFingerprint) return;
     const sessionId = session.id;
     identitySavedFor = sessionId; // claimed before the request so overlapping ticks don't send it twice
     try {
@@ -206,6 +212,21 @@ export function useTracker() {
     if (pending.length >= UPLOAD_EVERY) await flush();
   }
 
+  /**
+   * False while another character is on screen but the switch isn't confirmed yet: those ticks belong to
+   * neither session. Once confirmed, the old session is closed so this tick opens the new character's.
+   */
+  async function continuesSession(detection: Detection): Promise<boolean> {
+    const seen = detection.character.fingerprint;
+    const step = observeFingerprint(switchState, sessionFingerprint, seen);
+    switchState = step.state;
+    if (step.switched) {
+      await reset();
+      return true;
+    }
+    return !(sessionFingerprint !== null && seen !== null && seen !== sessionFingerprint);
+  }
+
   async function tick(): Promise<void> {
     const el = capture.video.value;
     if (status.value !== 'tracking' || !el) return;
@@ -220,7 +241,7 @@ export function useTracker() {
     }
     try {
       const detection = detector.read(el);
-      if (detection) {
+      if (detection && (await continuesSession(detection))) {
         ticks.value += 1;
         lastDetection.value = detection;
         streak.value = coreReady(detection) ? streak.value + 1 : 0;
@@ -267,6 +288,8 @@ export function useTracker() {
       rawMissStreak = 0;
       identity = null;
       identitySavedFor = '';
+      sessionFingerprint = null;
+      switchState = noSwitch;
       current.value = null;
       map.value = null;
       session.id = '';
@@ -337,6 +360,8 @@ export function useTracker() {
       latestSnapshot = null;
       rawMissStreak = 0;
       identitySavedFor = '';
+      sessionFingerprint = null;
+      switchState = noSwitch;
       current.value = null;
       session.id = '';
       session.token = '';
