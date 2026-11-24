@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
-/** The character's sprite from ClassicRank (via our /api/avatar proxy). Renders nothing if there isn't one. */
+/** The character's sprite from ClassicRank (via our /api/avatar proxy). Shows the empty character-select silhouette when there isn't one. */
 const props = defineProps<{ name: string | null | undefined; small?: boolean }>();
 
 const failedFor = ref<string | null>(null);
@@ -28,9 +28,11 @@ const usable = (name: string | null | undefined): name is string => !!name && /^
     height="96"
     @error="failedFor = name"
   />
+  <img v-else class="avatar placeholder" :class="{ small }" src="/empty-char.png" alt="No character sprite" width="96" height="96" />
 </template>
 
 <style scoped>
 .avatar { display: block; margin: 0 auto 6px; width: 96px; height: 96px; image-rendering: pixelated; }
+.avatar.placeholder { object-fit: contain; image-rendering: auto; border-radius: 12px; }
 .avatar.small { margin: 0; width: 48px; height: 48px; }
 </style>
