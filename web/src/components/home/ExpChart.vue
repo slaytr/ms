@@ -3,6 +3,7 @@ import { computed, ref, useId } from 'vue';
 
 import { formatCompact } from '../../lib/format';
 import { expRateSeries, type ExpGainPoint } from '../../lib/metrics';
+import { buildYAxis } from '../../lib/y-axis';
 
 const props = defineProps<{ series: readonly ExpGainPoint[] }>();
 /** Unique per chart: the Tracker page keeps its own copy mounted (hidden) while the Maps page shows another. */
@@ -35,13 +36,6 @@ const X_STEPS_MIN = [1, 2, 5, 10, 15, 30, 60, 120, 180, 360, 720];
 const plotW = W - PAD.left - PAD.right;
 const plotH = H - PAD.top - PAD.bottom;
 
-/** Round up to 1, 2, 2.5, 5 or 10 times a power of ten, so axis labels land on friendly numbers. */
-function niceMax(value: number): number {
-  const power = 10 ** Math.floor(Math.log10(value));
-  const step = [1, 2, 2.5, 5, 10].find((m) => m * power >= value) ?? 10;
-  return step * power;
-}
-
 /** What is plotted: one value per point, whichever mode is showing. */
 interface Sample {
   readonly elapsedMs: number;
@@ -60,36 +54,11 @@ const xMax = computed(() => Math.max(props.series[props.series.length - 1]?.elap
 const xMin = computed(() => (windowMin.value === null ? 0 : Math.max(0, xMax.value - windowMin.value * 60_000)));
 const xSpan = computed(() => xMax.value - xMin.value);
 const visible = computed(() => samples.value.filter((s) => s.elapsedMs >= xMin.value));
-/**
- * The y axis: gridlines every 10k (20k, 50k... when that would be crowded). When the data sits well above zero
- * (say 125k-210k) the axis starts at the gridline below the lowest value instead of 0, and a break mark says so.
- */
-interface YAxis {
-  readonly min: number;
-  readonly max: number;
-  readonly step: number;
-}
-const MAX_Y_INTERVALS = 6;
-const MIN_BIG_STEP = 10_000;
-function buildYAxis(low: number, high: number): YAxis {
-  const floor = mode.value === 'total' ? 100 : 1000;
-  const top = Math.max(high, floor);
-  const bottom = Math.min(low, top);
-  const steps = [1, 2, 5].flatMap((m) => [0, 1, 2, 3, 4, 5, 6, 7, 8].map((p) => m * 10 ** p)).sort((a, b) => a - b);
-  for (const step of steps) {
-    if (top >= 3 * MIN_BIG_STEP && step < MIN_BIG_STEP) continue;
-    const max = Math.ceil(top / step) * step;
-    // One gridline of headroom under the lowest value, so the line never rides the axis.
-    const rawMin = Math.floor(bottom / step) * step;
-    const min = bottom - rawMin < step * 0.25 ? rawMin - step : rawMin;
-    const start = min < step * 2 ? 0 : min;
-    if ((max - start) / step <= MAX_Y_INTERVALS) return { min: start, max: Math.max(max, start + step), step };
-  }
-  return { min: 0, max: niceMax(top), step: niceMax(top) / 4 };
-}
+/** The y axis (lib/y-axis.ts): starts at the gridline below the lowest value when the data sits well above zero, and a break mark says so. */
 const yAxis = computed(() => {
   const values = visible.value.map((s) => s.value);
-  return buildYAxis(values.length ? Math.min(...values) : 0, values.length ? Math.max(...values) : 0);
+  const floor = mode.value === 'total' ? 100 : 1000;
+  return buildYAxis(values.length ? Math.min(...values) : 0, values.length ? Math.max(...values) : 0, floor);
 });
 const yBroken = computed(() => yAxis.value.min > 0);
 

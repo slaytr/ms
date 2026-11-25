@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 
 import { formatPerHour } from '../lib/format';
 import { expRateSeries, type ExpGainPoint } from '../lib/metrics';
+import { overlayGraph } from '../lib/overlay-graph';
 import type { TrackerView } from '../lib/tracker-view';
 
 /**
@@ -11,24 +12,11 @@ import type { TrackerView } from '../lib/tracker-view';
  */
 const props = defineProps<{ view: TrackerView; series: readonly ExpGainPoint[]; tone?: 'green' | 'blue' }>();
 
-/** The backdrop is the last 30 minutes of EXP/hr, drawn in a 100x30 box that stretches to the window. */
-const WINDOW_MS = 30 * 60_000;
+/** The backdrop is the last 30 minutes of EXP/hr (lib/overlay-graph.ts), drawn in a 100x30 box that stretches to the window. */
 const GRAPH_W = 100;
 const GRAPH_H = 30;
 const rateSeries = computed(() => expRateSeries(props.series));
-const graph = computed(() => {
-  const rate = rateSeries.value;
-  const end = props.series[props.series.length - 1]?.elapsedMs ?? 0;
-  const start = Math.max(0, end - WINDOW_MS);
-  const span = Math.max(end - start, 60_000);
-  const pts = rate.filter((p) => p.elapsedMs >= start);
-  if (pts.length < 2) return null;
-  const top = Math.max(...pts.map((p) => p.expPerHour), 1);
-  const coords = pts.map((p) => `${(((p.elapsedMs - start) / span) * GRAPH_W).toFixed(2)},${(GRAPH_H - (Math.max(p.expPerHour, 0) / top) * GRAPH_H).toFixed(2)}`);
-  const first = coords[0].split(',')[0];
-  const last = coords[coords.length - 1].split(',')[0];
-  return { line: coords.join(' '), area: `${first},${GRAPH_H} ${coords.join(' ')} ${last},${GRAPH_H}` };
-});
+const graph = computed(() => overlayGraph(rateSeries.value, GRAPH_W, GRAPH_H));
 
 /** Pace right now: the latest 1-minute point, projected to an hour (the big figure is the last hour). */
 const nowRate = computed(() => {
@@ -61,7 +49,7 @@ onMounted(() => {
       <span class="rate" :class="{ dim: view.expPerHour === '—' }">{{ view.expPerHour }}<span class="unit">/hr</span></span>
       <span class="side">
         <span class="line1">
-          <span class="dim who">{{ view.name ?? 'Tracking' }}<template v-if="view.level !== null"> Lv.{{ view.level }}</template> · {{ view.paused ? 'Paused ' : '' }}{{ view.elapsed }}</span>
+          <span class="who">{{ view.name ?? 'Tracking' }}<template v-if="view.level !== null"> Lv.{{ view.level }}</template> · {{ view.paused ? 'Paused ' : '' }}{{ view.elapsed }}</span>
           <img class="leaf" src="/maple-leaf.png" alt="MapleStory" width="16" height="16" />
         </span>
         <span>+{{ fmt(view.expGained) }} <i>exp</i></span>
