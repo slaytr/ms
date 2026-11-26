@@ -23,6 +23,8 @@ function toEntry(row, latest) {
     id: row.id,
     player: row.player,
     job: row.job,
+    map: row.map || null,
+    seconds: row.seconds,
     level: now.level,
     pct: now.pct,
     expGained: exp,
@@ -36,7 +38,7 @@ function toEntry(row, latest) {
  * one entry per player (their most recent session), unnamed players left out (no one to show), the
  * biggest EXP gain first. Pure, so it is easy to test.
  *
- * @param {ReadonlyArray<{ id: string, player: string, job: string | null, playerKey: string, expGained: number, expPctGained: number, expEstimated?: boolean, seconds: number, startedAt: number }>} stats
+ * @param {ReadonlyArray<{ id: string, player: string, job: string | null, map: string, playerKey: string, expGained: number, expPctGained: number, expEstimated?: boolean, seconds: number, startedAt: number }>} stats
  * @param {ReadonlyMap<string, { level: number | null, pct: number | null }>} latest by session id
  */
 export function shapeLive(stats, latest) {
@@ -58,7 +60,7 @@ export function shapeLive(stats, latest) {
  * live (excludeKeys), unnamed players and sessions with no reading are left out. Each entry carries
  * lastSeenAt (ISO time of its latest reading), which is how the page tells them from live ones.
  *
- * @param {ReadonlyArray<{ id: string, player: string, job: string | null, playerKey: string, expGained: number, expPctGained: number, expEstimated?: boolean, seconds: number, startedAt: number }>} stats
+ * @param {ReadonlyArray<{ id: string, player: string, job: string | null, map: string, playerKey: string, expGained: number, expPctGained: number, expEstimated?: boolean, seconds: number, startedAt: number }>} stats
  * @param {ReadonlyMap<string, { level: number | null, pct: number | null }>} latest by session id
  * @param {ReadonlyMap<string, number>} lastSeen epoch ms of each session's latest reading, by session id
  * @param {ReadonlySet<string>} excludeKeys player keys to skip

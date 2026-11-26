@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { MAX_LABEL_LENGTH, mapLabel } from './map-label';
+import { MAX_LABEL_LENGTH, mapLabel, splitMapLabel } from './map-label';
 
 describe('mapLabel', () => {
   it('joins the street and the map the way the game shows them', () => {
@@ -21,5 +21,20 @@ describe('mapLabel', () => {
   it('never exceeds the length the API accepts', () => {
     const long = mapLabel({ street: 'S'.repeat(50), name: 'M'.repeat(50) });
     expect(long).toHaveLength(MAX_LABEL_LENGTH);
+  });
+});
+
+describe('splitMapLabel', () => {
+  it('separates the street from the map', () => {
+    expect(splitMapLabel('Victoria Road: Ant Tunnel I')).toEqual({ street: 'Victoria Road', name: 'Ant Tunnel I' });
+  });
+
+  it('keeps a name with no street whole', () => {
+    expect(splitMapLabel('boss run')).toEqual({ street: null, name: 'boss run' });
+    expect(splitMapLabel('farming 1:2')).toEqual({ street: null, name: 'farming 1:2' });
+  });
+
+  it('splits only at the first separator', () => {
+    expect(splitMapLabel('A: B: C')).toEqual({ street: 'A', name: 'B: C' });
   });
 });

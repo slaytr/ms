@@ -13,3 +13,12 @@ export function mapLabel(map: MapPlate): string | null {
   if (parts.length === 0) return null;
   return parts.join(': ').slice(0, MAX_LABEL_LENGTH);
 }
+
+/**
+ * A session name back as its two lines, for display: "Street: Map". A name without that separator (typed
+ * by the player, or only one line was read) has no street.
+ */
+export function splitMapLabel(label: string): { readonly street: string | null; readonly name: string } {
+  const at = label.indexOf(': ');
+  return at < 0 ? { street: null, name: label } : { street: label.slice(0, at), name: label.slice(at + 2) };
+}

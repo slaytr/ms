@@ -218,6 +218,10 @@ export interface LiveGrinder {
   id: string;
   player: string;
   job: string | null;
+  /** The session's name, normally the map being grinded ("Street: Map"); null until one is read or typed. */
+  map: string | null;
+  /** How long the session has run: first to latest reading. */
+  seconds: number;
   level: number | null;
   pct: number | null;
   expGained: number;

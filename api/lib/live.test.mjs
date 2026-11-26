@@ -6,6 +6,7 @@ const row = (over) => ({
   id: 'a',
   player: 'Ann',
   job: 'Spearman',
+  map: 'Victoria Road: Ant Tunnel I',
   playerKey: 'ann',
   expGained: 100,
   expPctGained: 0,
@@ -19,8 +20,16 @@ describe('shapeLive', () => {
   it('joins each session with its latest level and percent', () => {
     const out = shapeLive([row({ id: 's1' })], latest({ s1: { level: 34, pct: 12.5 } }));
     expect(out).toEqual([
-      { id: 's1', player: 'Ann', job: 'Spearman', level: 34, pct: 12.5, expGained: 100, expPerHour: 100, estimated: false },
+      {
+        id: 's1', player: 'Ann', job: 'Spearman', map: 'Victoria Road: Ant Tunnel I', seconds: 3600,
+        level: 34, pct: 12.5, expGained: 100, expPerHour: 100, estimated: false,
+      },
     ]);
+  });
+
+  it('leaves the map null while the session has no name', () => {
+    const [entry] = shapeLive([row({ map: '' })], latest({}));
+    expect(entry.map).toBeNull();
   });
 
   it('works out EXP per hour from the tracked time', () => {

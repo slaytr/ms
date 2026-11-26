@@ -3,6 +3,8 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import type { LiveGrinder } from '../../lib/api';
 import { formatAgo, formatCompact } from '../../lib/format';
+import { splitMapLabel } from '../../lib/map-label';
+import { formatStay } from '../../lib/maps';
 import CharacterAvatar from './CharacterAvatar.vue';
 import LevelBadge from './LevelBadge.vue';
 
@@ -11,6 +13,7 @@ import LevelBadge from './LevelBadge.vue';
  * session. With more than five it becomes a carousel of pages of five, turning by itself every few
  * seconds and pausing while hovered or focused. When fewer than three are grinding, the server fills the rest
  * with whoever was last seen (`lastSeenAt` set): those cards say how long ago instead of showing EXP.
+ * Hovering (or focusing) a card lifts it and shows where that session is and how long it has run.
  * Presentation only.
  */
 const props = defineProps<{ grinders: readonly LiveGrinder[] }>();
@@ -42,6 +45,7 @@ const visible = computed(() => props.grinders.slice(page.value * PER_PAGE, (page
 
 const fmt = (n: number) => Math.round(n).toLocaleString();
 const pct = (value: number | null) => (value === null ? '—' : `${value.toFixed(2)}%`);
+const place = (g: LiveGrinder) => (g.map ? splitMapLabel(g.map) : { street: null, name: 'Map unknown' });
 
 function go(next: number): void {
   page.value = (next + pages.value) % pages.value;
@@ -89,7 +93,7 @@ onBeforeUnmount(stop);
     <div class="row">
       <button v-if="pages > 1" class="nav" type="button" aria-label="Previous players" @click="go(page - 1)">‹</button>
       <ul class="cards" :style="{ '--n': Math.min(count, PER_PAGE) }" aria-live="polite">
-        <li v-for="g in visible" :key="g.id" class="card" :class="{ away: g.lastSeenAt }">
+        <li v-for="g in visible" :key="g.id" class="card" :class="{ away: g.lastSeenAt }" tabindex="0">
           <CharacterAvatar :name="g.player" small />
           <p class="who" :title="g.player">{{ g.player }}</p>
           <LevelBadge :level="g.level" />
@@ -97,6 +101,11 @@ onBeforeUnmount(stop);
           <p v-if="g.lastSeenAt" class="seen" :title="`Last seen grinding ${new Date(g.lastSeenAt).toLocaleString()}`">seen {{ seenAgo(g) }}</p>
           <p v-if="!g.lastSeenAt" class="gain" :title="g.estimated ? 'Estimated from the EXP bar percent' : undefined">{{ g.estimated ? '~' : '' }}+{{ fmt(g.expGained) }}</p>
           <p v-if="!g.lastSeenAt" class="rate" title="Average EXP per hour this session">{{ g.expPerHour === null ? '—' : `${g.estimated ? '~' : ''}${formatCompact(g.expPerHour)}/h` }}</p>
+          <div class="where">
+            <p v-if="place(g).street" class="street">{{ place(g).street }}</p>
+            <p class="map">{{ place(g).name }}</p>
+            <p class="stay">{{ g.lastSeenAt ? 'grinded' : 'grinding' }} for {{ formatStay(g.seconds) }}</p>
+          </div>
         </li>
       </ul>
       <button v-if="pages > 1" class="nav" type="button" aria-label="Next players" @click="go(page + 1)">›</button>
@@ -119,6 +128,9 @@ onBeforeUnmount(stop);
 <style scoped>
 .live {
   --ink: var(--c-4a2a0e-edge);
+  /* Above the logo that follows, which the hover tag hangs over. */
+  position: relative;
+  z-index: 5;
   /* As wide as its cards need (one to five of them), never wider than the page. */
   width: fit-content;
   max-width: 100%;
@@ -138,12 +150,23 @@ onBeforeUnmount(stop);
 .row { display: flex; align-items: center; justify-content: center; gap: 6px; }
 /* Width follows the number of players (--n, at most one page), so a last page with fewer cards doesn't resize the box. */
 .cards { --card: 6.5rem; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; width: calc(var(--n) * var(--card) + (var(--n) - 1) * 6px); max-width: 100%; min-width: 0; margin: 0; padding: 0; list-style: none; }
-.card { flex: none; width: var(--card); min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; background: var(--c-fffdf3-bg); border: 2px solid var(--c-d9c48a-edge); border-radius: 10px; text-align: center; }
+.card { position: relative; transition: transform 0.15s ease, box-shadow 0.15s ease; flex: none; width: var(--card); min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; background: var(--c-fffdf3-bg); border: 2px solid var(--c-d9c48a-edge); border-radius: 10px; text-align: center; }
 .who { max-width: 100%; margin: 2px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 1rem/1.2 'Lilita One', sans-serif; }
 .pct { margin: 0; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--c-6b4a22-text); }
 .rate { margin: 0; font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--c-6b4a22-text); }
 .gain { margin: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; font: 400 0.95rem/1.2 'Lilita One', sans-serif; color: var(--c-2e9a1f-text); font-variant-numeric: tabular-nums; }
 .card.away { opacity: 0.85; }
+/* Hover or keyboard focus lifts the card and drops its "where and how long" tag beneath it. */
+.card:hover, .card:focus-visible { z-index: 2; opacity: 1; transform: translateY(-5px); border-color: var(--ink); box-shadow: 0 7px 0 rgba(74, 42, 14, 0.25); }
+.card:focus-visible { outline: 3px solid var(--c-2f8fe0-edge); outline-offset: 2px; }
+/* Covers the gap the lift opens under the card, so a pointer on its bottom edge doesn't make it flicker. */
+.card::after { content: ''; position: absolute; top: 100%; left: 0; right: 0; height: 8px; }
+.where { position: absolute; z-index: 1; top: calc(100% + 8px); left: 50%; width: max-content; max-width: 11rem; padding: 6px 10px; background: var(--c-fffdf3-bg); border: 2px solid var(--ink); border-radius: 10px; box-shadow: 0 4px 0 rgba(74, 42, 14, 0.25); transform: translate(-50%, -4px); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s; }
+.card:hover .where, .card:focus-visible .where { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
+.where p { margin: 0; }
+.street { font-size: 11px; color: var(--c-8f7a55-text); }
+.map { font: 400 0.95rem/1.2 'Lilita One', sans-serif; }
+.stay { margin-top: 2px; font-size: 12px; font-weight: 800; color: var(--c-6b4a22-text); }
 .seen { margin: 2px 0 0; font-size: 12px; font-weight: 800; color: var(--c-8f7a55-text); }
 .card :deep(.badge) { transform: scale(0.75); transform-origin: center; margin: -3px 0; }
 @media (max-width: 520px) { .cards { --card: 5.4rem; } }
@@ -155,5 +178,5 @@ onBeforeUnmount(stop);
 .pip { width: 9px; height: 9px; padding: 0; background: var(--c-ecdcae-bg); border: 2px solid var(--ink); border-radius: 50%; cursor: pointer; }
 .pip.on { background: var(--c-3fa02a-bg); }
 
-@media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .dot { animation: none; } .card, .where { transition: none; } }
 </style>
